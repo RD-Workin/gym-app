@@ -76,8 +76,35 @@ export const BIBLIOTHEQUE: ExerciceDepart[] = [
   e({ cle: 'hack-squat', nom: 'Hack squat', equipement: 'machine', modeCharge: 'total', groupes: ['quadriceps', 'fessiers'], seance: 'Jambes' }),
 ];
 
-export const MODELES_DEPART: { nom: string; seance: ExerciceDepart['seance'] }[] = [
+export interface ModeleDepart {
+  nom: string;
+  /** Séance d'origine : tous ses exercices, dans l'ordre du carnet. */
+  seance?: ExerciceDepart['seance'];
+  /** Ou liste explicite (modèle composé, ex. Full body) : clé d'exercice + cibles. */
+  blocs?: { cle: string; series: number; reps: string }[];
+}
+
+export const MODELES_DEPART: ModeleDepart[] = [
   { nom: 'Push', seance: 'Push' },
   { nom: 'Pull', seance: 'Pull' },
   { nom: 'Jambes · épaules · abdos', seance: 'Jambes' },
+  {
+    // Tout le corps en une séance (~70 min, 24 séries) : un polyarticulaire par grand mouvement, puis un peu d'isolation.
+    nom: 'Full body',
+    blocs: [
+      { cle: 'leg-press', series: 3, reps: '8-10' },
+      { cle: 'dc', series: 3, reps: '6-8' },
+      { cle: 'lat-pulldown', series: 3, reps: '8-10' },
+      { cle: 'shoulder-press', series: 3, reps: '8-10' },
+      { cle: 'seated-row', series: 3, reps: '8-12' },
+      { cle: 'leg-curl', series: 3, reps: '10-12' },
+      { cle: 'curl-incline', series: 2, reps: '10-12' },
+      { cle: 'extension-poulie', series: 2, reps: '10-12' },
+      { cle: 'crunch', series: 2, reps: '12-15' },
+    ],
+  },
 ];
+
+/** Blocs d'un modèle de départ (clé d'exercice + cibles), quelle que soit sa forme. */
+export const blocsDepart = (m: ModeleDepart): { cle: string; series?: number; reps?: string }[] =>
+  m.blocs ?? BIBLIOTHEQUE.filter((x) => x.seance === m.seance).map((x) => ({ cle: x.cle, series: x.series, reps: x.reps }));
