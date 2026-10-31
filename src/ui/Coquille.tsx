@@ -14,7 +14,9 @@ export function BarreOnglets({ onglets }: { onglets: OngletNav[] }) {
     <nav class="ui-barre-onglets" aria-label="Navigation principale">
       {onglets.map((o) => (
         <a key={o.href} href={o.href} aria-current={o.actif ? 'page' : undefined}>
-          <Icone nom={o.icone} />
+          <span key={o.actif ? 'actif' : 'inactif'} class={`ui-barre-icone${o.actif ? ' anim-pulse' : ''}`}>
+            <Icone nom={o.icone} />
+          </span>
           {o.libelle}
         </a>
       ))}

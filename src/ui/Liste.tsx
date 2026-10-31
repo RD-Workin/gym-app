@@ -28,14 +28,14 @@ export function ElementListe({ titre, detail, debut, fin, href, onClick, surlign
     <>
       {debut}
       <span class="ui-element-texte">
-        <span class="ui-element-titre" style={{ display: 'block' }}>{titre}</span>
-        {detail && <span class="ui-element-detail" style={{ display: 'block' }}>{detail}</span>}
+        <span class="ui-element-titre">{titre}</span>
+        {detail && <span class="ui-element-detail">{detail}</span>}
       </span>
       {(fin || href) && (
         <span class="ui-element-fin">
           {fin}
           {href && (
-            <span class="ui-element-chevron" style={{ width: 18, height: 18, display: 'inline-flex' }}>
+            <span class="ui-element-chevron">
               <Icone nom="chevron" />
             </span>
           )}

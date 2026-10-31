@@ -39,6 +39,7 @@
   text-decoration: none;
 }
 .ui-barre-onglets a[aria-current='page'] { color: var(--c-action); }
+.ui-barre-icone { display: inline-flex; }
 .ui-barre-onglets svg { width: 24px; height: 24px; }
 
 /* ---- Bouton ---- */
@@ -138,10 +139,10 @@ a.ui-element:active,
 button.ui-element:active { background: var(--c-surface-2); }
 .ui-element.surligne { background: rgb(255 212 94 / 0.06); }
 .ui-element-texte { flex: 1; min-width: 0; }
-.ui-element-titre { font-weight: 600; }
-.ui-element-detail { font-size: 13px; color: var(--c-attenue); }
+.ui-element-titre { display: block; font-weight: 600; }
+.ui-element-detail { display: block; font-size: 13px; color: var(--c-attenue); }
 .ui-element-fin { flex: none; display: flex; align-items: center; gap: var(--e-2); }
-.ui-element-chevron { color: var(--c-attenue); }
+.ui-element-chevron { display: inline-flex; width: 18px; height: 18px; color: var(--c-attenue); }
 .ui-medaille {
   width: 34px;
   height: 34px;
@@ -257,7 +258,6 @@ button.ui-element:active { background: var(--c-surface-2); }
   from { transform: translateY(calc(-100% - 60px)); }
   to { transform: none; }
 }
-.ui-confettis { position: fixed; inset: 0; z-index: 31; pointer-events: none; }
 
 /* Apparition d'une ligne (ex. série validée). */
 .ui-apparition { animation: ui-pop 450ms var(--anim-ressort); }
