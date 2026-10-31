@@ -5,7 +5,7 @@ import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
 import { seanceEnCours, useRequete } from '../../core/requetes';
-import { unRmEstime } from '../../core/calculs';
+import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { ChoixExercice } from './ChoixExercice';
@@ -193,15 +193,11 @@ function SeanceActive({ seance }: { seance: Seance }) {
         setEdition(undefined);
         return;
       }
-      // Record : 1RM estimé au-dessus de tout l'historique de l'exercice.
-      const pdc = seance.contexte.poidsCorporelKg;
-      const rm = unRmEstime(saisie, pdc);
-      if (rm) {
-        const histo = await db.series.where('exerciceId').equals(bloc.exerciceId).toArray();
-        const max = Math.max(0, ...histo.map((s) => unRmEstime(s, pdc) ?? 0));
-        if (histo.length && rm > max) setToast(`${nom(plan.actif)} · 1RM estimé ${Math.round(rm)} kg`);
+      const serie = await enregistrerSerie(seance.id, bloc, saisie);
+      if (serie) {
+        const recs = await recordsDeLaSerie(serie);
+        if (recs.length) setToast(recs[0].texte);
       }
-      await enregistrerSerie(seance.id, bloc, saisie);
       if (exercice && saisie.reglagesMachine && saisie.reglagesMachine !== exercice.reglagesMachine) {
         await db.exercices.update(exercice.id, { reglagesMachine: saisie.reglagesMachine, modifieLe: maintenant() });
       }

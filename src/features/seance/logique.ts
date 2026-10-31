@@ -88,7 +88,7 @@ export interface Saisie {
   reglagesMachine?: string;
 }
 
-export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: Saisie, existante?: Serie) {
+export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: Saisie, existante?: Serie): Promise<Serie | undefined> {
   const t = maintenant();
   if (existante) {
     await db.series.update(existante.id, { ...saisie, modifieLe: t });
@@ -108,6 +108,7 @@ export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: S
     modifieLe: t,
   };
   await db.series.add(serie);
+  return serie;
 }
 
 /** Séries de travail de la dernière séance (hors séance courante) qui contient cet exercice. */
