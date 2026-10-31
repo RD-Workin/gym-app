@@ -1,5 +1,7 @@
 // Séance en cours (propriétaire : 04-seance).
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { PanneauConseils } from '../../ui';
+import { CONSEILS_SEANCE, conseilsExercice } from '../../data/conseils';
 import { Bouton, Carte, ElementListe, Liste, Onglets, Puce, Stepper, ToastRecord } from '../../ui';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
@@ -330,7 +332,8 @@ function SeanceActive({ seance }: { seance: Seance }) {
             {notes.map((n) => (
               <p key={n} class="sc-note">{n}</p>
             ))}
-          </div>
+
+            {conseilsExercice(nom(plan.actif)) && <PanneauConseils key={nom(plan.actif)} fiche={conseilsExercice(nom(plan.actif))!} titre={`Conseils · ${nom(plan.actif)}`} />}          </div>
 
           <ol class="sc-series">
             {faites.map((s, i) => (
@@ -446,6 +449,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
             </Bouton>
           )}
         </div>
+        <PanneauConseils fiche={CONSEILS_SEANCE} titre="Conseils de séance" />
       </div>
     </section>
   );

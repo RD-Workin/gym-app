@@ -1,6 +1,7 @@
 // Modèles de séance : liste et éditeur (propriétaire : 04-seance).
 import { useState } from 'preact/hooks';
-import { Bouton, Carte, ElementListe, Liste, Onglets } from '../../ui';
+import { Bouton, Carte, ElementListe, Liste, Onglets, PanneauConseils } from '../../ui';
+import { CONSEILS_OBJECTIFS } from '../../data/conseils';
 import { db } from '../../core/db';
 import { lien, naviguer } from '../../core/router';
 import { useRequete } from '../../core/requetes';
@@ -126,6 +127,7 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
         <p class="sc-attenue">
           Repos conseillé : {OBJECTIFS[objectif].plage} (proposé : {dureeTexte(OBJECTIFS[objectif].reposSec)}), {OBJECTIFS[objectif].reps} reps. Utilisé pour les exercices ajoutés.
         </p>
+        <PanneauConseils key={objectif} fiche={CONSEILS_OBJECTIFS[objectif]} titre={`Conseils · ${OBJECTIFS[objectif].libelle}`} />
         {m.blocs.length > 0 && (
           <Bouton variante="contour" onClick={() => setM({ ...m, blocs: m.blocs.map((b) => ({ ...b, reposSec: OBJECTIFS[objectif].reposSec })) })}>
             Repos {dureeTexte(OBJECTIFS[objectif].reposSec)} pour tous les exercices
