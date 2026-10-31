@@ -7,6 +7,17 @@ import { maintenant } from '../../core/ids';
 import type { Id } from '../../core/types';
 
 const CLE_POSITION = 'contexte.position';
+/** `false` = aucune météo automatique, aucune demande de localisation. Défaut : activé. */
+export const CLE_AUTO = 'contexte.auto';
+
+export async function contexteAutoActif(): Promise<boolean> {
+  return (await db.reglages.get(CLE_AUTO))?.valeur !== false;
+}
+
+export async function reglerContexteAuto(actif: boolean) {
+  await db.reglages.put({ cle: CLE_AUTO, valeur: actif });
+  if (!actif) await db.reglages.delete(CLE_POSITION);
+}
 const DELAI_MS = 8000;
 
 interface Position {
@@ -38,7 +49,7 @@ async function position(): Promise<Position | null> {
 }
 
 export async function temperatureActuelle(): Promise<number | null> {
-  if (!navigator.onLine) return null;
+  if (!navigator.onLine || !(await contexteAutoActif())) return null;
   const pos = await position();
   if (!pos) return null;
   const ctrl = new AbortController();
@@ -57,21 +68,41 @@ export async function temperatureActuelle(): Promise<number | null> {
   }
 }
 
-/** Remplit la température si elle n'a pas été saisie à la main. Silencieux en cas d'échec. */
-export async function remplirContexte(seanceId: Id) {
+/** Remplit la température (sauf saisie manuelle, ou si `forcer`). Silencieux en cas d'échec ou si désactivé. */
+export async function remplirContexte(seanceId: Id, forcer = false) {
   const temp = await temperatureActuelle();
   if (temp == null) return;
   const s = await db.seances.get(seanceId);
-  if (!s || s.contexte.source === 'manuel') return;
+  if (!s || (!forcer && s.contexte.source === 'manuel')) return;
   await db.seances.update(seanceId, { contexte: { ...s.contexte, temperatureC: temp, source: 'auto' }, modifieLe: maintenant() });
 }
 
 export async function majContexte(seanceId: Id, maj: { temperatureC?: number; poidsCorporelKg?: number }) {
-  const s = await db.seances.get(seanceId);
-  if (!s) return;
-  const contexte = { ...s.contexte, ...maj };
-  if ('temperatureC' in maj) contexte.source = 'manuel';
-  await db.seances.update(seanceId, { contexte, modifieLe: maintenant() });
+  await db.transaction('rw', db.seances, async () => {
+    const s = await db.seances.get(seanceId);
+    if (!s) return;
+    const contexte = { ...s.contexte, ...maj };
+    if ('temperatureC' in maj) contexte.source = 'manuel';
+    await db.seances.update(seanceId, { contexte, modifieLe: maintenant() });
+  });
+}
+
+/** Change le début de la séance ; la fin et les séries sont décalées d'autant (durées gardées). */
+export async function majDebut(seanceId: Id, debut: Date) {
+  await db.transaction('rw', db.seances, db.series, async () => {
+    const s = await db.seances.get(seanceId);
+    if (!s || Number.isNaN(debut.getTime())) return;
+    const delta = debut.getTime() - new Date(s.debut).getTime();
+    if (!delta) return;
+    const decale = (iso: string) => maintenant(new Date(new Date(iso).getTime() + delta));
+    await db.seances.update(seanceId, { debut: maintenant(debut), fin: s.fin ? decale(s.fin) : undefined, modifieLe: maintenant() });
+    await db.series
+      .where('seanceId')
+      .equals(seanceId)
+      .modify((x) => {
+        x.faiteLe = decale(x.faiteLe);
+      });
+  });
 }
 
 /** Oublie la position mémorisée (ou le refus) : la prochaine séance redemandera. */

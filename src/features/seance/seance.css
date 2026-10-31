@@ -61,3 +61,11 @@
 .sc-grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e-2); }
 .sc-grille label { display: grid; gap: 4px; font-size: var(--t-xs); color: var(--c-attenue); }
 .sc-actions-bloc { justify-content: flex-start; gap: var(--e-4); }
+
+/* Contexte (date, météo, poids) */
+.sc-contexte { text-align: left; }
+.sc-form { display: grid; gap: var(--e-3); }
+.sc-form > label, .sc-grille.deux label { display: grid; gap: 4px; font-size: var(--t-xs); color: var(--c-attenue); }
+.sc-grille.deux { grid-template-columns: 1fr 1fr; }
+.sc-form > label.sc-interrupteur { display: flex; gap: var(--e-3); align-items: flex-start; font-size: var(--t-md); color: var(--c-texte); cursor: pointer; }
+.sc-interrupteur input { width: 24px; height: 24px; margin: 0; flex: none; accent-color: var(--c-action); }
