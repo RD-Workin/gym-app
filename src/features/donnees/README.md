@@ -2,6 +2,7 @@
 
 ## Sauvegarde JSON
 `gym-sauvegarde_AAAA-MM-JJ_HHhMM.json` = `{ schemaVersion, exporteLe, donnees: { exercices, variantes, modeles, seances, series, reglages } }`, format décrit dans `docs/modele-donnees.md`. C'est la seule sauvegarde restaurable.
+Photos d'exercices (schéma v2) : encodées en `data:image/jpeg;base64,…` dans le JSON (JPEG, PNG ou WebP acceptés à l'import, ~6 Mo max par photo), absentes du CSV.
 Restauration : validation stricte (types, bornes, dates ISO, identifiants, liens entre tables, 50 Mo max), aperçu, puis remplacement complet en une transaction. Les réglages propres à l'appareil (`stockagePersistant`, `derniereSauvegarde`, `schemaVersion`) ne sont ni exportés ni écrasés.
 
 ## Tableau CSV (pour un coach ou une IA)

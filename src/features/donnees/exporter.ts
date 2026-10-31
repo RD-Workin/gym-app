@@ -20,11 +20,14 @@ export async function construireExportJson(): Promise<ExportJson> {
     db.series.toArray(),
     db.reglages.toArray(),
   ]);
+  const exercicesJson = await Promise.all(
+    exercices.map(async (e) => (e.photo ? { ...e, photo: await blobVersDataUrl(e.photo) } : e)),
+  );
   return {
     schemaVersion: SCHEMA_VERSION,
     exporteLe: maintenant(),
     donnees: {
-      exercices,
+      exercices: exercicesJson,
       variantes,
       modeles,
       seances,
@@ -32,6 +35,16 @@ export async function construireExportJson(): Promise<ExportJson> {
       reglages: reglages.filter((r) => !REGLAGES_LOCAUX.has(r.cle)),
     },
   };
+}
+
+/** Photo (Blob) → `data:image/jpeg;base64,…` pour le JSON. */
+export function blobVersDataUrl(b: Blob): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(b);
+  });
 }
 
 /** Colonnes du CSV, dans l'ordre. Documentées dans README.md (même dossier). */

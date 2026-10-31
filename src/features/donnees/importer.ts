@@ -4,7 +4,8 @@ import { migrerExport, type ExportJson } from '../../core/migrations';
 import type { BlocModele, Contexte, Exercice, Modele, Reglage, Seance, Serie, Variante } from '../../core/types';
 import { REGLAGES_LOCAUX, noterSauvegarde } from './exporter';
 
-export const TAILLE_MAX_OCTETS = 50 * 1024 * 1024;
+export const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
+const MAX_PHOTO_CARACTERES = 8 * 1024 * 1024; // ~6 Mo d'image
 const MAX_LIGNES = 500_000;
 const MAX_TEXTE = 2000;
 
@@ -97,6 +98,26 @@ const EQUIPEMENTS = ['barre', 'halteres', 'machine', 'poulie', 'poids_du_corps',
 const MODES = ['total', 'par_main', 'lest', 'sans_charge'] as const;
 const TYPES = ['travail', 'echauffement', 'degressive', 'echec'] as const;
 
+const RE_PHOTO = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
+
+/** `data:image/…;base64,…` → Blob. Seuls JPEG, PNG et WebP sont acceptés. */
+function photo(o: Obj, ou: string): Blob | undefined {
+  const v = o.photo;
+  if (v == null) return undefined;
+  if (typeof v !== 'string' || v.length > MAX_PHOTO_CARACTERES) echec(ou, '« photo » invalide ou trop lourde');
+  const m = RE_PHOTO.exec(v);
+  if (!m) echec(ou, '« photo » doit être une image JPEG, PNG ou WebP en base64');
+  let bin: string;
+  try {
+    bin = atob(m[2]);
+  } catch {
+    echec(ou, '« photo » : base64 illisible');
+  }
+  const octets = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) octets[i] = bin.charCodeAt(i);
+  return new Blob([octets], { type: `image/${m[1]}` });
+}
+
 function exercice(o: Obj, ou: string): Exercice {
   const g = o.groupesMusculaires ?? [];
   if (!Array.isArray(g) || g.length > 30 || g.some((x) => typeof x !== 'string' || x.length > 100)) echec(ou, '« groupesMusculaires » invalide');
@@ -108,6 +129,7 @@ function exercice(o: Obj, ou: string): Exercice {
     groupesMusculaires: [...(g as string[])],
     reglagesMachine: texte(o, 'reglagesMachine', ou),
     note: texte(o, 'note', ou),
+    photo: photo(o, ou),
     archive: booleen(o, 'archive', ou),
     ...horodatage(o, ou),
   });
@@ -225,7 +247,7 @@ function unique(liste: { id: string }[], libelle: string) {
 
 /** Lit et valide un fichier de sauvegarde. Lève une erreur lisible si le fichier est refusé. */
 export async function lireSauvegarde(fichier: File): Promise<Apercu> {
-  if (fichier.size > TAILLE_MAX_OCTETS) throw new ErreurImport('Fichier trop gros (50 Mo maximum).');
+  if (fichier.size > TAILLE_MAX_OCTETS) throw new ErreurImport('Fichier trop gros (100 Mo maximum).');
   let brut: unknown;
   try {
     brut = JSON.parse(await fichier.text());
