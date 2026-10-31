@@ -1,8 +1,7 @@
 // Liste des exercices : recherche, filtre par groupe musculaire, masqués. Propriétaire : 03-exercices.
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import { lien } from '../../core/router';
-import { amorcerBibliotheque } from '../../data/amorcage';
 import { EQUIPEMENTS, GROUPES, libelleGroupe } from '../../data/groupes';
 import { Bouton, ElementListe, Liste, Puce } from '../../ui';
 import { normaliser, tousLesExercices } from './exercices';
@@ -11,7 +10,6 @@ import './exercices.css';
 type Filtre = 'tous' | 'masques' | keyof typeof GROUPES;
 
 export function EcranExercices() {
-  useEffect(() => void amorcerBibliotheque(), []);
   const exercices = useRequete(tousLesExercices);
   const [texte, setTexte] = useState('');
   const [filtre, setFiltre] = useState<Filtre>('tous');

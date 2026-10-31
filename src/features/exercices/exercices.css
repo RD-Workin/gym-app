@@ -38,3 +38,5 @@
 .ex-retour { font-weight: 600; text-decoration: none; }
 .ex-ligne-variante { display: flex; gap: var(--e-2); }
 .ex-ligne-variante input { flex: 1; }
+.ex-photo { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--r-sm); }
+.ex-photo-choix { cursor: pointer; }

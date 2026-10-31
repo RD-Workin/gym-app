@@ -1,6 +1,6 @@
 // Fiche exercice : créer, modifier, masquer, variantes. Propriétaire : 03-exercices.
 // La courbe et l'historique (05-progression) pourront s'insérer sous la fiche.
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
 import type { Equipement, ModeCharge } from '../../core/types';
@@ -15,6 +15,7 @@ import {
   supprimerVariante,
   type BrouillonExercice,
 } from './exercices';
+import { enregistrerPhoto, retirerPhoto } from './photo';
 import './exercices.css';
 
 const VIDE: BrouillonExercice = { nom: '', equipement: 'machine', modeCharge: 'total', groupesMusculaires: [] };
@@ -32,6 +33,8 @@ export function EcranExercice({ id }: { id: string }) {
   const [message, setMessage] = useState('');
 
   const ex = donnees?.exercice;
+  const urlPhoto = useMemo(() => (ex?.photo ? URL.createObjectURL(ex.photo) : undefined), [ex?.photo]);
+  useEffect(() => () => urlPhoto && URL.revokeObjectURL(urlPhoto), [urlPhoto]);
   useEffect(() => {
     if (ex && !modifie) {
       const { nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note } = ex;
@@ -133,6 +136,36 @@ export function EcranExercice({ id }: { id: string }) {
 
       {!nouveau && (
         <>
+          <Carte titre="Photo de référence">
+            <div class="ui-pile">
+              {urlPhoto && <img class="ex-photo" src={urlPhoto} alt={`Photo de référence : ${ex!.nom}`} />}
+              <div class="ui-ligne">
+                <label class="ui-bouton secondaire ex-photo-choix">
+                  {urlPhoto ? 'Changer' : 'Ajouter une photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={async (e) => {
+                      const f = e.currentTarget.files?.[0];
+                      e.currentTarget.value = '';
+                      if (!f) return;
+                      try {
+                        await enregistrerPhoto(id, f);
+                      } catch {
+                        alert('Photo illisible.');
+                      }
+                    }}
+                  />
+                </label>
+                {urlPhoto && (
+                  <Bouton variante="danger" onClick={() => retirerPhoto(id)}>
+                    Retirer
+                  </Bouton>
+                )}
+              </div>
+            </div>
+          </Carte>
           <Carte titre="Variantes (suivies séparément)">
             <div class="ui-pile">
               {donnees!.variantes.length > 0 && (
