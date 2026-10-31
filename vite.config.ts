@@ -30,7 +30,7 @@ export default defineConfig({
       },
       workbox: {
         // Tout le code et les assets sont pré-cachés : l'app marche sans réseau.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         navigateFallback: 'index.html',
       },
     }),

@@ -1,10 +1,12 @@
+import { BarreOnglets, Coquille } from './ui';
 import { correspond, lien, useChemin } from './core/router';
 import { routes } from './core/routes';
-import './app.css';
+import { seanceEnCours, useRequete } from './core/requetes';
 
-// Coquille minimale : 02-design remplacera la navigation et le style par les composants de src/ui/.
 export function App() {
   const chemin = useChemin();
+  const enCours = useRequete(seanceEnCours);
+
   let contenu = null;
   for (const r of routes) {
     const p = correspond(r.motif, chemin);
@@ -13,18 +15,29 @@ export function App() {
       break;
     }
   }
+
+  // Barre masquée pendant une séance en cours (écrans /seance…).
+  const masquerBarre = chemin.startsWith('/seance') && !!enCours;
+  const barre = masquerBarre ? undefined : (
+    <BarreOnglets
+      onglets={routes
+        .filter((r) => r.onglet && r.icone)
+        .map((r) => ({
+          href: lien(r.motif),
+          libelle: r.onglet!,
+          icone: r.icone!,
+          actif: !!correspond(r.motif, chemin),
+        }))}
+    />
+  );
+
   return (
-    <>
-      <main>{contenu ?? <p>Page introuvable. <a href={lien('/')}>Accueil</a></p>}</main>
-      <nav>
-        {routes
-          .filter((r) => r.onglet)
-          .map((r) => (
-            <a key={r.motif} href={lien(r.motif)} aria-current={correspond(r.motif, chemin) ? 'page' : undefined}>
-              {r.onglet}
-            </a>
-          ))}
-      </nav>
-    </>
+    <Coquille barre={barre}>
+      {contenu ?? (
+        <p>
+          Page introuvable. <a href={lien('/')}>Accueil</a>
+        </p>
+      )}
+    </Coquille>
   );
 }
