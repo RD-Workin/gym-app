@@ -2,7 +2,7 @@
 import { db } from '../core/db';
 import { maintenant, nouvelId } from '../core/ids';
 import type { Exercice, Modele, Variante } from '../core/types';
-import { BIBLIOTHEQUE, MODELES_DEPART } from './bibliotheque';
+import { BIBLIOTHEQUE, MODELES_DEPART, reposDepart } from './bibliotheque';
 
 const CLE = 'bibliothequeAmorcee';
 
@@ -48,6 +48,7 @@ export async function amorcerBibliotheque(): Promise<void> {
         exerciceId: ids.get(x.cle)!,
         seriesCibles: x.series,
         repsCibles: x.reps,
+        reposSec: reposDepart(x.cle),
       })),
     }));
     await db.exercices.bulkAdd(exercices);

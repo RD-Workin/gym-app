@@ -19,6 +19,19 @@ export interface ExerciceDepart {
   reps?: string;
 }
 
+/**
+ * Repos par défaut des modèles de départ (10-coach). Polyarticulaires lourds : 2 min 30 ;
+ * isolation : 90 s (REPOS_DEFAUT_SEC). Des repos ≥ 2 min sur les gros exercices préservent
+ * les reps des séries suivantes et donc le volume utile (Schoenfeld 2016, Singer 2024).
+ */
+export const REPOS_POLYARTICULAIRE_SEC = 150;
+const POLYARTICULAIRES = new Set([
+  'chest-press', 'bench-plate', 'dc', 'dips', 'vertical-chest', 'dev-incline-halt', 'dev-incline-barre', 'dc-halt', 'dc-decline',
+  'lat-pulldown', 'tractions', 'seated-row', 'rowing-barre', 'plate-lat', 'one-arm-row',
+  'shoulder-press', 'leg-press', 'bulgares', 'hack-squat',
+]);
+export const reposDepart = (cle: string): number | undefined => (POLYARTICULAIRES.has(cle) ? REPOS_POLYARTICULAIRE_SEC : undefined);
+
 const e = (x: ExerciceDepart) => x;
 
 export const BIBLIOTHEQUE: ExerciceDepart[] = [
@@ -57,7 +70,7 @@ export const BIBLIOTHEQUE: ExerciceDepart[] = [
   e({ cle: 'leg-press', nom: 'Leg press', equipement: 'machine', modeCharge: 'total', groupes: ['quadriceps', 'fessiers'], reglagesMachine: 'chaise 3', seance: 'Jambes', series: 3, reps: '7-10' }),
   e({ cle: 'leg-extension', nom: 'Leg extension', equipement: 'machine', modeCharge: 'total', groupes: ['quadriceps'], note: 'Bien tirer avec les bras, ne pas monter trop haut ni trop vite.', seance: 'Jambes', series: 3, reps: '8-10' }),
   e({ cle: 'mollets', nom: 'Mollets', equipement: 'machine', modeCharge: 'total', groupes: ['mollets'], seance: 'Jambes', series: 3, reps: '7-9' }),
-  e({ cle: 'hip-abduction', nom: 'Hip abduction', equipement: 'machine', modeCharge: 'total', groupes: ['fessiers', 'adducteurs'], seance: 'Jambes', reps: '10' }),
+  e({ cle: 'hip-abduction', nom: 'Hip abduction', equipement: 'machine', modeCharge: 'total', groupes: ['fessiers'], note: 'Moyen fessier (abducteurs), pas les adducteurs.', seance: 'Jambes', reps: '10' }),
   e({ cle: 'bulgares', nom: 'Fentes bulgares', equipement: 'halteres', modeCharge: 'par_main', groupes: ['quadriceps', 'fessiers'], seance: 'Jambes' }),
   e({ cle: 'leg-curl', nom: 'Leg curl', equipement: 'machine', modeCharge: 'total', groupes: ['ischios'], note: 'Ramener vers le bas.', seance: 'Jambes', series: 3, reps: '7-8' }),
   e({ cle: 'hack-squat', nom: 'Hack squat', equipement: 'machine', modeCharge: 'total', groupes: ['quadriceps', 'fessiers'], seance: 'Jambes' }),
