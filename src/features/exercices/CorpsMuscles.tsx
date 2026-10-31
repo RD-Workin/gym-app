@@ -13,12 +13,19 @@ interface Props {
   mini?: boolean;
 }
 
-function Vue({ zones, titre, actifs, secondaires, onBasculer, mini }: Props & { zones: ZoneCorps[]; titre: string }) {
+// Groupes sans zone propre sur le dessin : on allume la zone la plus proche.
+// Abducteurs → fessiers (le moyen fessier est le principal abducteur).
+const ZONE_DE: Record<string, string> = { abducteurs: 'fessiers' };
+const versZones = (gs: string[] = []) => [...gs, ...gs.map((g) => ZONE_DE[g]).filter(Boolean)];
+
+function Vue({ zones, titre, actifs: groupes, secondaires: groupes2, onBasculer, mini }: Props & { zones: ZoneCorps[]; titre: string }) {
+  const actifs = versZones(groupes);
+  const secondaires = versZones(groupes2);
   return (
     <figure class="ex-corps-vue">
-      <svg viewBox="0 0 100 200" role={onBasculer ? 'group' : 'img'} aria-label={`${titre} : ${actifs.map(libelleGroupe).join(', ') || 'aucun muscle'}`}>
+      <svg viewBox="0 0 100 200" role={onBasculer ? 'group' : 'img'} aria-label={`${titre} : ${groupes.map(libelleGroupe).join(', ') || 'aucun muscle'}`}>
         {zones.map((z, i) => {
-          const etat = z.g && actifs.includes(z.g) ? 'actif' : z.g && secondaires?.includes(z.g) ? 'secondaire' : '';
+          const etat = z.g && actifs.includes(z.g) ? 'actif' : z.g && secondaires.includes(z.g) ? 'secondaire' : '';
           const touchable = !!(onBasculer && z.g);
           return (
             <g

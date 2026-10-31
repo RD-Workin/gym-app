@@ -19,6 +19,11 @@ EQUIPEMENT = {
     'barbell': 'barre', 'e-z curl bar': 'barre', 'dumbbell': 'halteres', 'cable': 'poulie', 'machine': 'machine',
     'body only': 'poids_du_corps', 'kettlebells': 'kettlebell',
 }
+# Corrections du coach (10) : muscles secondaires faux dans la source, à retirer (id → groupes).
+RETIRER = {
+    'Leg_Press': {'mollets'},
+    'Hack_Squat': {'mollets'},
+}
 NIVEAU = {'beginner': 1, 'intermediate': 2, 'expert': 3}
 
 
@@ -41,7 +46,7 @@ def main():
     sortie = []
     for x in sorted(garde, key=lambda x: x['name'].lower()):
         p = uniques(MUSCLES[m] for m in x['primaryMuscles'])
-        s = [m for m in uniques(MUSCLES[m] for m in x['secondaryMuscles']) if m not in p]
+        s = [m for m in uniques(MUSCLES[m] for m in x['secondaryMuscles']) if m not in p and m not in RETIRER.get(x['id'], ())]
         sortie.append({
             'id': x['id'], 'nom': x['name'], 'eq': EQUIPEMENT.get(x['equipment'] or '', 'autre'),
             'niv': NIVEAU.get(x['level'], 1), 'p': p, 's': s, 'inst': x['instructions'], 'img': min(2, len(x['images'])),
