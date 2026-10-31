@@ -11,7 +11,7 @@ export const NOUVEAUTES: Nouveaute[] = [
   {
     numero: 2,
     date: '2026-10-31',
-    points: ['Nouveau modèle de séance « Full body » : tout le corps en une séance d’environ 1 h.'],
+    points: ['Nouveau modèle de séance « Full body » : tout le corps en une séance d’environ 1 h 10.'],
   },
   {
     numero: 1,
