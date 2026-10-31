@@ -13,7 +13,7 @@ MUSCLES = {
     'abdominals': 'abdos', 'abductors': 'abducteurs', 'adductors': 'adducteurs', 'biceps': 'biceps',
     'calves': 'mollets', 'chest': 'pectoraux', 'forearms': 'avant-bras', 'glutes': 'fessiers',
     'hamstrings': 'ischios', 'lats': 'dos', 'lower back': 'lombaires', 'middle back': 'dos',
-    'neck': 'trapezes', 'quadriceps': 'quadriceps', 'shoulders': 'epaules', 'traps': 'trapezes', 'triceps': 'triceps',
+    'neck': 'cou', 'quadriceps': 'quadriceps', 'shoulders': 'epaules', 'traps': 'trapezes', 'triceps': 'triceps',
 }
 EQUIPEMENT = {
     'barbell': 'barre', 'e-z curl bar': 'barre', 'dumbbell': 'halteres', 'cable': 'poulie', 'machine': 'machine',

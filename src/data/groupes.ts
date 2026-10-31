@@ -4,6 +4,7 @@ export const GROUPES = {
   pectoraux: 'Pectoraux',
   epaules: 'Épaules',
   trapezes: 'Trapèzes',
+  cou: 'Cou',
   dos: 'Dos',
   lombaires: 'Lombaires',
   biceps: 'Biceps',
