@@ -34,6 +34,18 @@ export default defineConfig({
         // Tout le code et les assets sont pré-cachés : l'app marche sans réseau.
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         navigateFallback: 'index.html',
+        // Images du catalogue (12 Mo) : hors précache, gardées hors ligne dès la 1re consultation.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/catalogue/') && url.pathname.endsWith('.webp'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'catalogue-images',
+              expiration: { maxEntries: 1500 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
       },
     }),
   ],
