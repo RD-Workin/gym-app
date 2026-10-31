@@ -1,4 +1,4 @@
-# Modèle de données — v1
+# Modèle de données — v2
 
 Propriétaire : 01-architecture. Toute évolution passe par 01 (nouvelle version + migration).
 Code correspondant : `src/core/types.ts`, `src/core/db.ts`, `src/core/calculs.ts`.
@@ -21,6 +21,7 @@ Code correspondant : `src/core/types.ts`, `src/core/db.ts`, `src/core/calculs.ts
 | modeCharge | `'total' \| 'par_main' \| 'lest' \| 'sans_charge'` | défaut pour les séries ; `lest` = poids ajouté au poids du corps |
 | groupesMusculaires | string[] | ex. `['pectoraux','triceps']` |
 | reglagesMachine | string? | dernier réglage connu, ex. « chaise 4 » |
+| photo | Blob? | v2 — photo de référence de la machine, JPEG ~1080 px (compressée par 03). Exclue du CSV ; encodée en base64 (`data:image/jpeg;base64,…`) dans le JSON par 06 |
 | note | string? | |
 | archive | boolean | |
 Index Dexie : `id, nom, equipement, *groupesMusculaires, archive`
@@ -105,3 +106,4 @@ Index : `id, seanceId, exerciceId, [exerciceId+faiteLe]`
 | Version | Date | Changement |
 |---|---|---|
 | 1 | 2026-10-31 | Schéma initial |
+| 2 | 2026-10-31 | `exercices.photo?: Blob` (non indexé, pas de migration de données) |

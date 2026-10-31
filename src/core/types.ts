@@ -19,6 +19,8 @@ export interface Exercice extends Horodatage {
   modeCharge: ModeCharge;
   groupesMusculaires: string[];
   reglagesMachine?: string;
+  /** Photo de référence (JPEG ~1080 px, v2). Hors CSV ; base64 dans l'export JSON. */
+  photo?: Blob;
   note?: string;
   archive: boolean;
 }

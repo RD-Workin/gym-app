@@ -1,0 +1,10 @@
+.maj-banniere {
+  display: flex; align-items: center; gap: var(--e-3, 12px);
+  width: 100%; margin: 0 0 var(--e-4, 16px); padding: var(--e-3, 12px) var(--e-4, 16px);
+  border: 0; border-radius: 14px; font: inherit; text-align: left; cursor: pointer;
+  background: var(--c-action); color: var(--c-action-encre); font-weight: 600;
+}
+.maj-banniere small { display: block; font-weight: 400; opacity: 0.85; }
+.maj-nouveautes ul { margin: 0 0 var(--e-3, 12px); padding-left: 1.2em; }
+.maj-nouveautes li { margin: 4px 0; }
+.maj-actions { display: flex; flex-wrap: wrap; gap: var(--e-2, 8px); margin-top: var(--e-3, 12px); }

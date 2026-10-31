@@ -3,3 +3,7 @@ dist
 dev-dist
 *.local
 .DS_Store
+test-results
+playwright-report
+.lighthouseci
+__pycache__/

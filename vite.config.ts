@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { cspPlugin } from './securite/csp';
 
 
 export default defineConfig({
@@ -8,8 +9,10 @@ export default defineConfig({
   base: './',
   plugins: [
     preact(),
+    cspPlugin(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // « prompt » : la nouvelle version attend que Romain touche le bandeau (core/miseAJour.ts).
+      registerType: 'prompt',
       includeAssets: ['icons/apple-touch-icon.png', 'icons/icon.svg'],
       manifest: {
         name: 'Gym App',
@@ -30,8 +33,20 @@ export default defineConfig({
       },
       workbox: {
         // Tout le code et les assets sont pré-cachés : l'app marche sans réseau.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         navigateFallback: 'index.html',
+        // Images du catalogue (12 Mo) : hors précache, gardées hors ligne dès la 1re consultation.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/catalogue/') && url.pathname.endsWith('.webp'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'catalogue-images',
+              expiration: { maxEntries: 1500 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -1,0 +1,65 @@
+/* Styles propres à la bibliothèque d'exercices (03). Composants partagés : src/ui. */
+.ex-recherche,
+.ex-champ input,
+.ex-champ select,
+.ex-champ textarea {
+  width: 100%;
+  min-height: var(--cible);
+  padding: var(--e-2) var(--e-3);
+  border: 1.5px solid var(--c-trait);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  font-size: var(--t-md);
+  box-sizing: border-box;
+}
+.ex-recherche { font-size: 17px; }
+.ex-champ { display: grid; gap: var(--e-1); }
+.ex-champ textarea { min-height: 88px; resize: vertical; }
+.ex-filtres {
+  display: flex;
+  gap: var(--e-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--e-4));
+  padding: 0 var(--e-4);
+}
+.ex-filtres::-webkit-scrollbar { display: none; }
+.ex-filtre {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--e-3);
+  border: 1.5px solid var(--c-trait);
+  border-radius: 999px;
+  background: transparent;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.ex-filtre[aria-pressed='true'] { background: var(--c-action); border-color: var(--c-action); color: var(--c-action-encre); }
+.ex-retour { font-weight: 600; text-decoration: none; }
+.ex-ligne-variante { display: flex; gap: var(--e-2); }
+.ex-ligne-variante input { flex: 1; }
+.ex-photo { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--r-sm); }
+.ex-photo-choix { cursor: pointer; }
+/* Corps 2D */
+.ex-corps { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-3); max-width: 360px; margin: 0 auto; width: 100%; }
+.ex-corps-vue { margin: 0; display: grid; justify-items: center; gap: var(--e-1); }
+.ex-corps-vue svg { width: 100%; height: auto; max-height: 300px; overflow: visible; }
+.ex-zone polygon { fill: var(--c-surface-2); stroke: var(--c-fond); stroke-width: 0.6; transition: fill var(--anim-rapide); }
+.ex-zone.secondaire polygon { fill: rgb(255 122 61 / 0.38); }
+.ex-zone.actif polygon { fill: var(--c-action); }
+.ex-zone.touchable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ex-zone.touchable:not(.actif):active polygon { fill: var(--c-trait); }
+/* Vignettes */
+.ex-vignette {
+  flex: none; width: 52px; height: 52px; border-radius: var(--r-sm); overflow: hidden;
+  background: #fff; display: grid; place-items: center;
+}
+.ex-vignette img { width: 100%; height: 100%; object-fit: cover; }
+.ex-vignette:has(svg) { background: var(--c-surface-2); }
+.ex-vignette svg { height: 46px; width: auto; }
+.ex-vignette .ex-corps-vue { width: 100%; height: 100%; place-items: center; }
+/* Images du catalogue */
+.ex-images { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-2); }
+.ex-images img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-sm); background: #fff; }
+.ex-etapes { margin: 0; padding-left: var(--e-5); display: grid; gap: var(--e-2); line-height: 1.45; }
+.ex-plus { width: 100%; }
