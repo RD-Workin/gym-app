@@ -34,3 +34,30 @@ jobs:
         run: npm test
       - name: Build
         run: npx vite build
+
+  e2e:
+    name: E2E et Lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - name: Navigateur Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Tests de bout en bout
+        run: npm run e2e
+      - name: Lighthouse (perf ≥ 90, accessibilité ≥ 95, bonnes pratiques ≥ 90)
+        run: npx -y @lhci/cli@0.15.1 autorun
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-e2e
+          path: |
+            test-results
+            .lighthouseci
+          retention-days: 7
