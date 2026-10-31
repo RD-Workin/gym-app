@@ -16,27 +16,32 @@ export const CLE_CORRECTIFS = 'correctifsAppliques';
 
 const memesElements = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 
-export const CORRECTIFS: Correctif[] = [
-  {
-    id: '2026-10-31-hip-abduction',
-    description: 'Hip abduction : muscles corrigés (fessiers, pas adducteurs).',
+/**
+ * Remet les groupes musculaires d'un exercice de départ à leur nouvelle valeur par défaut (et sa note si vide),
+ * seulement s'ils valent encore `ancien`. Repérage par le nom de départ : un exercice renommé n'est pas touché.
+ */
+function correctifGroupes(id: string, cle: string, ancien: string[], description: string): Correctif {
+  const depart = BIBLIOTHEQUE.find((x) => x.cle === cle);
+  if (!depart) throw new Error(`Correctif ${id} : exercice de départ « ${cle} » introuvable`);
+  return {
+    id,
+    description,
     async executer(simuler) {
-      const cibles = (await db.exercices.where('nom').equals('Hip abduction').toArray()).filter((x) =>
-        memesElements(x.groupesMusculaires, ['fessiers', 'adducteurs']),
-      );
+      const cibles = (await db.exercices.where('nom').equals(depart.nom).toArray()).filter((x) => memesElements(x.groupesMusculaires, ancien));
       if (!simuler) {
         const t = maintenant();
         for (const x of cibles) {
-          await db.exercices.update(x.id, {
-            groupesMusculaires: ['fessiers'],
-            note: x.note || 'Moyen fessier (abducteurs), pas les adducteurs.',
-            modifieLe: t,
-          });
+          await db.exercices.update(x.id, { groupesMusculaires: [...depart.groupes], note: x.note || depart.note, modifieLe: t });
         }
       }
       return cibles.length;
     },
-  },
+  };
+}
+
+export const CORRECTIFS: Correctif[] = [
+  correctifGroupes('2026-10-31-hip-abduction', 'hip-abduction', ['fessiers', 'adducteurs'], 'Hip abduction : muscles corrigés (abducteurs et fessiers, pas les adducteurs).'),
+  correctifGroupes('2026-10-31-rowing-barre', 'rowing-barre', ['dos'], 'Rowing barre : lombaires ajoutés aux muscles travaillés.'),
   {
     id: '2026-10-31-repos-polyarticulaires',
     description: `Modèles de départ : repos de ${Math.floor(REPOS_POLYARTICULAIRE_SEC / 60)} min ${String(REPOS_POLYARTICULAIRE_SEC % 60).padStart(2, "0")} sur les gros exercices (développés, tirages, presses…).`,
