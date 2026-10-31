@@ -10,6 +10,7 @@
 | `Carte`, `Puce` | Tons : `progres` (vert), `alerte` (ambre), `record` (or), `mise-en-avant` |
 | `Liste`, `ElementListe`, `Medaille` | Listes tactiles (≥ 56 px) |
 | `Onglets` | Contrôle segmenté |
+| `PanneauConseils` | Conseils du coach repliables (`fiche` = `FicheConseil` de `src/data/conseils.ts`), fermé par défaut |
 | `ToastRecord` | Célébration d'un record uniquement |
 | `Icone` | Icônes trait 24 px |
 

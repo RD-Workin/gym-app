@@ -11,3 +11,4 @@ export { Onglets } from './Onglets';
 export { Stepper } from './Stepper';
 export { ToastRecord } from './ToastRecord';
 export { Coquille, BarreOnglets, type OngletNav } from './Coquille';
+export { PanneauConseils, type ContenuConseils } from './PanneauConseils';
