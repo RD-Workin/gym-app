@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { SCHEMA_VERSION } from '../db';
+import { lien } from '../router';
 
 export function EcranReglages() {
   const [persistant, setPersistant] = useState<boolean | null>(null);
@@ -12,6 +13,9 @@ export function EcranReglages() {
       <p>
         Stockage protégé :{' '}
         {persistant == null ? '…' : persistant ? 'oui' : "non (installe l'app sur l'écran d'accueil)"}
+      </p>
+      <p>
+        <a href={lien('/donnees')}>Sauvegarde et restauration</a>
       </p>
       <p>Version du schéma : {SCHEMA_VERSION}</p>
     </section>
