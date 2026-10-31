@@ -188,11 +188,12 @@ export const dureeTexte = (sec: number) => {
 /* ---- Repos selon l'objectif (valeurs à valider par 10-coach) ---- */
 export type Objectif = 'force' | 'hypertrophie' | 'endurance';
 export const OBJECTIFS: Record<Objectif, { libelle: string; reposSec: number; plage: string; reps: string }> = {
-  force: { libelle: 'Force', reposSec: 180, plage: '2 à 5 min', reps: '3-6' },
-  hypertrophie: { libelle: 'Hypertrophie', reposSec: 90, plage: '1 à 2 min', reps: '8-12' },
+  force: { libelle: 'Force', reposSec: 180, plage: '3 à 5 min', reps: '1-6' },
+  // 10-coach : ≥ 2 min sur les polyarticulaires, 1 min 30 sur l'isolation (Schoenfeld 2016, Singer 2024).
+  hypertrophie: { libelle: 'Hypertrophie', reposSec: 120, plage: '1 min 30 à 3 min', reps: '6-12' },
   endurance: { libelle: 'Endurance', reposSec: 45, plage: '30 à 60 s', reps: '15-20' },
 };
 /** Durées proposées en un tap (secondes). */
 export const REPOS_RAPIDES = [45, 60, 90, 120, 180, 240];
 /** Objectif le plus proche d'une durée de repos. */
-export const objectifDepuisRepos = (sec?: number): Objectif => (sec == null ? 'hypertrophie' : sec >= 150 ? 'force' : sec <= 60 ? 'endurance' : 'hypertrophie');
+export const objectifDepuisRepos = (sec?: number): Objectif => (sec == null ? 'hypertrophie' : sec >= 180 ? 'force' : sec <= 60 ? 'endurance' : 'hypertrophie');
