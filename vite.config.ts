@@ -11,7 +11,8 @@ export default defineConfig({
     preact(),
     cspPlugin(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // « prompt » : la nouvelle version attend que Romain touche le bandeau (core/miseAJour.ts).
+      registerType: 'prompt',
       includeAssets: ['icons/apple-touch-icon.png', 'icons/icon.svg'],
       manifest: {
         name: 'Gym App',

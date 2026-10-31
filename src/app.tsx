@@ -3,6 +3,7 @@ import { correspond, lien, useChemin } from './core/router';
 import { routes } from './core/routes';
 import { seanceEnCours, useRequete } from './core/requetes';
 import { TransitionEcran } from './anim';
+import { BanniereMiseAJour } from './core/ecrans/MiseAJour';
 
 export function App() {
   const chemin = useChemin();
@@ -34,6 +35,7 @@ export function App() {
 
   return (
     <Coquille barre={barre}>
+      <BanniereMiseAJour />
       <TransitionEcran chemin={chemin}>
         {contenu ?? (
           <p>
