@@ -1,5 +1,5 @@
 // Fiche exercice : créer, modifier, masquer, variantes. Propriétaire : 03-exercices.
-// La courbe et l'historique (05-progression) pourront s'insérer sous la fiche.
+// Courbe, records et historique : composant de 05-progression.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
@@ -16,6 +16,8 @@ import {
   type BrouillonExercice,
 } from './exercices';
 import { enregistrerPhoto, retirerPhoto } from './photo';
+import { FicheProgression } from '../progression/FicheProgression';
+import '../progression/progression.css';
 import './exercices.css';
 
 const VIDE: BrouillonExercice = { nom: '', equipement: 'machine', modeCharge: 'total', groupesMusculaires: [] };
@@ -81,6 +83,9 @@ export function EcranExercice({ id }: { id: string }) {
           <p style={{ margin: 0 }}>Absent des listes. L'historique reste visible.</p>
         </Carte>
       )}
+
+      {!nouveau && <FicheProgression exerciceId={id} />}
+      {!nouveau && <h2 style={{ marginTop: 'var(--e-3)' }}>Réglages de l'exercice</h2>}
 
       <form class="ui-pile" onSubmit={enregistrer}>
         <label class="ex-champ">
