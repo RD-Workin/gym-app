@@ -1,6 +1,7 @@
 // Courbe, records et historique d'un exercice. Propriétaire : 05-progression.
 // Réutilisable par 03 dans la fiche exercice : <FicheProgression exerciceId={id} />.
 import { useMemo, useState } from 'preact/hooks';
+import { useCompteur } from '../../anim';
 import { Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
 import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
@@ -45,19 +46,20 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const recs = bilan.actuels.get(`${exerciceId}|${varianteCle}`);
   const seancesRecord = new Set(bilan.evenements.filter((e) => (e.varianteId ?? '') === varianteCle && (e.type === 'un_rm' || e.type === 'charge_max')).map((e) => e.seanceId));
 
-  if (seriesEx.filter((s) => s.type !== 'echauffement').length === 0) {
-    return <Carte titre="Progression"><p class="ui-attenue">Aucune série enregistrée pour cet exercice.</p></Carte>;
-  }
-
   const pc = points
     .map((p) => ({ date: p.date, valeur: valeurMesure(p, mesure) ?? NaN, record: seancesRecord.has(p.seanceId), incertain: p.poidsInconnu }))
     .filter((p) => !Number.isNaN(p.valeur));
   const dernier = pc[pc.length - 1];
   const t = tendance(points, mesure);
   const f = fmt(mesure);
+  const affiche = useCompteur(dernier?.valeur ?? 0, 700, mesure === 'volume' ? 0 : 1);
+
+  if (seriesEx.filter((s) => s.type !== 'echauffement').length === 0) {
+    return <Carte titre="Progression"><p class="ui-attenue">Aucune série enregistrée pour cet exercice.</p></Carte>;
+  }
 
   return (
-    <div class="ui-pile">
+    <div class="ui-pile anim-cascade">
       {options.length > 1 && (
         <div class="prog-puces" role="group" aria-label="Variante">
           {options.map((o) => (
@@ -72,7 +74,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
           <div>
             <span class="ui-surtitre">{TITRE_MESURE[mesure]}</span>
             <div class="prog-grand">
-              <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(dernier.valeur) : kg(dernier.valeur).replace(' kg', '')) : '–'}</span>
+              <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(affiche) : kg(affiche).replace(' kg', '')) : '–'}</span>
               <span class="ui-attenue">kg</span>
             </div>
           </div>
@@ -93,9 +95,9 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
         <>
           <span class="ui-surtitre">Records</span>
           <Liste label="Records de l'exercice">
-            {recs.unRm && <ElementListe debut={<Medaille />} titre={NOM_TYPE_RECORD.un_rm} detail={dateLongue(recs.unRm.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
-            {recs.chargeMax && <ElementListe debut={<Medaille />} titre={NOM_TYPE_RECORD.charge_max} detail={dateLongue(recs.chargeMax.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
-            {recs.volumeSeance && <ElementListe debut={<Medaille />} titre={NOM_TYPE_RECORD.volume_seance} detail={dateLongue(recs.volumeSeance.date)} fin={<span class="ui-chiffre prog-val">{nombre(recs.volumeSeance.valeur)} kg</span>} />}
+            {recs.unRm && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.un_rm} detail={dateLongue(recs.unRm.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
+            {recs.chargeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.charge_max} detail={dateLongue(recs.chargeMax.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
+            {recs.volumeSeance && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.volume_seance} detail={dateLongue(recs.volumeSeance.date)} fin={<span class="ui-chiffre prog-val">{nombre(recs.volumeSeance.valeur)} kg</span>} />}
           </Liste>
           {recs.repsACharge.length > 0 && (
             <details class="prog-details">

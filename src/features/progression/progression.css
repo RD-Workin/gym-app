@@ -48,3 +48,6 @@
 
 .prog-hist-fin { display: grid; text-align: right; font-size: var(--t-sm); }
 .prog-hist-fin .ui-chiffre { font-size: var(--t-md); font-weight: 700; }
+.prog-lueur { border-radius: var(--r-md); }
+.prog-lueur > .ui-carte { height: 100%; }
+.prog-medaille { display: inline-flex; }

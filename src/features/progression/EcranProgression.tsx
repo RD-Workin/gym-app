@@ -1,5 +1,6 @@
 // Écran Progrès : exercices, records, vue globale, historique. Propriétaire : 05-progression.
 import { useMemo, useState } from 'preact/hooks';
+import { useCompteur } from '../../anim';
 import { Carte, ElementListe, Icone, Liste, Medaille, Onglets, Puce } from '../../ui';
 import { db } from '../../core/db';
 import { useRequete } from '../../core/requetes';
@@ -134,12 +135,16 @@ function VueRecords({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => 
   }
   liste.sort((a, b) => b.r.date.localeCompare(a.r.date));
   const recents = evenements.slice(-30).reverse();
+  const nbMois = useCompteur(ceMois);
+  const nbTotal = useCompteur(evenements.length);
 
   return (
-    <div class="ui-pile">
-      <div class="prog-tuiles">
-        <Carte><span class="ui-chiffre prog-tuile prog-or">{ceMois}</span><span class="ui-attenue">ce mois-ci</span></Carte>
-        <Carte><span class="ui-chiffre prog-tuile">{evenements.length}</span><span class="ui-attenue">au total</span></Carte>
+    <div class="ui-pile anim-cascade">
+      <div class="prog-tuiles anim-cascade">
+        <div class={ceMois > 0 ? 'anim-lueur-record prog-lueur' : undefined}>
+          <Carte><span class="ui-chiffre prog-tuile prog-or">{nbMois}</span><span class="ui-attenue">ce mois-ci</span></Carte>
+        </div>
+        <Carte><span class="ui-chiffre prog-tuile">{nbTotal}</span><span class="ui-attenue">au total</span></Carte>
         <Carte><span class="ui-chiffre prog-tuile">{jours == null ? '–' : `${jours} j`}</span><span class="ui-attenue">depuis le dernier</span></Carte>
       </div>
       {groupes.length > 1 && (
@@ -158,7 +163,7 @@ function VueRecords({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => 
             key={`${r.exerciceId}${r.varianteId ?? ''}`}
             onClick={() => ouvrir(r.exerciceId)}
             surligne={r.date >= debutMois}
-            debut={<Medaille />}
+            debut={<span class="anim-zoom prog-medaille"><Medaille /></span>}
             titre={nom}
             detail={`${NOM_TYPE_RECORD[r.type]} · ${dateCourte(r.date)}`}
             fin={<span class="ui-chiffre prog-val">{kg(r.valeur)}</span>}
@@ -189,8 +194,8 @@ function VueGlobale({ d }: { d: DonneesProgression }) {
   const maxG = Math.max(1, ...groupes.map((g) => g.series));
 
   return (
-    <div class="ui-pile">
-      <div class="prog-tuiles">
+    <div class="ui-pile anim-cascade">
+      <div class="prog-tuiles anim-cascade">
         <Carte><span class="ui-chiffre prog-tuile">{semaines[semaines.length - 1].nb}</span><span class="ui-attenue">cette semaine</span></Carte>
         <Carte><span class="ui-chiffre prog-tuile">{moy4.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</span><span class="ui-attenue">par sem. (4 sem.)</span></Carte>
         <Carte><span class={`ui-chiffre prog-tuile${affilee >= 4 ? ' prog-vert' : ''}`}>{affilee}</span><span class="ui-attenue">sem. d'affilée</span></Carte>
