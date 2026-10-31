@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquettes Gym App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Plan : un seul thème sombre (l'app est sombre par défaut). Galerie d'écrans iPhone côte à côte, annotés, puis le design system. */
+:root{
+  --bg:#0D1015;          /* fond app */
+  --surface:#161B22;     /* cartes */
+  --surface-2:#1F2630;   /* champs, steppers */
+  --line:#2A3340;
+  --text:#EEF2F6;
+  --muted:#8E9AAB;
+  --accent:#FF7A3D;      /* action principale : orange énergie */
+  --accent-ink:#1A0D05;
+  --good:#3DDC97;        /* progression */
+  --warn:#FFB547;        /* à renforcer */
+  --record:#FFD45E;      /* records */
+  --page:#07090C;        /* fond de la planche, hors téléphone */
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r-sm:10px; --r-md:16px; --r-lg:22px;
+  --tap:48px;            /* cible tactile mini (≥ 44 px) */
+  --safe-top:47px; --safe-bottom:34px; /* iPhone 15 : encoche / barre d'accueil */
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* ---------- planche ---------- */
+.sheet-head{max-width:1200px;margin:0 auto;padding:32px 20px 8px;display:grid;gap:8px}
+.sheet-head h1{font-size:40px;font-weight:800;text-transform:uppercase}
+.sheet-head p{color:var(--muted);max-width:68ch;margin:0}
+.gallery{display:flex;flex-wrap:wrap;gap:36px 28px;justify-content:center;padding:28px 16px 40px;max-width:1500px;margin:0 auto}
+figure{margin:0;display:grid;gap:14px;width:375px;max-width:100%}
+figcaption{font-size:14px;color:var(--muted)}
+figcaption b{display:block;color:var(--text);font-family:var(--f-display);font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+figcaption .idx{color:var(--accent);margin-right:6px}
+
+/* ---------- téléphone ---------- */
+.phone{position:relative;width:375px;max-width:100%;height:780px;background:var(--bg);border-radius:46px;border:10px solid #1b1f25;box-shadow:0 0 0 1px #2c323a,0 30px 60px -20px #000;overflow:hidden;display:flex;flex-direction:column}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:110px;height:30px;background:#000;border-radius:20px;z-index:5}
+.statusbar{height:var(--safe-top);flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 26px 6px;font-size:14px;font-weight:600}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:5px;border-radius:3px;background:#e9edf2;opacity:.85;z-index:5}
+.screen{flex:1;overflow:hidden;padding:6px 16px 0;display:flex;flex-direction:column;gap:12px;min-height:0}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px var(--safe-bottom);background:rgba(13,16,21,.92);border-top:1px solid var(--line)}
+.tab{display:grid;justify-items:center;gap:2px;font-size:11px;color:var(--muted);min-height:var(--tap);padding-top:4px;background:none;border:0}
+.tab svg{width:24px;height:24px}
+.tab.on{color:var(--accent)}
+
+/* ---------- composants ---------- */
+.card{background:var(--surface);border-radius:var(--r-md);padding:14px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--surface-2);font-size:13px;font-weight:600;color:var(--text)}
+.chip.good{color:var(--good)} .chip.warn{color:var(--warn)} .chip.rec{color:var(--record)}
+.btn{min-height:var(--tap);border-radius:var(--r-sm);border:0;padding:0 18px;font-weight:700;font-size:16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-secondary{background:var(--surface-2);color:var(--text)}
+.btn-ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line)}
+.btn-xl{min-height:64px;font-size:20px;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.04em;width:100%;border-radius:var(--r-md)}
+.btn:active{transform:scale(.97)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;min-height:38px;border-radius:9px;font-weight:600;color:var(--muted);font-size:14px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 0 #ffffff10}
+.list{display:grid;background:var(--surface);border-radius:var(--r-md);overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:56px;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li .grow{flex:1;min-width:0}
+.li .t{font-weight:600}
+.li .s{font-size:13px;color:var(--muted)}
+.medal{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#ffd45e1f;color:var(--record);flex:none}
+.medal svg{width:18px;height:18px}
+
+/* stepper */
+.stepper{display:grid;grid-template-columns:var(--tap) 1fr var(--tap);align-items:center;background:var(--surface-2);border-radius:var(--r-md);padding:6px;gap:4px}
+.stepper button{height:56px;width:var(--tap);border-radius:12px;border:0;background:var(--surface);font-size:28px;font-weight:600;line-height:1}
+.stepper .val{text-align:center;display:grid;line-height:1}
+.stepper .val .num{font-size:40px;font-weight:700}
+.stepper .val small{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+
+/* écran accueil */
+.hello h2{font-size:30px;font-weight:800;text-transform:uppercase}
+.next{background:linear-gradient(135deg,#2A1A12 0%,var(--surface) 70%);border:1px solid #ff7a3d33}
+.next h3{font-size:28px;text-transform:uppercase}
+.goal-bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.goal-bar i{display:block;height:100%;background:var(--good);border-radius:4px}
+.weak{border-left:3px solid var(--warn)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:54px}
+.week i{display:block;background:var(--surface-2);border-radius:4px}
+.week i.on{background:var(--accent)}
+.week-l{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:11px;color:var(--muted);text-align:center}
+
+/* écran séance */
+.sess-head h2{font-size:24px;text-transform:uppercase}
+.timer{font-size:22px;color:var(--muted)}
+.dots{display:flex;gap:4px}
+.dots i{flex:1;height:4px;border-radius:2px;background:var(--surface-2)}
+.dots i.done{background:var(--good)} .dots i.cur{background:var(--accent)}
+.ex-title{font-size:32px;font-weight:800;text-transform:uppercase;line-height:1}
+.last{font-size:14px;color:var(--muted)}
+.last b{color:var(--text)}
+.sets{display:grid;gap:6px}
+.set{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;background:var(--surface);font-size:15px}
+.set .n{font-family:var(--f-display);color:var(--muted);font-weight:700}
+.set.done .ok{color:var(--good)}
+.set.cur{outline:2px solid var(--accent);background:#ff7a3d14}
+.set.new{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rest{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.ring{width:38px;height:38px}
+
+/* toast record */
+.toast{position:absolute;left:14px;right:14px;top:calc(var(--safe-top) + 6px);z-index:6;background:linear-gradient(120deg,#3a2d08,#1c1708);border:1px solid #ffd45e66;border-radius:var(--r-md);padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px -10px #000;transform:translateY(calc(-100% - 90px));transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
+.toast.show{transform:none}
+.toast .medal{width:42px;height:42px;background:#ffd45e33}
+.toast b{font-family:var(--f-display);font-size:20px;text-transform:uppercase;color:var(--record);display:block;line-height:1.1}
+.toast span{font-size:14px}
+canvas.confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
+
+/* fiche exercice */
+.big1rm{display:flex;align-items:baseline;gap:8px}
+.big1rm .num{font-size:56px;font-weight:800;line-height:1}
+.chart svg{display:block;width:100%;height:auto}
+.hist .li{min-height:48px}
+
+/* records */
+.rec-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rec-hero .card{padding:10px;text-align:center}
+.rec-hero .num{font-size:30px;font-weight:800;display:block;line-height:1.1}
+.rec-hero small{color:var(--muted);font-size:12px}
+.li.fresh{background:#ffd45e0f}
+
+/* export */
+.alert{display:flex;gap:12px;align-items:flex-start;background:#ffb5471a;border:1px solid #ffb54755;border-radius:var(--r-md);padding:12px 14px;font-size:14px}
+.alert svg{flex:none;color:var(--warn);width:22px;height:22px}
+.btn-wide{width:100%;justify-content:flex-start;gap:12px;min-height:60px;text-align:left}
+.btn-wide .s{display:block;font-weight:500;font-size:13px;color:var(--muted)}
+.btn-wide.btn-primary .s{color:#1a0d05b3}
+
+/* ---------- design system ---------- */
+.ds{max-width:1200px;margin:0 auto;padding:12px 20px 60px;display:grid;gap:22px}
+.ds h2{font-size:28px;text-transform:uppercase;font-weight:800}
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.sw{border-radius:var(--r-sm);overflow:hidden;background:var(--surface);font-size:12px}
+.sw i{display:block;height:46px}
+.sw div{padding:6px 8px}
+.sw code{color:var(--muted)}
+.notes{display:grid;gap:6px;margin:0;padding-left:18px;color:var(--muted);max-width:75ch}
+.notes b{color:var(--text)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="sheet-head">
+  <span class="eyebrow">02 Design · maquettes v1 · 31 oct. 2026</span>
+  <h1>Gym App : écrans clés</h1>
+  <p>Cinq écrans en taille iPhone, avec tes vrais exercices. L'écran « Séance en cours » est cliquable : règle la charge et les reps, puis valide la série. Mets 75 kg sur le Pec fly pour voir la célébration de record.</p>
+</header>
+
+<main class="gallery">
+
+<!-- ============ 1. ACCUEIL ============ -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="statusbar"><span>9:41</span><span>5G ▮</span></div>
+  <div class="screen">
+    <div class="row between hello">
+      <div><span class="eyebrow">Samedi 31 octobre</span><h2>Salut Romain</h2></div>
+      <span class="chip">☁ 12 °C</span>
+    </div>
+
+    <div class="card next" style="display:grid;gap:10px">
+      <div class="row between"><span class="eyebrow">Prochaine séance</span><span class="chip">dernière : il y a 4 j</span></div>
+      <h3>Pull</h3>
+      <div class="s" style="color:var(--muted);font-size:14px">12 exercices · ~55 min · Lat pulldown, Tractions, Seated row…</div>
+      <button class="btn btn-primary btn-xl" type="button">Démarrer</button>
+    </div>
+
+    <div class="card" style="display:grid;gap:8px">
+      <div class="row between"><span class="eyebrow">Prochain objectif</span><span class="chip good">▲ 3 séances de suite</span></div>
+      <div class="row between"><b style="font-size:17px">Leg press</b><span class="num" style="font-size:22px;font-weight:700">113 → 115 kg</span></div>
+      <div class="goal-bar"><i style="width:72%"></i></div>
+      <span style="font-size:13px;color:var(--muted)">10 reps à 113 kg validées, prochaine marche : 115 kg × 8</span>
+    </div>
+
+    <div class="card weak" style="display:grid;gap:6px">
+      <span class="eyebrow" style="color:var(--warn)">À renforcer</span>
+      <div class="row between"><span>Tractions</span><span class="chip warn">stagne 3 sem.</span></div>
+      <div class="row between"><span>Jambes</span><span class="chip warn">1 séance / 14 j</span></div>
+    </div>
+
+    <div class="card" style="display:grid;gap:8px">
+      <div class="row between"><span class="eyebrow">Cette semaine</span><span class="num" style="font-size:18px">2 / 3 séances</span></div>
+      <div class="week"><i class="on" style="height:80%"></i><i style="height:8%"></i><i class="on" style="height:95%"></i><i style="height:8%"></i><i style="height:8%"></i><i style="height:8%"></i><i style="height:8%"></i></div>
+      <div class="week-l"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Navigation">
+    <button class="tab on" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Séance</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Exercices</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Records</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Données</button>
+  </nav>
+  <div class="homebar"></div>
+</div>
+<figcaption><b><span class="idx">1</span>Accueil / tableau de bord</b>Une seule action évidente : démarrer la prochaine séance de la rotation Push → Pull → Jambes. Dessous, l'objectif suivant (vert) et les points faibles (ambre). Date et météo en haut, mémorisées avec la séance.</figcaption>
+</figure>
+
+<!-- ============ 2. SÉANCE EN COURS ============ -->
+<figure>
+<div class="phone" id="live">
+  <div class="island"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <div class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></div>
+    <div><b>Nouveau record !</b><span id="toast-txt">Pec fly · 1RM estimé 97 kg</span></div>
+  </div>
+  <canvas class="confetti" id="confetti" width="355" height="760"></canvas>
+  <div class="statusbar"><span>9:41</span><span>5G ▮</span></div>
+  <div class="screen">
+    <div class="row between sess-head">
+      <h2>Push</h2>
+      <span class="timer num">32:14</span>
+      <button class="btn btn-secondary" type="button" style="min-height:40px;padding:0 14px;font-size:14px">Terminer</button>
+    </div>
+    <div class="dots" aria-label="Exercice 1 sur 9"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div style="display:grid;gap:4px">
+      <div class="row between"><span class="eyebrow">Exercice 1 / 9 · machine</span><span class="chip">Chaise 4</span></div>
+      <div class="ex-title">Pec fly</div>
+      <div class="last">Dernière fois : <b class="num" style="font-size:16px">73 kg · 9-8-8-7</b></div>
+    </div>
+
+    <div class="sets" id="sets">
+      <div class="set done"><span class="n">1</span><span class="num" style="font-size:18px">73 kg × 9</span><span class="ok">✓</span></div>
+      <div class="set done"><span class="n">2</span><span class="num" style="font-size:18px">73 kg × 8</span><span class="ok">✓</span></div>
+      <div class="set cur" id="curset"><span class="n">3</span><span style="color:var(--muted)">en cours</span><span></span></div>
+    </div>
+
+    <div class="rest"><svg class="ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--surface-2)" stroke-width="4"/><circle cx="20" cy="20" r="16" fill="none" stroke="var(--accent)" stroke-width="4" stroke-dasharray="100.5" stroke-dashoffset="38" transform="rotate(-90 20 20)" stroke-linecap="round"/></svg><span>Repos <b class="num" style="color:var(--text);font-size:18px">0:56</b> / 1:30</span></div>
+
+    <div class="steppers">
+      <div class="stepper"><button type="button" id="kg-m" aria-label="Moins 1 kg">−</button><div class="val"><span class="num" id="kg">73</span><small>kg</small></div><button type="button" id="kg-p" aria-label="Plus 1 kg">+</button></div>
+      <div class="stepper"><button type="button" id="rp-m" aria-label="Moins 1 rep">−</button><div class="val"><span class="num" id="rp">8</span><small>reps</small></div><button type="button" id="rp-p" aria-label="Plus 1 rep">+</button></div>
+    </div>
+    <button class="btn btn-primary btn-xl" type="button" id="validate" style="margin-top:auto">Valider la série</button>
+    <div class="row between" style="font-size:13px;color:var(--muted);padding-bottom:10px"><span>‹ Exercice précédent</span><span>Chest press ›</span></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<figcaption><b><span class="idx">2</span>Séance en cours</b>Valeurs préremplies depuis la dernière séance : une série = un tap sur « Valider ». Steppers de 56 px de haut, bouton principal en bas, à portée du pouce. Le chrono de repos démarre seul. Pas de barre d'onglets pendant la séance.</figcaption>
+</figure>
+
+<!-- ============ 3. FICHE EXERCICE ============ -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="statusbar"><span>9:41</span><span>5G ▮</span></div>
+  <div class="screen">
+    <div class="row between"><span style="color:var(--accent);font-weight:600">‹ Exercices</span><span class="chip">barre · Push</span></div>
+    <h2 style="font-size:30px;text-transform:uppercase;font-weight:800;line-height:1">Développé couché</h2>
+    <div class="card" style="display:grid;gap:10px">
+      <div class="row between">
+        <div><span class="eyebrow">1RM estimé</span><div class="big1rm"><span class="num">82</span><span style="color:var(--muted)">kg</span></div></div>
+        <span class="chip good">▲ +10 kg en 12 sem.</span>
+      </div>
+      <div class="seg" role="tablist"><button class="on" type="button">1RM</button><button type="button">Charge max</button><button type="button">Volume</button></div>
+      <div class="chart" id="chart" aria-label="Évolution du 1RM estimé sur 12 semaines"></div>
+    </div>
+    <span class="eyebrow">Historique</span>
+    <div class="list hist">
+      <div class="li"><div class="grow"><div class="t num" style="font-size:18px">65 kg · 8-8-7</div><div class="s">28 oct. · 14 °C</div></div><span class="chip rec">★ record</span></div>
+      <div class="li"><div class="grow"><div class="t num" style="font-size:18px">65 kg · 7-7-6</div><div class="s">21 oct. · 17 °C</div></div><span class="s">1RM 80</span></div>
+      <div class="li"><div class="grow"><div class="t num" style="font-size:18px">62,5 kg · 8-7-7</div><div class="s">14 oct. · 19 °C</div></div><span class="s">1RM 79</span></div>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Navigation">
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Séance</button>
+    <button class="tab on" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Exercices</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Records</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Données</button>
+  </nav>
+  <div class="homebar"></div>
+</div>
+<figcaption><b><span class="idx">3</span>Fiche exercice</b>Le chiffre qui compte en grand (1RM estimé, formule d'Epley), la courbe dessous, puis l'historique avec la température du jour. Les onglets changent la mesure affichée.</figcaption>
+</figure>
+
+<!-- ============ 4. RECORDS ============ -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="statusbar"><span>9:41</span><span>5G ▮</span></div>
+  <div class="screen">
+    <h2 style="font-size:30px;text-transform:uppercase;font-weight:800">Records</h2>
+    <div class="rec-hero">
+      <div class="card"><span class="num" style="color:var(--record)">4</span><small>ce mois-ci</small></div>
+      <div class="card"><span class="num">31</span><small>au total</small></div>
+      <div class="card"><span class="num">9 j</span><small>depuis le dernier</small></div>
+    </div>
+    <div class="seg"><button class="on" type="button">Tous</button><button type="button">Push</button><button type="button">Pull</button><button type="button">Jambes</button></div>
+    <div class="list">
+      <div class="li fresh"><div class="medal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg></div><div class="grow"><div class="t">Développé couché</div><div class="s">1RM estimé · 28 oct.</div></div><span class="num" style="font-size:22px;font-weight:700">82 kg</span></div>
+      <div class="li fresh"><div class="medal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg></div><div class="grow"><div class="t">Leg press</div><div class="s">Charge max · 22 oct.</div></div><span class="num" style="font-size:22px;font-weight:700">113 kg</span></div>
+      <div class="li"><div class="medal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg></div><div class="grow"><div class="t">Seated row</div><div class="s">Reps à 54 kg · 17 oct.</div></div><span class="num" style="font-size:22px;font-weight:700">10 reps</span></div>
+      <div class="li"><div class="medal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg></div><div class="grow"><div class="t">Dips</div><div class="s">Reps lestées +10 kg · 10 oct.</div></div><span class="num" style="font-size:22px;font-weight:700">11 reps</span></div>
+      <div class="li"><div class="medal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg></div><div class="grow"><div class="t">Pec fly</div><div class="s">1RM estimé · 3 oct.</div></div><span class="num" style="font-size:22px;font-weight:700">95 kg</span></div>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Navigation">
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Séance</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Exercices</button>
+    <button class="tab on" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Records</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Données</button>
+  </nav>
+  <div class="homebar"></div>
+</div>
+<figcaption><b><span class="idx">4</span>Records</b>L'or est réservé aux records, partout dans l'app. Trois types : charge max, 1RM estimé, reps à une charge donnée. Les records du mois sont surlignés.</figcaption>
+</figure>
+
+<!-- ============ 5. EXPORT ============ -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="statusbar"><span>9:41</span><span>5G ▮</span></div>
+  <div class="screen">
+    <h2 style="font-size:30px;text-transform:uppercase;font-weight:800">Mes données</h2>
+    <div class="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg><div><b>Dernière sauvegarde il y a 12 jours.</b><br>Tes données ne vivent que sur ce téléphone. Exporte-les pour ne rien perdre.</div></div>
+    <div style="display:grid;gap:10px">
+      <button class="btn btn-primary btn-wide" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg><span>Exporter tout (JSON)<span class="s">Sauvegarde complète, réimportable</span></span></button>
+      <button class="btn btn-secondary btn-wide" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM4 10h16M10 4v16"/></svg><span>Exporter en CSV<span class="s">Pour un tableur, un coach ou une IA</span></span></button>
+      <button class="btn btn-ghost btn-wide" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M4 5h16"/></svg><span>Importer un fichier<span class="s" style="color:var(--muted)">Aperçu avant de remplacer quoi que ce soit</span></span></button>
+    </div>
+    <div class="list">
+      <div class="li"><div class="grow"><div class="t">Stockage protégé</div><div class="s">iOS ne videra pas les données</div></div><span class="chip good">● actif</span></div>
+      <div class="li"><div class="grow"><div class="t">Contenu</div><div class="s">37 exercices · 48 séances · 1 312 séries</div></div></div>
+      <div class="li"><div class="grow"><div class="t">Rappel de sauvegarde</div><div class="s">Tous les 7 jours</div></div><span style="color:var(--muted)">›</span></div>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Navigation">
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Séance</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Exercices</button>
+    <button class="tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Records</button>
+    <button class="tab on" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Données</button>
+  </nav>
+  <div class="homebar"></div>
+</div>
+<figcaption><b><span class="idx">5</span>Export et sauvegarde</b>Le rappel s'affiche en ambre quand la dernière sauvegarde date de plus de 7 jours. JSON pour restaurer, CSV pour le coach ou une IA. L'import montre un aperçu avant d'écrire.</figcaption>
+</figure>
+
+</main>
+
+<section class="ds" aria-labelledby="ds-t">
+  <h2 id="ds-t">Design system (base de src/ui/)</h2>
+  <div class="ds-grid">
+    <div class="card" style="display:grid;gap:12px">
+      <span class="eyebrow">Couleurs (tokens)</span>
+      <div class="swatches">
+        <div class="sw"><i style="background:var(--bg);border-bottom:1px solid var(--line)"></i><div>Fond<br><code>--bg</code></div></div>
+        <div class="sw"><i style="background:var(--surface-2)"></i><div>Surface<br><code>--surface-2</code></div></div>
+        <div class="sw"><i style="background:var(--accent)"></i><div>Action<br><code>--accent</code></div></div>
+        <div class="sw"><i style="background:var(--good)"></i><div>Progrès<br><code>--good</code></div></div>
+        <div class="sw"><i style="background:var(--warn)"></i><div>À renforcer<br><code>--warn</code></div></div>
+        <div class="sw"><i style="background:var(--record)"></i><div>Record<br><code>--record</code></div></div>
+      </div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <span class="eyebrow">Typographie (Google Fonts, gratuites)</span>
+      <div style="font-family:var(--f-display);font-size:34px;font-weight:800;text-transform:uppercase;line-height:1">Barlow Condensed</div>
+      <div style="color:var(--muted);font-size:14px">Titres et chiffres, chiffres à chasse fixe pour que les colonnes s'alignent.</div>
+      <div style="font-size:17px">Barlow pour le texte courant, lisible en petit.</div>
+      <div class="num" style="font-size:40px;font-weight:700">73 kg × 8</div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <span class="eyebrow">Composants</span>
+      <div class="row" style="flex-wrap:wrap"><button class="btn btn-primary" type="button">Primaire</button><button class="btn btn-secondary" type="button">Secondaire</button><button class="btn btn-ghost" type="button">Contour</button></div>
+      <div class="row" style="flex-wrap:wrap"><span class="chip good">▲ progrès</span><span class="chip warn">stagne</span><span class="chip rec">★ record</span><span class="chip">☁ 12 °C</span></div>
+      <div class="seg"><button class="on" type="button">Onglet</button><button type="button">Onglet</button><button type="button">Onglet</button></div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li><b>Une main :</b> l'action principale est toujours en bas d'écran, cibles d'au moins 48 px (règle iOS : 44).</li>
+    <li><b>Zones sûres :</b> marge haute de l'encoche et marge basse de la barre d'accueil via <code>env(safe-area-inset-*)</code> en plein écran.</li>
+    <li><b>Couleurs à sens unique :</b> orange = agir, vert = progrès, ambre = à renforcer, or = record. Contraste du texte ≥ 4,5:1 sur le fond.</li>
+    <li><b>Mouvement :</b> rebond court à la validation d'une série, confettis et vibration seulement pour un record. Coupé si « Réduire les animations » est activé.</li>
+  </ul>
+</section>
+
+<script>
+(function(){
+  // ---- graphique 1RM (Développé couché) ----
+  var data=[72,73,73,75,76,76,78,79,80,82];
+  var W=320,H=130,p={l:28,r:10,t:10,b:20},min=70,max=84;
+  var x=function(i){return p.l+i*(W-p.l-p.r)/(data.length-1)};
+  var y=function(v){return p.t+(max-v)*(H-p.t-p.b)/(max-min)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7A3D" stop-opacity=".35"/><stop offset="1" stop-color="#FF7A3D" stop-opacity="0"/></linearGradient></defs>';
+  [70,75,80].forEach(function(v){s+='<line x1="'+p.l+'" x2="'+(W-p.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#2A3340"/><text x="'+(p.l-6)+'" y="'+(y(v)+4)+'" fill="#8E9AAB" font-size="11" text-anchor="end" font-family="Barlow Condensed">'+v+'</text>';});
+  var line=data.map(function(v,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)}).join(' ');
+  s+='<path d="'+line+' L'+x(data.length-1)+' '+(H-p.b)+' L'+p.l+' '+(H-p.b)+'Z" fill="url(#g)"/>';
+  s+='<path d="'+line+'" fill="none" stroke="#FF7A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  var lx=x(data.length-1),ly=y(82);
+  s+='<circle cx="'+lx+'" cy="'+ly+'" r="7" fill="#FFD45E33"/><circle cx="'+lx+'" cy="'+ly+'" r="4" fill="#FFD45E"/>';
+  s+='<text x="'+p.l+'" y="'+(H-4)+'" fill="#8E9AAB" font-size="11" font-family="Barlow">août</text><text x="'+(W-p.r)+'" y="'+(H-4)+'" fill="#8E9AAB" font-size="11" text-anchor="end" font-family="Barlow">28 oct.</text></svg>';
+  document.getElementById('chart').innerHTML=s;
+
+  // ---- séance interactive ----
+  var kg=73,rp=8,setN=3,best=73*(1+9/30);
+  var $=function(id){return document.getElementById(id)};
+  function render(){$('kg').textContent=String(kg).replace('.',',');$('rp').textContent=rp;}
+  $('kg-m').onclick=function(){kg=Math.max(0,kg-1);render()};
+  $('kg-p').onclick=function(){kg+=1;render()};
+  $('rp-m').onclick=function(){rp=Math.max(1,rp-1);render()};
+  $('rp-p').onclick=function(){rp+=1;render()};
+  $('validate').onclick=function(){
+    var cur=$('curset');
+    cur.className='set done new';
+    cur.innerHTML='<span class="n">'+setN+'</span><span class="num" style="font-size:18px">'+kg+' kg × '+rp+'</span><span class="ok">✓</span>';
+    cur.removeAttribute('id');
+    var e=kg*(1+rp/30);
+    if(e>best+0.01){best=e;celebrate(Math.round(e));}
+    setN++;
+    var sets=$('sets');
+    if(sets.children.length>=4){sets.removeChild(sets.firstElementChild);}
+    var n=document.createElement('div');n.className='set cur';n.id='curset';
+    n.innerHTML='<span class="n">'+setN+'</span><span style="color:var(--muted)">en cours</span><span></span>';
+    sets.appendChild(n);
+    try{navigator.vibrate&&navigator.vibrate(30)}catch(_){}
+  };
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function celebrate(v){
+    $('toast-txt').textContent='Pec fly · 1RM estimé '+v+' kg';
+    var t=$('toast');t.classList.add('show');
+    setTimeout(function(){t.classList.remove('show')},2600);
+    if(!reduce)confetti();
+  }
+  function confetti(){
+    var c=$('confetti'),ctx=c.getContext('2d'),cols=['#FFD45E','#FF7A3D','#3DDC97','#EEF2F6'],ps=[];
+    for(var i=0;i<90;i++)ps.push({x:c.width/2,y:120,vx:(Math.random()-.5)*9,vy:Math.random()*-7-2,s:Math.random()*5+3,c:cols[i%4],r:Math.random()*6});
+    var f=0;(function tick(){
+      ctx.clearRect(0,0,c.width,c.height);
+      ps.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.r+=.15;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore();});
+      if(++f<110)requestAnimationFrame(tick);else ctx.clearRect(0,0,c.width,c.height);
+    })();
+  }
+})();
+</script>
+</body>
+</html>
