@@ -2,8 +2,10 @@
 // La valeur stockée est la clé ; le libellé sert à l'affichage.
 export const GROUPES = {
   pectoraux: 'Pectoraux',
-  dos: 'Dos',
   epaules: 'Épaules',
+  trapezes: 'Trapèzes',
+  dos: 'Dos',
+  lombaires: 'Lombaires',
   biceps: 'Biceps',
   triceps: 'Triceps',
   'avant-bras': 'Avant-bras',
@@ -13,6 +15,7 @@ export const GROUPES = {
   fessiers: 'Fessiers',
   mollets: 'Mollets',
   adducteurs: 'Adducteurs',
+  abducteurs: 'Abducteurs',
 } as const;
 
 export type Groupe = keyof typeof GROUPES;

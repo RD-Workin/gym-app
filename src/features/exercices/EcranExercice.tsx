@@ -9,6 +9,8 @@ import { Bouton, Carte, ElementListe, Liste } from '../../ui';
 import {
   ajouterVariante,
   creerExercice,
+  idCatalogue,
+  liensCatalogue,
   exerciceEtVariantes,
   masquerExercice,
   modifierExercice,
@@ -16,6 +18,9 @@ import {
   type BrouillonExercice,
 } from './exercices';
 import { enregistrerPhoto, retirerPhoto } from './photo';
+import { EcranCatalogue } from './EcranCatalogue';
+import { CorpsMuscles } from './CorpsMuscles';
+import { urlImage } from '../../data/catalogue';
 import { FicheProgression } from '../progression/FicheProgression';
 import '../progression/progression.css';
 import './exercices.css';
@@ -27,6 +32,11 @@ const modeParDefaut = (eq: Equipement): ModeCharge =>
   eq === 'halteres' ? 'par_main' : eq === 'poids_du_corps' ? 'lest' : 'total';
 
 export function EcranExercice({ id }: { id: string }) {
+  if (id.startsWith('cat:')) return <EcranCatalogue id={id.slice(4)} />;
+  return <FicheExercice id={id} />;
+}
+
+function FicheExercice({ id }: { id: string }) {
   const nouveau = id === 'nouveau';
   const donnees = useRequete(() => (nouveau ? null : exerciceEtVariantes(id)), [id]);
   const [b, setB] = useState<BrouillonExercice>(VIDE);
@@ -35,6 +45,8 @@ export function EcranExercice({ id }: { id: string }) {
   const [message, setMessage] = useState('');
 
   const ex = donnees?.exercice;
+  const liens = useRequete(liensCatalogue);
+  const catId = ex && liens ? idCatalogue(ex, liens) : undefined;
   const urlPhoto = useMemo(() => (ex?.photo ? URL.createObjectURL(ex.photo) : undefined), [ex?.photo]);
   useEffect(() => () => urlPhoto && URL.revokeObjectURL(urlPhoto), [urlPhoto]);
   useEffect(() => {
@@ -84,6 +96,15 @@ export function EcranExercice({ id }: { id: string }) {
         </Carte>
       )}
 
+      {catId && (
+        <a class="ex-images" href={lien(`/exercices/cat:${catId}`)} aria-label="Images et explications">
+          <img src={urlImage(catId, 0)} alt="" loading="lazy" />
+          <img src={urlImage(catId, 1)} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
+        </a>
+      )}
+      <Carte titre="Muscles travaillés" aside={catId ? <a href={lien(`/exercices/cat:${catId}`)}>Explications ›</a> : undefined}>
+        <CorpsMuscles actifs={b.groupesMusculaires} onBasculer={basculerGroupe} />
+      </Carte>
       {!nouveau && <FicheProgression exerciceId={id} />}
       {!nouveau && <h2 style={{ marginTop: 'var(--e-3)' }}>Réglages de l'exercice</h2>}
 
@@ -117,7 +138,7 @@ export function EcranExercice({ id }: { id: string }) {
           </label>
         </div>
         <div class="ex-champ">
-          <span class="ui-surtitre">Muscles</span>
+          <span class="ui-surtitre">Muscles (ou touche le corps plus haut)</span>
           <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }}>
             {Object.entries(GROUPES).map(([g, l]) => (
               <button key={g} type="button" class="ex-filtre" aria-pressed={b.groupesMusculaires.includes(g)} onClick={() => basculerGroupe(g)}>

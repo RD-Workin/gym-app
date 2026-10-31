@@ -1,7 +1,8 @@
 // Accès aux données des exercices (propriétaire : 03-exercices).
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
-import type { Exercice, Variante } from '../../core/types';
+import type { Exercice, ModeCharge, Variante } from '../../core/types';
+import { VISUELS_DEPART, type EntreeCatalogue } from '../../data/catalogue';
 
 export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharge' | 'groupesMusculaires' | 'reglagesMachine' | 'note'>;
 
@@ -30,8 +31,43 @@ export async function creerExercice(b: BrouillonExercice): Promise<string> {
   return id;
 }
 
-export const modifierExercice = (id: string, b: BrouillonExercice) =>
-  db.exercices.update(id, { ...nettoyer(b), modifieLe: maintenant() });
+export async function modifierExercice(id: string, b: BrouillonExercice) {
+  await db.transaction('rw', db.exercices, db.reglages, async () => {
+    const avant = await db.exercices.get(id);
+    // Renommer un exercice de départ ne doit pas lui faire perdre son visuel.
+    const depart = avant && VISUELS_DEPART[avant.nom];
+    if (depart && !(await liensCatalogue())[id]) await lierAuCatalogue(id, depart);
+    await db.exercices.update(id, { ...nettoyer(b), modifieLe: maintenant() });
+  });
+}
+
+// Lien exercice → entrée du catalogue (visuel, explications), stocké dans `reglages`.
+const CLE_LIENS = 'liensCatalogue';
+export type Liens = Record<string, string>;
+
+export const liensCatalogue = async (): Promise<Liens> => ((await db.reglages.get(CLE_LIENS))?.valeur as Liens) ?? {};
+
+export async function lierAuCatalogue(exerciceId: string, catalogueId: string | null) {
+  const liens = { ...(await liensCatalogue()) };
+  if (catalogueId) liens[exerciceId] = catalogueId;
+  else delete liens[exerciceId];
+  await db.reglages.put({ cle: CLE_LIENS, valeur: liens });
+}
+
+/** Entrée du catalogue d'un exercice : lien explicite, sinon exercice de départ, sinon même nom. */
+export function idCatalogue(ex: Pick<Exercice, 'id' | 'nom'>, liens: Liens, parNom?: Map<string, string>): string | undefined {
+  return liens[ex.id] ?? VISUELS_DEPART[ex.nom] ?? parNom?.get(normaliser(ex.nom));
+}
+
+const modeDe = (eq: Exercice['equipement']): ModeCharge => (eq === 'halteres' ? 'par_main' : eq === 'poids_du_corps' ? 'lest' : 'total');
+
+export async function ajouterDepuisCatalogue(c: EntreeCatalogue): Promise<string> {
+  return db.transaction('rw', db.exercices, db.reglages, async () => {
+    const id = await creerExercice({ nom: c.nom, equipement: c.eq, modeCharge: modeDe(c.eq), groupesMusculaires: [...c.p, ...c.s] });
+    await lierAuCatalogue(id, c.id);
+    return id;
+  });
+}
 
 export const masquerExercice = (id: string, archive: boolean) =>
   db.exercices.update(id, { archive, modifieLe: maintenant() });
