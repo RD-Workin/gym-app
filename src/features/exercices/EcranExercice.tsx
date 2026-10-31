@@ -5,7 +5,9 @@ import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
 import type { Equipement, ModeCharge } from '../../core/types';
 import { EQUIPEMENTS, GROUPES, MODES_CHARGE } from '../../data/groupes';
-import { Bouton, Carte, ElementListe, Liste } from '../../ui';
+import { Bouton, Carte, ElementListe, Liste, PanneauConseils } from '../../ui';
+import { CONSEILS_EQUIPEMENTS, CONSEILS_GROUPES, conseilsExercice } from '../../data/conseils';
+import { libelleGroupe } from '../../data/groupes';
 import {
   ajouterVariante,
   creerExercice,
@@ -105,6 +107,7 @@ function FicheExercice({ id }: { id: string }) {
       <Carte titre="Muscles travaillés" aside={catId ? <a href={lien(`/exercices/cat:${catId}`)}>Explications ›</a> : undefined}>
         <CorpsMuscles actifs={b.groupesMusculaires} onBasculer={basculerGroupe} />
       </Carte>
+      {!nouveau && <Conseils nom={ex!.nom} groupes={b.groupesMusculaires} equipement={b.equipement} />}
       {!nouveau && <FicheProgression exerciceId={id} />}
       {!nouveau && <h2 style={{ marginTop: 'var(--e-3)' }}>Réglages de l'exercice</h2>}
 
@@ -238,5 +241,21 @@ function FicheExercice({ id }: { id: string }) {
         </>
       )}
     </section>
+  );
+}
+
+/** Conseils du coach (contenu : 10-coach) : l'exercice, son muscle principal, son matériel. */
+function Conseils({ nom, groupes, equipement }: { nom: string; groupes: string[]; equipement: Equipement }) {
+  const exo = conseilsExercice(nom);
+  const g = groupes[0] as keyof typeof CONSEILS_GROUPES | undefined;
+  const muscle = g && CONSEILS_GROUPES[g];
+  const materiel = CONSEILS_EQUIPEMENTS[equipement];
+  if (!exo && !muscle && !materiel) return null;
+  return (
+    <div class="ui-pile">
+      {exo && <PanneauConseils fiche={exo} titre="Conseils du coach" />}
+      {muscle && <PanneauConseils fiche={muscle} titre={`Le muscle : ${libelleGroupe(g!)}`} />}
+      {materiel && <PanneauConseils fiche={materiel} titre="Le matériel" />}
+    </div>
   );
 }

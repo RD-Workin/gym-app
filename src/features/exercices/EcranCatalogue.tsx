@@ -4,7 +4,8 @@ import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
 import { chargerCatalogue, NIVEAUX, urlImage, type EntreeCatalogue } from '../../data/catalogue';
 import { EQUIPEMENTS, libelleGroupe } from '../../data/groupes';
-import { Bouton, Carte, Puce } from '../../ui';
+import { Bouton, Carte, PanneauConseils, Puce } from '../../ui';
+import { CONSEILS_GROUPES } from '../../data/conseils';
 import { CorpsMuscles } from './CorpsMuscles';
 import { ajouterDepuisCatalogue, idCatalogue, liensCatalogue, normaliser, tousLesExercices } from './exercices';
 import './exercices.css';
@@ -60,6 +61,10 @@ export function EcranCatalogue({ id }: { id: string }) {
           </p>
         </div>
       </Carte>
+      {c.p.map((g) => {
+        const f = CONSEILS_GROUPES[g as keyof typeof CONSEILS_GROUPES];
+        return f && <PanneauConseils key={g} fiche={f} titre={`Le muscle : ${libelleGroupe(g)}`} />;
+      })}
       {c.inst.length > 0 && (
         <Carte titre="Explications (en anglais)">
           <ol class="ex-etapes" lang="en">

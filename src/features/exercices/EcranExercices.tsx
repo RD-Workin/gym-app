@@ -6,7 +6,8 @@ import { lien } from '../../core/router';
 import type { Exercice } from '../../core/types';
 import { chargerCatalogue, NIVEAUX, type EntreeCatalogue } from '../../data/catalogue';
 import { EQUIPEMENTS, GROUPES, libelleGroupe } from '../../data/groupes';
-import { Bouton, ElementListe, Liste, Onglets, Puce } from '../../ui';
+import { Bouton, ElementListe, Liste, Onglets, PanneauConseils, Puce } from '../../ui';
+import { CONSEILS_GROUPES } from '../../data/conseils';
 import { CorpsMuscles } from './CorpsMuscles';
 import { idCatalogue, liensCatalogue, normaliser, tousLesExercices } from './exercices';
 import { Vignette } from './Vignette';
@@ -113,6 +114,11 @@ export function EcranExercices() {
           </button>
         ))}
       </div>
+
+      {muscles.map((g) => {
+        const f = CONSEILS_GROUPES[g as keyof typeof CONSEILS_GROUPES];
+        return f && <PanneauConseils key={g} fiche={f} titre={libelleGroupe(g)} />;
+      })}
 
       {source === 'perso' && nbMasques > 0 && (
         <button type="button" class="ex-filtre" style={{ justifySelf: 'start' }} aria-pressed={masques} onClick={() => setMasques(!masques)}>
