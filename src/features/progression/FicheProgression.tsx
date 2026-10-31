@@ -6,6 +6,7 @@ import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
+import './progression.css';
 
 const MESURES: { valeur: Mesure; libelle: string }[] = [
   { valeur: 'un_rm', libelle: '1RM' },
