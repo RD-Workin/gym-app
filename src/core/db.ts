@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Exercice, Modele, Reglage, Seance, Serie, Variante } from './types';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export class GymDb extends Dexie {
   exercices!: EntityTable<Exercice, 'id'>;
@@ -23,6 +23,8 @@ export class GymDb extends Dexie {
       series: 'id, seanceId, exerciceId, [exerciceId+faiteLe]',
       reglages: 'cle',
     });
+    // v2 : champ optionnel exercices.photo (Blob, non indexé). Aucune donnée à transformer.
+    this.version(2).stores({});
   }
 }
 
