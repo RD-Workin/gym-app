@@ -138,7 +138,9 @@ export const repsDepuisCible = (cible?: string) => {
  */
 export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, faites: Serie[], avant: Serie[]): Saisie {
   const modeCharge = exercice?.modeCharge ?? 'total';
-  const ref = faites[faites.length - 1] ?? avant[faites.length] ?? avant[avant.length - 1];
+  // L'échauffement ne sert pas de référence : la 1re série de travail reprend la charge de travail d'avant.
+  const travail = faites.filter((s) => s.type !== 'echauffement');
+  const ref = travail[travail.length - 1] ?? avant[travail.length] ?? avant[avant.length - 1];
   return {
     chargeKg: ref?.chargeKg ?? (modeCharge === 'sans_charge' ? undefined : 0),
     reps: ref?.reps ?? repsDepuisCible(bloc.repsCibles) ?? 10,

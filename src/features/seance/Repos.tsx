@@ -57,7 +57,7 @@ export function Repos({ fin, duree, onAjouter, onPasser }: Props) {
           'Repos terminé'
         ) : (
           <>
-            Repos <b class="sc-num">{dureeTexte(reste)}</b> / {dureeTexte(duree)}
+            Repos <b key={Math.ceil(reste)} class="sc-num anim-pulse">{dureeTexte(reste)}</b> / {dureeTexte(duree)}
           </>
         )}
       </span>

@@ -5,6 +5,7 @@ import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
 import { seanceEnCours, useRequete } from '../../core/requetes';
+import { eclatSur } from '../../anim';
 import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
@@ -184,7 +185,8 @@ function SeanceActive({ seance }: { seance: Seance }) {
     setPlan({ ...plan, blocs, actif: Math.max(0, Math.min(plan.actif, blocs.length - 1)) });
   };
 
-  const valider = async () => {
+  const valider = async (e?: Event) => {
+    const bouton = e?.currentTarget as Element | undefined;
     if (!bloc || !saisie || occupe) return;
     setOccupe(true);
     try {
@@ -194,6 +196,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
         return;
       }
       const serie = await enregistrerSerie(seance.id, bloc, saisie);
+      eclatSur(bouton);
       if (serie) {
         const recs = await recordsDeLaSerie(serie);
         if (recs.length) setToast(recs[0].texte);
