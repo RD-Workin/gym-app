@@ -1,0 +1,40 @@
+/* Styles propres à la bibliothèque d'exercices (03). Composants partagés : src/ui. */
+.ex-recherche,
+.ex-champ input,
+.ex-champ select,
+.ex-champ textarea {
+  width: 100%;
+  min-height: var(--cible);
+  padding: var(--e-2) var(--e-3);
+  border: 1.5px solid var(--c-trait);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  font-size: var(--t-md);
+  box-sizing: border-box;
+}
+.ex-recherche { font-size: 17px; }
+.ex-champ { display: grid; gap: var(--e-1); }
+.ex-champ textarea { min-height: 88px; resize: vertical; }
+.ex-filtres {
+  display: flex;
+  gap: var(--e-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--e-4));
+  padding: 0 var(--e-4);
+}
+.ex-filtres::-webkit-scrollbar { display: none; }
+.ex-filtre {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--e-3);
+  border: 1.5px solid var(--c-trait);
+  border-radius: 999px;
+  background: transparent;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.ex-filtre[aria-pressed='true'] { background: var(--c-action); border-color: var(--c-action); color: var(--c-action-encre); }
+.ex-retour { font-weight: 600; text-decoration: none; }
+.ex-ligne-variante { display: flex; gap: var(--e-2); }
+.ex-ligne-variante input { flex: 1; }
