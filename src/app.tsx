@@ -2,6 +2,7 @@ import { BarreOnglets, Coquille } from './ui';
 import { correspond, lien, useChemin } from './core/router';
 import { routes } from './core/routes';
 import { seanceEnCours, useRequete } from './core/requetes';
+import { TransitionEcran } from './anim';
 
 export function App() {
   const chemin = useChemin();
@@ -33,11 +34,13 @@ export function App() {
 
   return (
     <Coquille barre={barre}>
-      {contenu ?? (
-        <p>
-          Page introuvable. <a href={lien('/')}>Accueil</a>
-        </p>
-      )}
+      <TransitionEcran chemin={chemin}>
+        {contenu ?? (
+          <p>
+            Page introuvable. <a href={lien('/')}>Accueil</a>
+          </p>
+        )}
+      </TransitionEcran>
     </Coquille>
   );
 }

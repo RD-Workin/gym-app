@@ -1,0 +1,59 @@
+/* Animations (09). Uniquement transform et opacity : composées par le GPU, pas de reflow. */
+:root {
+  --anim-ecran: 260ms;
+  --anim-sortie-douce: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- Entrée d'écran ---- */
+.anim-ecran.avant { animation: anim-glisse-droite var(--anim-ecran) var(--anim-sortie-douce); }
+.anim-ecran.arriere { animation: anim-glisse-gauche var(--anim-ecran) var(--anim-sortie-douce); }
+.anim-ecran.onglet { animation: anim-fondu-zoom var(--anim-ecran) var(--anim-sortie-douce); }
+@keyframes anim-glisse-droite { from { opacity: 0; transform: translateX(28px); } }
+@keyframes anim-glisse-gauche { from { opacity: 0; transform: translateX(-28px); } }
+@keyframes anim-fondu-zoom { from { opacity: 0; transform: scale(0.97); } }
+
+/* ---- Cascade : les enfants apparaissent l'un après l'autre (listes, cartes) ---- */
+.anim-cascade > * { animation: anim-monte 380ms var(--anim-sortie-douce) both; }
+.anim-cascade > :nth-child(2) { animation-delay: 35ms; }
+.anim-cascade > :nth-child(3) { animation-delay: 70ms; }
+.anim-cascade > :nth-child(4) { animation-delay: 105ms; }
+.anim-cascade > :nth-child(5) { animation-delay: 140ms; }
+.anim-cascade > :nth-child(6) { animation-delay: 175ms; }
+.anim-cascade > :nth-child(7) { animation-delay: 210ms; }
+.anim-cascade > :nth-child(n + 8) { animation-delay: 245ms; }
+@keyframes anim-monte { from { opacity: 0; transform: translateY(12px); } }
+
+/* ---- Micro-interactions ---- */
+/* Zoom d'apparition (badge, médaille, chiffre clé). */
+.anim-zoom { animation: anim-zoom 480ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes anim-zoom { from { opacity: 0; transform: scale(0.6); } }
+
+/* Rebond d'une valeur qui change : changer la `key` de l'élément pour rejouer. */
+.anim-pulse { animation: anim-pulse 320ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes anim-pulse { 40% { transform: scale(1.14); } }
+
+/* Refus (saisie invalide). */
+.anim-tremble { animation: anim-tremble 360ms ease-in-out; }
+@keyframes anim-tremble {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* Lueur dorée d'un record (carte, ligne). */
+.anim-lueur-record { animation: anim-lueur 1.6s ease-out; }
+@keyframes anim-lueur {
+  0% { box-shadow: 0 0 0 0 rgb(255 212 94 / 0.7); }
+  100% { box-shadow: 0 0 0 18px rgb(255 212 94 / 0); }
+}
+
+/* Appui sur un élément tactile qui n'est pas un Bouton de 02. */
+.anim-appui { transition: transform 120ms ease-out; }
+.anim-appui:active { transform: scale(0.97); }
+
+/* Toile des particules : créée à la demande, retirée quand l'effet est fini. */
+.anim-particules { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 40; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-ecran, .anim-cascade > *, .anim-zoom, .anim-pulse, .anim-tremble, .anim-lueur-record { animation: none !important; }
+  .anim-appui, .anim-appui:active { transition: none; transform: none; }
+}
