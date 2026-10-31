@@ -89,7 +89,7 @@ export const MODELES_DEPART: ModeleDepart[] = [
   { nom: 'Pull', seance: 'Pull' },
   { nom: 'Jambes · épaules · abdos', seance: 'Jambes' },
   {
-    // Tout le corps en une séance (~60 min) : un polyarticulaire par grand mouvement, puis un peu d'isolation.
+    // Tout le corps en une séance (~70 min, 24 séries) : un polyarticulaire par grand mouvement, puis un peu d'isolation.
     nom: 'Full body',
     blocs: [
       { cle: 'leg-press', series: 3, reps: '8-10' },
