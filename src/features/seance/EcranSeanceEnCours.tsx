@@ -11,6 +11,7 @@ import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/typ
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
+import { ChoixRepos } from './ChoixRepos';
 import {
   REPOS_DEFAUT_SEC,
   demarrerSeance,
@@ -140,6 +141,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const [rirVisible, setRirVisible] = useState(false);
   const [saisie, setSaisie] = useState<Saisie>();
   const [toast, setToast] = useState<string>();
+  const [reglerRepos, setReglerRepos] = useState(false);
   const [occupe, setOccupe] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -222,6 +224,22 @@ function SeanceActive({ seance }: { seance: Seance }) {
     }
   };
 
+  // Repos réglé à la main : vaut pour ce bloc jusqu'à la fin de la séance, et pour le repos en cours.
+  const reposBloc = plan.blocs[grp[0]]?.reposSec ?? REPOS_DEFAUT_SEC;
+  const changerRepos = (sec: number) => {
+    const blocs = plan.blocs.map((b, i) => (i === grp[0] ? { ...b, reposSec: sec } : b));
+    const enCours = plan.reposFin && plan.reposFin > Date.now();
+    const debutRepos = enCours ? plan.reposFin! - (plan.reposDuree ?? REPOS_DEFAUT_SEC) * 1000 : 0;
+    setPlan({ ...plan, blocs, ...(enCours ? { reposFin: debutRepos + sec * 1000, reposDuree: sec } : {}) });
+  };
+  const garderRepos = async () => {
+    if (!modele) return;
+    const b = plan.blocs[grp[0]];
+    const blocs = modele.blocs.map((x) => (x.id === b.id ? { ...x, reposSec: b.reposSec } : x));
+    await db.modeles.update(modele.id, { blocs, modifieLe: maintenant() });
+    setReglerRepos(false);
+  };
+
   const supprimer = async () => {
     if (!edition || !confirm('Supprimer cette série ?')) return;
     await db.series.delete(edition.id);
@@ -301,9 +319,14 @@ function SeanceActive({ seance }: { seance: Seance }) {
             {cible && (
               <div class="sc-attenue">
                 Cible du jour : <b class="sc-num">{cible}</b>
-                {bloc.reposSec ? ` · repos ${dureeTexte(bloc.reposSec)}` : ''}
               </div>
             )}
+            <div class="sc-attenue">
+              Repos :{' '}
+              <button type="button" class="sc-lien sc-lien-inline" onClick={() => setReglerRepos(!reglerRepos)} aria-label="Régler la durée du repos">
+                {dureeTexte(reposBloc)} ✎
+              </button>
+            </div>
             {notes.map((n) => (
               <p key={n} class="sc-note">{n}</p>
             ))}
@@ -339,7 +362,11 @@ function SeanceActive({ seance }: { seance: Seance }) {
               duree={plan.reposDuree ?? REPOS_DEFAUT_SEC}
               onAjouter={(s) => setPlan({ ...plan, reposFin: plan.reposFin! + s * 1000, reposDuree: (plan.reposDuree ?? REPOS_DEFAUT_SEC) + s })}
               onPasser={() => setPlan({ ...plan, reposFin: undefined })}
+              onRegler={() => setReglerRepos(!reglerRepos)}
             />
+          )}
+          {reglerRepos && (
+            <ChoixRepos valeur={reposBloc} onChange={changerRepos} onGarder={modele ? garderRepos : undefined} onFermer={() => setReglerRepos(false)} />
           )}
 
           {saisie && (

@@ -6,10 +6,12 @@ interface Props {
   duree: number;
   onAjouter: (sec: number) => void;
   onPasser: () => void;
+  /** Toucher la durée = la régler à la main. */
+  onRegler: () => void;
 }
 
 /** Minuteur de repos. Basé sur l'heure de fin : il reste juste après une fermeture de l'app. */
-export function Repos({ fin, duree, onAjouter, onPasser }: Props) {
+export function Repos({ fin, duree, onAjouter, onPasser, onRegler }: Props) {
   const [now, setNow] = useState(Date.now());
   const vibre = useRef(false);
   useEffect(() => {
@@ -57,7 +59,10 @@ export function Repos({ fin, duree, onAjouter, onPasser }: Props) {
           'Repos terminé'
         ) : (
           <>
-            Repos <b key={Math.ceil(reste)} class="sc-num anim-pulse">{dureeTexte(reste)}</b> / {dureeTexte(duree)}
+            Repos <b key={Math.ceil(reste)} class="sc-num anim-pulse">{dureeTexte(reste)}</b> /{' '}
+            <button type="button" class="sc-lien sc-lien-inline" onClick={onRegler} aria-label="Régler la durée du repos">
+              {dureeTexte(duree)} ✎
+            </button>
           </>
         )}
       </span>

@@ -1,13 +1,13 @@
 // Modèles de séance : liste et éditeur (propriétaire : 04-seance).
 import { useState } from 'preact/hooks';
-import { Bouton, Carte, ElementListe, Liste } from '../../ui';
+import { Bouton, Carte, ElementListe, Liste, Onglets } from '../../ui';
 import { db } from '../../core/db';
 import { lien, naviguer } from '../../core/router';
 import { useRequete } from '../../core/requetes';
 import { nouvelId } from '../../core/ids';
 import type { BlocModele, Modele } from '../../core/types';
 import { ChoixExercice } from '../seance/ChoixExercice';
-import { demarrerSeance, dureeTexte, groupes } from '../seance/logique';
+import { OBJECTIFS, demarrerSeance, dureeTexte, groupes, objectifDepuisRepos, type Objectif } from '../seance/logique';
 import { enregistrerModele, nouveauModele } from './modeles';
 import '../seance/seance.css';
 
@@ -44,6 +44,11 @@ export function EcranModeles() {
 function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void }) {
   const [m, setM] = useState<Modele>(initial);
   const [choix, setChoix] = useState(false);
+  // Objectif : propose repos et reps par défaut ; chaque exercice reste modifiable à la main.
+  const [objectif, setObjectif] = useState<Objectif>(() => {
+    const r = initial.blocs.map((b) => b.reposSec).filter((x): x is number => x != null).sort((a, b) => a - b);
+    return objectifDepuisRepos(r[Math.floor(r.length / 2)]);
+  });
   const exercices = useRequete(async () => new Map((await db.exercices.toArray()).map((e) => [e.id, e])));
   if (!exercices) return null;
   if (choix)
@@ -51,7 +56,7 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
       <ChoixExercice
         onAnnuler={() => setChoix(false)}
         onChoix={(e) => {
-          setM({ ...m, blocs: [...m.blocs, { id: nouvelId(), exerciceId: e.id, seriesCibles: 3, repsCibles: '8-12', reposSec: 90 }] });
+          setM({ ...m, blocs: [...m.blocs, { id: nouvelId(), exerciceId: e.id, seriesCibles: 3, repsCibles: OBJECTIFS[objectif].reps, reposSec: OBJECTIFS[objectif].reposSec }] });
           setChoix(false);
         }}
       />
@@ -111,6 +116,22 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
         </Bouton>
       </div>
       <input class="sc-champ sc-champ-titre" placeholder="Nom (Push, Pull, Jambes…)" value={m.nom} onInput={(e) => setM({ ...m, nom: (e.target as HTMLInputElement).value })} aria-label="Nom du modèle" />
+      <Carte titre="Objectif">
+        <Onglets
+          label="Objectif de la séance"
+          options={(Object.keys(OBJECTIFS) as Objectif[]).map((o) => ({ valeur: o, libelle: OBJECTIFS[o].libelle }))}
+          valeur={objectif}
+          onChange={setObjectif}
+        />
+        <p class="sc-attenue">
+          Repos conseillé : {OBJECTIFS[objectif].plage} (proposé : {dureeTexte(OBJECTIFS[objectif].reposSec)}), {OBJECTIFS[objectif].reps} reps. Utilisé pour les exercices ajoutés.
+        </p>
+        {m.blocs.length > 0 && (
+          <Bouton variante="contour" onClick={() => setM({ ...m, blocs: m.blocs.map((b) => ({ ...b, reposSec: OBJECTIFS[objectif].reposSec })) })}>
+            Repos {dureeTexte(OBJECTIFS[objectif].reposSec)} pour tous les exercices
+          </Bouton>
+        )}
+      </Carte>
       {m.blocs.map((b, i) => {
         const enSuperset = !!b.supersetId && (m.blocs[i - 1]?.supersetId === b.supersetId || m.blocs[i + 1]?.supersetId === b.supersetId);
         return (
