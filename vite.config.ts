@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { cspPlugin } from './securite/csp';
 
 
 export default defineConfig({
@@ -8,6 +9,7 @@ export default defineConfig({
   base: './',
   plugins: [
     preact(),
+    cspPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png', 'icons/icon.svg'],
