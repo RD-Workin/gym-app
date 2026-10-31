@@ -1,0 +1,50 @@
+/* Styles propres à la progression (05). Les composants partagés restent dans src/ui (02). */
+.prog-titre { text-transform: uppercase; font-weight: 800; }
+.prog-retour { display: inline-flex; align-items: center; gap: 4px; min-height: var(--cible); background: none; border: 0; padding: 0; color: var(--c-action); font: inherit; font-weight: 600; cursor: pointer; justify-self: start; }
+.prog-retour svg { width: 20px; height: 20px; }
+.prog-grand { display: flex; align-items: baseline; gap: 6px; }
+.prog-grand .ui-chiffre { font-size: var(--t-3xl); font-weight: 800; line-height: 1; }
+.prog-val { font-size: var(--t-lg); font-weight: 700; }
+.prog-or { color: var(--c-record); }
+.prog-vert { color: var(--c-progres); }
+.prog-note { font-size: var(--t-xs); margin: 0; }
+.prog-vide { margin: var(--e-4) 0; text-align: center; }
+.prog-chevron { width: 18px; height: 18px; display: inline-flex; }
+
+.prog-courbe { margin: 0; }
+.prog-courbe svg { display: block; width: 100%; height: auto; touch-action: pan-y; user-select: none; }
+.prog-grille { stroke: var(--c-trait); stroke-width: 1; stroke-dasharray: 3 4; }
+.prog-axe { fill: var(--c-attenue); font-size: 11px; font-family: var(--f-texte); font-variant-numeric: tabular-nums; }
+.prog-curseur { stroke: var(--c-attenue); stroke-width: 1; opacity: 0.5; }
+.prog-bulle { font-size: var(--t-sm); margin-top: var(--e-1); }
+.prog-bulle .ui-chiffre { font-size: var(--t-md); font-weight: 700; }
+
+.prog-puces { display: flex; gap: var(--e-2); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.prog-puce { flex: none; min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--c-trait); background: none; color: var(--c-attenue); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.prog-puce::first-letter { text-transform: uppercase; }
+.prog-puce[aria-pressed='true'] { background: var(--c-surface-2); color: var(--c-texte); border-color: var(--c-surface-2); }
+
+.prog-tuiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e-2); }
+.prog-tuiles .ui-carte { gap: 2px; padding: 12px; }
+.prog-tuiles .ui-attenue { font-size: var(--t-xs); }
+.prog-tuile { font-size: 30px; font-weight: 800; line-height: 1.1; }
+
+.prog-details summary { cursor: pointer; color: var(--c-attenue); font-size: var(--t-sm); font-weight: 600; min-height: var(--cible); display: flex; align-items: center; }
+.prog-details[open] summary { margin-bottom: var(--e-2); }
+
+.prog-barres { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; height: 120px; align-items: end; }
+.prog-barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; }
+.prog-barre-val { font-size: 11px; color: var(--c-attenue); min-height: 14px; }
+.prog-barre-fill { align-self: end; min-height: 3px; border-radius: 4px 4px 0 0; background: var(--c-action); }
+.prog-barre-lib { font-size: 10px; color: var(--c-attenue); min-height: 14px; white-space: nowrap; }
+
+.prog-groupes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-3); }
+.prog-groupes li { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'nom val' 'jauge vol'; gap: 4px var(--e-3); align-items: center; }
+.prog-groupe-nom { grid-area: nom; font-weight: 600; text-transform: capitalize; }
+.prog-groupe-val { grid-area: val; text-align: right; }
+.prog-groupe-vol { grid-area: vol; font-size: var(--t-xs); text-align: right; }
+.prog-jauge { grid-area: jauge; height: 8px; border-radius: 4px; background: var(--c-surface-2); overflow: hidden; }
+.prog-jauge span { display: block; height: 100%; border-radius: 4px; background: var(--c-progres); }
+
+.prog-hist-fin { display: grid; text-align: right; font-size: var(--t-sm); }
+.prog-hist-fin .ui-chiffre { font-size: var(--t-md); font-weight: 700; }
