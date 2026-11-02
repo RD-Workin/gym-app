@@ -130,6 +130,7 @@ function exercice(o: Obj, ou: string): Exercice {
     reglagesMachine: texte(o, 'reglagesMachine', ou),
     note: texte(o, 'note', ou),
     photo: photo(o, ou),
+    favori: booleen(o, 'favori', ou) || undefined,
     archive: booleen(o, 'archive', ou),
     ...horodatage(o, ou),
   });

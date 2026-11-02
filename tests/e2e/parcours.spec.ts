@@ -62,3 +62,17 @@ test('fiche exercice → saisie rapide → séance libre du jour', async ({ page
   await expect(page.getByText(/1 exercices · \d+ séries/)).toBeVisible();
   await expect(page.getByText('2,5/0 kg · 10-8-9')).toBeVisible();
 });
+
+test('favori : épinglé en haut de la bibliothèque et filtrable', async ({ page }) => {
+  await page.goto('./#/exercices');
+  const lignes = page.locator('.ui-liste > li');
+  await expect(lignes.first()).toBeVisible();
+  const dernier = lignes.last();
+  const nom = (await dernier.locator('.ui-element-titre').textContent())!;
+  await dernier.getByRole('button', { name: /^Favori/ }).click();
+  await expect(lignes.first().locator('.ui-element-titre')).toHaveText(nom);
+  await expect(lignes.first().getByRole('button', { name: /^Favori/ })).toHaveAttribute('aria-pressed', 'true');
+  await page.screenshot({ path: 'test-results/favoris.png' });
+  await page.getByRole('button', { name: /Favoris \(1\)/ }).click();
+  await expect(lignes).toHaveCount(1);
+});

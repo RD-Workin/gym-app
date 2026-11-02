@@ -142,6 +142,8 @@ button.ui-element:active { background: var(--c-surface-2); }
 .ui-element-titre { display: block; font-weight: 600; }
 .ui-element-detail { display: block; font-size: 13px; color: var(--c-attenue); }
 .ui-element-fin { flex: none; display: flex; align-items: center; gap: var(--e-2); }
+.ui-li-action { display: flex; align-items: center; }
+.ui-li-action > .ui-element { flex: 1; min-width: 0; }
 .ui-element-chevron { display: inline-flex; width: 18px; height: 18px; color: var(--c-attenue); }
 .ui-medaille {
   width: 34px;
