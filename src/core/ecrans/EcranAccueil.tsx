@@ -11,6 +11,9 @@ export function EcranAccueil() {
       <p>
         <a href={lien('/seance')}>Commencer une séance</a>
       </p>
+      <p>
+        <a href={lien('/exercices')}>Noter un exercice (sans séance)</a>
+      </p>
     </section>
   );
 }

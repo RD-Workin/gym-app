@@ -9,7 +9,7 @@ import { EQUIPEMENTS, GROUPES, libelleGroupe } from '../../data/groupes';
 import { Bouton, ElementListe, Liste, Onglets, PanneauConseils, Puce } from '../../ui';
 import { CONSEILS_GROUPES } from '../../data/conseils';
 import { CorpsMuscles } from './CorpsMuscles';
-import { idCatalogue, liensCatalogue, normaliser, tousLesExercices } from './exercices';
+import { idCatalogue, liensCatalogue, normaliser, proposerNom, tousLesExercices } from './exercices';
 import { Vignette } from './Vignette';
 import './exercices.css';
 
@@ -124,6 +124,12 @@ export function EcranExercices() {
         <button type="button" class="ex-filtre" style={{ justifySelf: 'start' }} aria-pressed={masques} onClick={() => setMasques(!masques)}>
           {masques ? 'Voir les exercices actifs' : `Voir les masqués (${nbMasques})`}
         </button>
+      )}
+
+      {source === 'perso' && q && !(exercices ?? []).some((e) => normaliser(e.nom) === q) && (
+        <Bouton variante="secondaire" icone="plus" href={lien('/exercices/nouveau')} onClick={() => proposerNom(texte)}>
+          Créer « {texte.trim()} »
+        </Bouton>
       )}
 
       <p class="ui-attenue" style={{ margin: 0, fontSize: 'var(--t-sm)' }}>

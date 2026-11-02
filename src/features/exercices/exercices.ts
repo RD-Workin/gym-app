@@ -10,6 +10,17 @@ export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharg
 export const normaliser = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
+/** Nom tapé dans la recherche, repris par « Créer » (fiche nouvel exercice). */
+let nomPropose = '';
+export const proposerNom = (nom: string) => {
+  nomPropose = nom.trim();
+};
+export const prendreNomPropose = () => {
+  const n = nomPropose;
+  nomPropose = '';
+  return n;
+};
+
 export const tousLesExercices = () => db.exercices.orderBy('nom').toArray();
 
 export const exerciceEtVariantes = async (id: string) => ({

@@ -32,3 +32,16 @@ test('fonctionne hors ligne après le premier chargement', async ({ page, contex
   await page.reload();
   await expect(page.getByRole('main')).toBeVisible();
 });
+
+// Saisie rapide : noter un set depuis la fiche d'un exercice, sans lancer de séance.
+test('fiche exercice → saisie rapide → séance libre du jour', async ({ page }) => {
+  await page.goto('./#/exercices');
+  await page.locator('.ui-liste a').first().click();
+  const ajouter = page.getByRole('button', { name: /^Ajouter \d+ × \d+/ });
+  await expect(ajouter).toBeVisible();
+  await ajouter.click();
+  await expect(page.getByText('la séance libre du jour')).toBeVisible();
+  await page.getByText('la séance libre du jour').click();
+  await expect(page.getByRole('heading', { name: 'Séance libre' })).toBeVisible();
+  await expect(page.getByText(/1 exercices · \d+ séries/)).toBeVisible();
+});
