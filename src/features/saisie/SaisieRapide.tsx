@@ -173,8 +173,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
               </button>
             )}
           </div>
-          <Stepper id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
-          {!sansCharge && <Stepper id="sr-charge" valeur={ligne.chargeKg ?? 0} onChange={(v) => majLigne({ chargeKg: v })} unite={unite} pas={pas} min={0} max={999} decimales={2} />}
+          {/* key par série : le champ repart de la valeur de la série touchée, sans délai de synchro. */}
+          <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
+          {!sansCharge && <Stepper key={`charge-${i}`} id="sr-charge" valeur={ligne.chargeKg ?? 0} onChange={(v) => majLigne({ chargeKg: v })} unite={unite} pas={pas} min={0} max={999} decimales={2} />}
         </div>
 
         {suggestion && (

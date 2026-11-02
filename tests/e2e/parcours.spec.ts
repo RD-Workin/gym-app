@@ -46,9 +46,11 @@ test('fiche exercice → saisie rapide → séance libre du jour', async ({ page
   await expect(page.locator('.sr-ligne')).toHaveCount(4); // 3 séries + « + Série »
   await saisir('#sr-charge', '2,5');
   await ligne(1).click();
+  await expect(ligne(1)).toHaveAttribute('aria-pressed', 'true');
   await saisir('#sr-reps', '8');
   await saisir('#sr-charge', '2,5');
   await ligne(2).click();
+  await expect(ligne(2)).toHaveAttribute('aria-pressed', 'true');
   await saisir('#sr-reps', '9');
   const enregistrer = page.getByRole('button', { name: /^Enregistrer \d+ séries?/ });
   await enregistrer.click();
