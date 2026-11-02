@@ -133,14 +133,22 @@ export const repsDepuisCible = (cible?: string) => {
 };
 
 /**
- * Valeurs préremplies pour la prochaine série : la série d'avant dans cette séance,
- * sinon la série de même rang la dernière fois, sinon la cible du modèle.
+ * Valeurs préremplies pour la prochaine série : la série de même rang la dernière fois
+ * (ex. S2 = 8 × 70 si c'était S2 la semaine d'avant). Si la charge a été changée aujourd'hui
+ * sur la série précédente, on garde la charge du jour avec les reps de la dernière fois.
+ * Sans dernière fois : la série d'avant dans cette séance, sinon la cible du modèle.
  */
 export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, faites: Serie[], avant: Serie[]): Saisie {
   const modeCharge = exercice?.modeCharge ?? 'total';
   // L'échauffement ne sert pas de référence : la 1re série de travail reprend la charge de travail d'avant.
   const travail = faites.filter((s) => s.type !== 'echauffement');
-  const ref = travail[travail.length - 1] ?? avant[travail.length] ?? avant[avant.length - 1];
+  const n = travail.length;
+  const precJour = travail[n - 1];
+  const memeRang = avant[n];
+  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'modeCharge' | 'reglagesMachine'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
+  if (memeRang && precJour && avant[n - 1] && precJour.chargeKg !== avant[n - 1].chargeKg) {
+    ref = { ...memeRang, chargeKg: precJour.chargeKg, reglagesMachine: precJour.reglagesMachine ?? memeRang.reglagesMachine };
+  }
   return {
     chargeKg: ref?.chargeKg ?? (modeCharge === 'sans_charge' ? undefined : 0),
     reps: ref?.reps ?? repsDepuisCible(bloc.repsCibles) ?? 10,
