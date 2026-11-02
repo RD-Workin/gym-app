@@ -54,7 +54,7 @@ jobs:
       - name: Lighthouse (perf ≥ 90, accessibilité ≥ 95, bonnes pratiques ≥ 90)
         run: npx -y @lhci/cli@0.15.1 autorun
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rapports-e2e
           path: |
