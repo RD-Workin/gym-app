@@ -80,6 +80,20 @@ export async function ajouterDepuisCatalogue(c: EntreeCatalogue): Promise<string
   });
 }
 
+/** Favori : `undefined` plutôt que `false` (le champ disparaît). */
+export const basculerFavori = (id: string, favori: boolean) =>
+  db.exercices.update(id, { favori: favori || undefined, modifieLe: maintenant() });
+
+/** exerciceId → date ISO de la dernière série (tri « Derniers faits »). */
+export async function derniersUsages(): Promise<Map<string, string>> {
+  const m = new Map<string, string>();
+  await db.series.each((s) => {
+    const v = m.get(s.exerciceId);
+    if (!v || s.faiteLe > v) m.set(s.exerciceId, s.faiteLe);
+  });
+  return m;
+}
+
 export const masquerExercice = (id: string, archive: boolean) =>
   db.exercices.update(id, { archive, modifieLe: maintenant() });
 

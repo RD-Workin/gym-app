@@ -20,9 +20,11 @@ interface PropsElement {
   onClick?: () => void;
   /** Fond doré léger (ex. record récent). */
   surligne?: boolean;
+  /** Bouton à côté de la ligne (ex. favori), hors du lien pour rester un contrôle séparé. */
+  action?: ComponentChildren;
 }
 
-export function ElementListe({ titre, detail, debut, fin, href, onClick, surligne }: PropsElement) {
+export function ElementListe({ titre, detail, debut, fin, href, onClick, surligne, action }: PropsElement) {
   const classe = `ui-element${surligne ? ' surligne' : ''}`;
   const corps = (
     <>
@@ -44,7 +46,7 @@ export function ElementListe({ titre, detail, debut, fin, href, onClick, surlign
     </>
   );
   return (
-    <li>
+    <li class={action ? 'ui-li-action' : undefined}>
       {href ? (
         <a class={classe} href={href}>{corps}</a>
       ) : onClick ? (
@@ -52,6 +54,7 @@ export function ElementListe({ titre, detail, debut, fin, href, onClick, surlign
       ) : (
         <div class={classe}>{corps}</div>
       )}
+      {action}
     </li>
   );
 }

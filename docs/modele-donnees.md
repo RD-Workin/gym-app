@@ -23,6 +23,7 @@ Code correspondant : `src/core/types.ts`, `src/core/db.ts`, `src/core/calculs.ts
 | reglagesMachine | string? | dernier réglage connu, ex. « chaise 4 » |
 | photo | Blob? | v2 — photo de référence de la machine, JPEG ~1080 px (compressée par 03). Exclue du CSV ; encodée en base64 (`data:image/jpeg;base64,…`) dans le JSON par 06 |
 | note | string? | |
+| favori | boolean? | en haut des listes ; absent = non favori. Non indexé, sans changement de version |
 | archive | boolean | |
 Index Dexie : `id, nom, equipement, *groupesMusculaires, archive`
 

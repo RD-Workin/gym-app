@@ -1,15 +1,17 @@
-// Exercices : ma bibliothèque et le catalogue libre, recherche texte et par muscle (corps 2D).
+// Exercices : ma bibliothèque et le catalogue libre, recherche texte, filtres (favoris, muscle, matériel) et tri.
 // Propriétaire : 03-exercices.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import { lien } from '../../core/router';
-import type { Exercice } from '../../core/types';
+import type { Equipement, Exercice } from '../../core/types';
 import { chargerCatalogue, NIVEAUX, type EntreeCatalogue } from '../../data/catalogue';
 import { EQUIPEMENTS, GROUPES, libelleGroupe } from '../../data/groupes';
 import { Bouton, ElementListe, Liste, Onglets, PanneauConseils, Puce } from '../../ui';
 import { CONSEILS_GROUPES } from '../../data/conseils';
 import { CorpsMuscles } from './CorpsMuscles';
-import { idCatalogue, liensCatalogue, normaliser, proposerNom, tousLesExercices } from './exercices';
+import { BoutonFavori } from './BoutonFavori';
+import { derniersUsages, idCatalogue, liensCatalogue, normaliser, proposerNom, tousLesExercices } from './exercices';
+import { passeFiltres, trierExercices, TRIS, type Tri } from './tri';
 import { Vignette } from './Vignette';
 import './exercices.css';
 
@@ -17,7 +19,16 @@ type Source = 'perso' | 'catalogue';
 const PAGE = 40;
 
 // Gardé entre deux visites de l'écran (retour depuis une fiche).
-const memo = { source: 'perso' as Source, texte: '', muscles: [] as string[], corps: true, masques: false };
+const memo = {
+  source: 'perso' as Source,
+  texte: '',
+  muscles: [] as string[],
+  corps: true,
+  masques: false,
+  favoris: false,
+  equipement: '' as Equipement | '',
+  tri: 'nom' as Tri,
+};
 
 export function EcranExercices() {
   const exercices = useRequete(tousLesExercices);
@@ -28,11 +39,15 @@ export function EcranExercices() {
   const [muscles, setMuscles] = useState(memo.muscles);
   const [corps, setCorps] = useState(memo.corps);
   const [masques, setMasques] = useState(memo.masques);
+  const [favoris, setFavoris] = useState(memo.favoris);
+  const [equipement, setEquipement] = useState(memo.equipement);
+  const [tri, setTri] = useState(memo.tri);
   const [nbAffiches, setNbAffiches] = useState(PAGE);
-  Object.assign(memo, { source, texte, muscles, corps, masques });
+  Object.assign(memo, { source, texte, muscles, corps, masques, favoris, equipement, tri });
+  const derniers = useRequete(() => (tri === 'recent' ? derniersUsages() : undefined), [tri]);
 
   useEffect(() => void chargerCatalogue().then(setCatalogue), []);
-  useEffect(() => setNbAffiches(PAGE), [source, texte, muscles]);
+  useEffect(() => setNbAffiches(PAGE), [source, texte, muscles, equipement]);
 
   const parNom = useMemo(() => new Map(catalogue?.map((c) => [normaliser(c.nom), c.id])), [catalogue]);
   const dejaAjoutes = useMemo(
@@ -47,23 +62,28 @@ export function EcranExercices() {
 
   const persos = useMemo(
     () =>
-      (exercices ?? []).filter(
-        (e) =>
-          e.archive === masques &&
-          (!muscles.length || e.groupesMusculaires.some((g) => muscles.includes(g))) &&
-          correspondTexte(e.nom, e.groupesMusculaires, e.equipement),
+      trierExercices(
+        (exercices ?? []).filter(
+          (e) => e.archive === masques && passeFiltres(e, { favoris, muscles, equipement }) && correspondTexte(e.nom, e.groupesMusculaires, e.equipement),
+        ),
+        tri,
+        derniers,
       ),
-    [exercices, masques, muscles, q],
+    [exercices, masques, muscles, q, favoris, equipement, tri, derniers],
   );
   const duCatalogue = useMemo(
     () =>
       (catalogue ?? []).filter(
-        (c) => (!muscles.length || c.p.some((g) => muscles.includes(g))) && correspondTexte(c.nom, [...c.p, ...c.s], c.eq),
+        (c) =>
+          (!muscles.length || c.p.some((g) => muscles.includes(g))) &&
+          (!equipement || c.eq === equipement) &&
+          correspondTexte(c.nom, [...c.p, ...c.s], c.eq),
       ),
-    [catalogue, muscles, q],
+    [catalogue, muscles, q, equipement],
   );
 
   const nbMasques = exercices?.filter((e) => e.archive).length ?? 0;
+  const nbFavoris = exercices?.filter((e) => e.favori && !e.archive).length ?? 0;
   const nb = source === 'perso' ? persos.length : duCatalogue.length;
 
   return (
@@ -92,6 +112,31 @@ export function EcranExercices() {
         onInput={(e) => setTexte(e.currentTarget.value)}
         autocomplete="off"
       />
+
+      <div class="ex-outils">
+        {source === 'perso' && (
+          <button type="button" class="ex-filtre" aria-pressed={favoris} onClick={() => setFavoris(!favoris)}>
+            ★ Favoris{nbFavoris ? ` (${nbFavoris})` : ''}
+          </button>
+        )}
+        <select class="ex-select" aria-label="Filtrer par matériel" value={equipement} onChange={(e) => setEquipement(e.currentTarget.value as Equipement | '')}>
+          <option value="">Tout matériel</option>
+          {Object.entries(EQUIPEMENTS).map(([k, l]) => (
+            <option key={k} value={k}>
+              {l}
+            </option>
+          ))}
+        </select>
+        {source === 'perso' && (
+          <select class="ex-select" aria-label="Trier" value={tri} onChange={(e) => setTri(e.currentTarget.value as Tri)}>
+            {Object.entries(TRIS).map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       <div class="ui-ligne-entre">
         <span class="ui-surtitre">{muscles.length ? muscles.map(libelleGroupe).join(' · ') : 'Touche un muscle'}</span>
@@ -139,7 +184,7 @@ export function EcranExercices() {
       {source === 'perso' ? (
         exercices === undefined ? null : persos.length === 0 ? (
           <p class="ui-attenue">
-            Aucun exercice ici.{' '}
+            {favoris && !nbFavoris ? 'Aucun favori : touche l’étoile d’un exercice pour l’épingler en haut. ' : 'Aucun exercice ici. '}
             <button type="button" class="ex-filtre" onClick={() => setSource('catalogue')}>
               Chercher dans le catalogue
             </button>
@@ -189,6 +234,7 @@ function LignePerso({ e, catalogueId }: { e: Exercice; catalogueId?: string }) {
       titre={e.nom}
       detail={[EQUIPEMENTS[e.equipement], e.groupesMusculaires.map(libelleGroupe).join(', ')].filter(Boolean).join(' · ')}
       fin={e.reglagesMachine ? <Puce>{e.reglagesMachine}</Puce> : undefined}
+      action={<BoutonFavori e={e} />}
     />
   );
 }

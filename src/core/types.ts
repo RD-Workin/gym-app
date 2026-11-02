@@ -22,6 +22,8 @@ export interface Exercice extends Horodatage {
   /** Photo de référence (JPEG ~1080 px, v2). Hors CSV ; base64 dans l'export JSON. */
   photo?: Blob;
   note?: string;
+  /** Favori : en haut des listes (champ optionnel, non indexé). */
+  favori?: boolean;
   archive: boolean;
 }
 

@@ -23,6 +23,7 @@ import {
 import { enregistrerPhoto, retirerPhoto } from './photo';
 import { EcranCatalogue } from './EcranCatalogue';
 import { CorpsMuscles } from './CorpsMuscles';
+import { BoutonFavori } from './BoutonFavori';
 import { urlImage } from '../../data/catalogue';
 import { FicheProgression } from '../progression/FicheProgression';
 import { useDonneesProgression } from '../progression/donnees';
@@ -95,7 +96,10 @@ function FicheExercice({ id }: { id: string }) {
   return (
     <section class="ui-pile">
       <a class="ex-retour" href={lien('/exercices')}>‹ Exercices</a>
-      <h1>{nouveau ? 'Nouvel exercice' : b.nom || ex!.nom}</h1>
+      <div class="ex-titre-fiche">
+        <h1>{nouveau ? 'Nouvel exercice' : b.nom || ex!.nom}</h1>
+        {!nouveau && <BoutonFavori e={ex!} />}
+      </div>
       {ex?.archive && (
         <Carte ton="alerte" titre="Masqué">
           <p style={{ margin: 0 }}>Absent des listes. L'historique reste visible.</p>
