@@ -10,12 +10,16 @@ import { CLE_PLAN, type PlanSeance } from '../seance/logique';
 /** Id de la dernière séance créée par la saisie rapide (pour regrouper les saisies d'une même journée). */
 export const CLE_SEANCE_RAPIDE = 'saisie.seanceDuJour';
 
+/** Une série : reps et charge propres (ex. 10 × 28, 8 × 28, 9 × 26). */
+export interface LigneSet {
+  reps: number;
+  chargeKg?: number;
+}
+
 export interface SetRapide {
   exerciceId: Id;
   varianteId?: Id;
-  series: number;
-  reps: number;
-  chargeKg?: number;
+  series: LigneSet[];
   modeCharge: ModeCharge;
 }
 
@@ -29,7 +33,8 @@ export interface ResultatRapide {
 
 export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide> {
   const t = maintenant();
-  const n = Math.max(1, Math.min(20, Math.round(s.series)));
+  const lignes = s.series.filter((l) => l.reps >= 1).slice(0, 30);
+  if (!lignes.length) throw new Error('Aucune série à enregistrer');
   let creee: Seance | undefined;
   const res = await db.transaction('rw', db.seances, db.series, db.reglages, async () => {
     const enCours = await db.seances.filter((x) => !x.fin).first();
@@ -58,15 +63,15 @@ export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide
     }
     const existantes = await db.series.where('seanceId').equals(seance.id).toArray();
     let ordre = existantes.reduce((m, x) => Math.max(m, x.ordre), 0);
-    const series: Serie[] = Array.from({ length: n }, () => ({
+    const series: Serie[] = lignes.map((l) => ({
       id: nouvelId(),
       seanceId: seance!.id,
       exerciceId: s.exerciceId,
       varianteId: s.varianteId,
       ordre: ++ordre,
-      chargeKg: s.modeCharge === 'sans_charge' ? undefined : s.chargeKg,
+      chargeKg: s.modeCharge === 'sans_charge' ? undefined : l.chargeKg,
       modeCharge: s.modeCharge,
-      reps: s.reps,
+      reps: l.reps,
       type: 'travail',
       faiteLe: t,
       creeLe: t,

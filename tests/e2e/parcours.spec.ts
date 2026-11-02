@@ -37,11 +37,28 @@ test('fonctionne hors ligne après le premier chargement', async ({ page, contex
 test('fiche exercice → saisie rapide → séance libre du jour', async ({ page }) => {
   await page.goto('./#/exercices');
   await page.locator('.ui-liste a').first().click();
-  const ajouter = page.getByRole('button', { name: /^Ajouter \d+ × \d+/ });
-  await expect(ajouter).toBeVisible();
-  await ajouter.click();
+  // Sans historique : 3 séries proposées. On les rend différentes : 10 × 2,5 / 8 × 2,5 / 9 × 0.
+  const ligne = (n: number) => page.locator('.sr-ligne').nth(n);
+  const saisir = async (champ: string, v: string) => {
+    await page.locator(champ).fill(v);
+    await page.locator(champ).blur();
+  };
+  await expect(page.locator('.sr-ligne')).toHaveCount(4); // 3 séries + « + Série »
+  await saisir('#sr-charge', '2,5');
+  await ligne(1).click();
+  await expect(ligne(1)).toHaveAttribute('aria-pressed', 'true');
+  await saisir('#sr-reps', '8');
+  await saisir('#sr-charge', '2,5');
+  await ligne(2).click();
+  await expect(ligne(2)).toHaveAttribute('aria-pressed', 'true');
+  await saisir('#sr-reps', '9');
+  const enregistrer = page.getByRole('button', { name: /^Enregistrer \d+ séries?/ });
+  await enregistrer.click();
   await expect(page.getByText('la séance libre du jour')).toBeVisible();
+  await expect(page.locator('.sr-confirmation')).toContainText('2,5 kg · 10-8');
+  await expect(page.locator('.sr-confirmation')).toContainText('0 kg · 9');
   await page.getByText('la séance libre du jour').click();
   await expect(page.getByRole('heading', { name: 'Séance libre' })).toBeVisible();
   await expect(page.getByText(/1 exercices · \d+ séries/)).toBeVisible();
+  await expect(page.getByText('2,5/0 kg · 10-8-9')).toBeVisible();
 });

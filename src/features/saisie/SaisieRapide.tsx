@@ -9,9 +9,9 @@ import type { Exercice, Id, Variante } from '../../core/types';
 import { libelleGroupe } from '../../data/groupes';
 import { kg, pointsExercice } from '../progression/calculs';
 import { recordsDeLaSerie, type DonneesProgression } from '../progression/donnees';
-import { derniereFois, formatCharge } from '../seance/logique';
-import { annulerSetRapide, enregistrerSetRapide, type ResultatRapide } from './saisieRapide';
-import { depuisDerniereFois, maxProjete, suggererCharge, unRmRecent } from './suggestion';
+import { derniereFois } from '../seance/logique';
+import { annulerSetRapide, enregistrerSetRapide, type LigneSet, type ResultatRapide } from './saisieRapide';
+import { depuisDerniereFois, maxProjete, resumeLignes, suggererCharge, unRmRecent } from './suggestion';
 import './saisie.css';
 
 const pasCharge = (e: Exercice) => (e.equipement === 'barre' || e.equipement === 'machine' || e.equipement === 'poulie' ? 2.5 : e.modeCharge === 'par_main' ? 1 : 1.25);
@@ -42,34 +42,45 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     return res;
   }, [d, exercice]);
 
-  const [series, setSeries] = useState(3);
-  const [reps, setReps] = useState(10);
-  const [charge, setCharge] = useState(0);
+  const [lignes, setLignes] = useState<LigneSet[]>([{ reps: 10, chargeKg: 0 }]);
+  const [sel, setSel] = useState(0);
   const [initialise, setInitialise] = useState('');
   const [toast, setToast] = useState<string>();
   const [dernier, setDernier] = useState<ResultatRapide & { texte: string }>();
   const [occupe, setOccupe] = useState(false);
 
+  const i = Math.min(sel, lignes.length - 1);
+  const ligne = lignes[i];
+  const majLigne = (p: Partial<LigneSet>) => setLignes((l) => l.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  const ajouterLigne = () => {
+    setLignes((l) => [...l, { ...l[l.length - 1] }]);
+    setSel(lignes.length);
+  };
+  const retirerLigne = () => {
+    if (lignes.length < 2) return;
+    setLignes((l) => l.filter((_, j) => j !== i));
+    setSel(Math.max(0, i - 1));
+  };
+
   const suggestion = suggererCharge({
     points,
-    reps,
+    reps: ligne.reps,
     mode: modeCharge,
     pas,
     poidsCorporelKg: poidsActuel,
     autres,
     nomMuscle: exercice.groupesMusculaires[0] ? libelleGroupe(exercice.groupesMusculaires[0]) : undefined,
+    unite: modeCharge === 'par_main' ? 'kg/main' : modeCharge === 'lest' ? 'kg lest' : 'kg',
   });
 
-  // Préremplissage : la dernière fois, sinon la suggestion.
+  // Préremplissage : les séries de la dernière fois (chacune avec ses reps et sa charge), sinon la suggestion.
   useEffect(() => {
     const cle = `${exercice.id}|${varianteId}`;
     if (avant === undefined || initialise === cle) return;
     const p = depuisDerniereFois(avantVariante);
-    if (p) {
-      setSeries(p.series);
-      setReps(p.reps);
-      setCharge(p.chargeKg ?? 0);
-    } else if (suggestion) setCharge(suggestion.chargeKg);
+    if (p) setLignes(p.map((l) => ({ reps: l.reps, chargeKg: l.chargeKg ?? 0 })));
+    else setLignes([0, 1, 2].map(() => ({ reps: 10, chargeKg: suggestion?.chargeKg ?? 0 })));
+    setSel(0);
     setInitialise(cle);
   }, [avant, exercice.id, varianteId, suggestion?.chargeKg]);
 
@@ -77,15 +88,16 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const projete = maxProjete(points);
   const sansCharge = modeCharge === 'sans_charge';
   const unite = modeCharge === 'par_main' ? 'kg/main' : modeCharge === 'lest' ? 'kg lest' : 'kg';
+  const fmtKg = (v?: number) => (v ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 
-  const ajouter = async (e: Event) => {
-    if (occupe || reps < 1) return;
+  const enregistrer = async (e: Event) => {
+    if (occupe) return;
     const bouton = e.currentTarget as Element;
     setOccupe(true);
     try {
-      const r = await enregistrerSetRapide({ exerciceId: exercice.id, varianteId: varianteId || undefined, series, reps, chargeKg: sansCharge ? undefined : charge, modeCharge });
+      const r = await enregistrerSetRapide({ exerciceId: exercice.id, varianteId: varianteId || undefined, series: lignes, modeCharge });
       eclatSur(bouton);
-      const texte = `${series} × ${reps}${sansCharge ? '' : ` à ${formatCharge({ chargeKg: charge, modeCharge })}`}`;
+      const texte = sansCharge ? lignes.map((l) => l.reps).join('-') + ' reps' : resumeLignes(lignes, unite);
       setDernier({ ...r, texte });
       for (const s of r.series) {
         const recs = await recordsDeLaSerie(s);
@@ -108,13 +120,13 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
               <div>
                 <span class="ui-surtitre">La dernière fois</span>
                 <span class="ui-chiffre">
-                  {avantVariante.map((s) => s.reps).join('-')} {sansCharge ? '' : `à ${formatCharge(avantVariante[0])}`}
+                  {sansCharge ? `${avantVariante.map((s) => s.reps).join('-')} reps` : resumeLignes(avantVariante, unite)}
                 </span>
               </div>
             )}
             {ref != null && (
               <div>
-                <span class="ui-surtitre">1RM estimé</span>
+                <span class="ui-surtitre">1RM estimé{modeCharge === 'par_main' ? ' (2 mains)' : ''}</span>
                 <span class="ui-chiffre">{kg(ref)}</span>
               </div>
             )}
@@ -137,34 +149,56 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
           </div>
         )}
 
+        <div class="sr-lignes" role="group" aria-label="Séries à enregistrer">
+          {lignes.map((l, j) => (
+            <button key={j} type="button" class="sr-ligne" aria-pressed={j === i} onClick={() => setSel(j)}>
+              <span class="sr-num">S{j + 1}</span>
+              <span class="ui-chiffre">
+                {l.reps}
+                {sansCharge ? ' reps' : ` × ${fmtKg(l.chargeKg)}`}
+              </span>
+            </button>
+          ))}
+          <button type="button" class="sr-ligne sr-plus" onClick={ajouterLigne} aria-label="Ajouter une série">
+            + Série
+          </button>
+        </div>
+
         <div class="sr-champs">
-          <Stepper id="sr-series" valeur={series} onChange={setSeries} unite="séries" min={1} max={20} decimales={0} />
-          <Stepper id="sr-reps" valeur={reps} onChange={setReps} unite="reps" min={1} max={200} decimales={0} />
-          {!sansCharge && <Stepper id="sr-charge" valeur={charge} onChange={setCharge} unite={unite} pas={pas} min={0} max={999} decimales={2} />}
+          <div class="ui-ligne-entre">
+            <span class="ui-surtitre">Série {i + 1}</span>
+            {lignes.length > 1 && (
+              <button type="button" class="prog-puce" onClick={retirerLigne}>
+                Retirer S{i + 1}
+              </button>
+            )}
+          </div>
+          {/* key par série : le champ repart de la valeur de la série touchée, sans délai de synchro. */}
+          <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
+          {!sansCharge && <Stepper key={`charge-${i}`} id="sr-charge" valeur={ligne.chargeKg ?? 0} onChange={(v) => majLigne({ chargeKg: v })} unite={unite} pas={pas} min={0} max={999} decimales={2} />}
         </div>
 
         {suggestion && (
           <div class="sr-suggestion">
             <p class="ui-attenue">{suggestion.texte}</p>
             <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }}>
-              {suggestion.source === 'historique' && suggestion.solide !== charge && (
-                <button type="button" class="prog-puce" onClick={() => setCharge(suggestion.solide)}>
-                  {suggestion.solide.toLocaleString('fr-FR')} kg
+              {suggestion.source === 'historique' && suggestion.solide !== ligne.chargeKg && (
+                <button type="button" class="prog-puce" onClick={() => majLigne({ chargeKg: suggestion.solide })}>
+                  {fmtKg(suggestion.solide)} kg
                 </button>
               )}
-              {suggestion.chargeKg !== charge && (
-                <button type="button" class="prog-puce" onClick={() => setCharge(suggestion.chargeKg)}>
+              {suggestion.chargeKg !== ligne.chargeKg && (
+                <button type="button" class="prog-puce" onClick={() => majLigne({ chargeKg: suggestion.chargeKg })}>
                   {suggestion.source === 'historique' ? 'À tester : ' : 'Essayer '}
-                  {suggestion.chargeKg.toLocaleString('fr-FR')} kg
+                  {fmtKg(suggestion.chargeKg)} kg
                 </button>
               )}
             </div>
           </div>
         )}
 
-        <Bouton taille="geant" icone="valider" onClick={ajouter} disabled={occupe}>
-          Ajouter {series} × {reps}
-          {sansCharge ? '' : ` à ${charge.toLocaleString('fr-FR')} kg`}
+        <Bouton taille="geant" icone="valider" onClick={enregistrer} disabled={occupe}>
+          Enregistrer {lignes.length} série{lignes.length > 1 ? 's' : ''}
         </Bouton>
 
         {dernier && (

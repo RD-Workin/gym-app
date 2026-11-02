@@ -12,7 +12,7 @@ export const NOUVEAUTES: Nouveaute[] = [
     numero: 3,
     date: '2026-11-02',
     points: [
-      'Noter une perf sans lancer de séance : ouvre un exercice, entre séries × reps × kg, c’est ajouté à ta séance libre du jour (et compté dans tes stats).',
+      'Noter une perf sans lancer de séance : ouvre un exercice, note chaque série avec ses reps et sa charge (ex. 10 × 28, 8 × 28, 9 × 26), c’est ajouté à ta séance libre du jour et compté dans tes stats.',
       'La fiche exercice affiche en haut ta dernière fois, ton 1RM estimé, un max projeté et une charge à tester.',
       'Recherche d’exercice : « Créer » reprend le nom tapé.',
     ],
