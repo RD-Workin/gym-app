@@ -2,7 +2,7 @@
 import { db } from '../core/db';
 import { maintenant, nouvelId } from '../core/ids';
 import type { Exercice, Modele, Variante } from '../core/types';
-import { BIBLIOTHEQUE, MODELES_DEPART, reposDepart } from './bibliotheque';
+import { BIBLIOTHEQUE, blocsDepart, MODELES_DEPART, reposDepart } from './bibliotheque';
 
 const CLE = 'bibliothequeAmorcee';
 
@@ -43,7 +43,7 @@ export async function amorcerBibliotheque(): Promise<void> {
       archive: false,
       creeLe: t,
       modifieLe: t,
-      blocs: BIBLIOTHEQUE.filter((x) => x.seance === m.seance).map((x) => ({
+      blocs: blocsDepart(m).map((x) => ({
         id: nouvelId(),
         exerciceId: ids.get(x.cle)!,
         seriesCibles: x.series,
