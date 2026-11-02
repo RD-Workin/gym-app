@@ -93,6 +93,9 @@ function Demarrage() {
           </Bouton>
         </Carte>
       )}
+      <Bouton variante="contour" taille="large" href={lien('/exercices')} detail="Choisis l'exercice et note tes séries, sans lancer de séance">
+        Noter un exercice
+      </Bouton>
       <Bouton variante="contour" href={lien('/modeles')}>
         Gérer les modèles
       </Bouton>

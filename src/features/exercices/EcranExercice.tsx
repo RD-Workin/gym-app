@@ -15,6 +15,7 @@ import {
   liensCatalogue,
   exerciceEtVariantes,
   masquerExercice,
+  prendreNomPropose,
   modifierExercice,
   supprimerVariante,
   type BrouillonExercice,
@@ -24,6 +25,8 @@ import { EcranCatalogue } from './EcranCatalogue';
 import { CorpsMuscles } from './CorpsMuscles';
 import { urlImage } from '../../data/catalogue';
 import { FicheProgression } from '../progression/FicheProgression';
+import { useDonneesProgression } from '../progression/donnees';
+import { SaisieRapide } from '../saisie/SaisieRapide';
 import '../progression/progression.css';
 import './exercices.css';
 
@@ -41,12 +44,13 @@ export function EcranExercice({ id }: { id: string }) {
 function FicheExercice({ id }: { id: string }) {
   const nouveau = id === 'nouveau';
   const donnees = useRequete(() => (nouveau ? null : exerciceEtVariantes(id)), [id]);
-  const [b, setB] = useState<BrouillonExercice>(VIDE);
+  const [b, setB] = useState<BrouillonExercice>(() => (nouveau ? { ...VIDE, nom: prendreNomPropose() } : VIDE));
   const [modifie, setModifie] = useState(false);
   const [variante, setVariante] = useState('');
   const [message, setMessage] = useState('');
 
   const ex = donnees?.exercice;
+  const prog = useDonneesProgression();
   const liens = useRequete(liensCatalogue);
   const catId = ex && liens ? idCatalogue(ex, liens) : undefined;
   const urlPhoto = useMemo(() => (ex?.photo ? URL.createObjectURL(ex.photo) : undefined), [ex?.photo]);
@@ -98,6 +102,9 @@ function FicheExercice({ id }: { id: string }) {
         </Carte>
       )}
 
+      {!nouveau && prog && <SaisieRapide exercice={ex!} variantes={donnees!.variantes} d={prog} />}
+      {!nouveau && prog && <FicheProgression exerciceId={id} donnees={prog} />}
+
       {catId && (
         <a class="ex-images" href={lien(`/exercices/cat:${catId}`)} aria-label="Images et explications">
           <img src={urlImage(catId, 0)} alt="" loading="lazy" />
@@ -108,7 +115,6 @@ function FicheExercice({ id }: { id: string }) {
         <CorpsMuscles actifs={b.groupesMusculaires} onBasculer={basculerGroupe} />
       </Carte>
       {!nouveau && <Conseils nom={ex!.nom} groupes={b.groupesMusculaires} equipement={b.equipement} />}
-      {!nouveau && <FicheProgression exerciceId={id} />}
       {!nouveau && <h2 style={{ marginTop: 'var(--e-3)' }}>Réglages de l'exercice</h2>}
 
       <form class="ui-pile" onSubmit={enregistrer}>

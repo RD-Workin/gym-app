@@ -9,6 +9,15 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 3,
+    date: '2026-11-02',
+    points: [
+      'Noter une perf sans lancer de séance : ouvre un exercice, entre séries × reps × kg, c’est ajouté à ta séance libre du jour (et compté dans tes stats).',
+      'La fiche exercice affiche en haut ta dernière fois, ton 1RM estimé, un max projeté et une charge à tester.',
+      'Recherche d’exercice : « Créer » reprend le nom tapé.',
+    ],
+  },
+  {
     numero: 2,
     date: '2026-10-31',
     points: ['Nouveau modèle de séance « Full body » : tout le corps en une séance d’environ 1 h 10.'],
