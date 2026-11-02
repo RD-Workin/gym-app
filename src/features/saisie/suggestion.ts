@@ -43,16 +43,26 @@ export function maxProjete(points: PointSeance[], maintenant = new Date()): numb
   return Math.min(ref * 1.1, ref + pente * 4);
 }
 
-export interface Prerempli {
-  series: number;
+export interface LignePrerempli {
   reps: number;
   chargeKg?: number;
 }
 
-/** Dernière séance de l'exercice → « 4 × 8 à 70 kg » (reps et charge de la 1re série de travail). */
-export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg'>[] | undefined): Prerempli | null {
+/** Dernière séance de l'exercice → les mêmes séries, chacune avec ses reps et sa charge. */
+export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg'>[] | undefined): LignePrerempli[] | null {
   if (!derniere?.length) return null;
-  return { series: derniere.length, reps: derniere[0].reps, chargeKg: derniere[0].chargeKg };
+  return derniere.map((s) => ({ reps: s.reps, chargeKg: s.chargeKg }));
+}
+
+/** « 28 kg · 10-8 / 26 kg · 9 » : charges groupées dans l'ordre, reps de chaque série. */
+export function resumeLignes(l: LignePrerempli[], unite = 'kg'): string {
+  const parts: { c?: number; reps: number[] }[] = [];
+  for (const x of l) {
+    const d = parts[parts.length - 1];
+    if (d && d.c === x.chargeKg) d.reps.push(x.reps);
+    else parts.push({ c: x.chargeKg, reps: [x.reps] });
+  }
+  return parts.map((p) => `${p.c == null ? '' : `${fmt(p.c)} ${unite} · `}${p.reps.join('-')}`).join(' / ');
 }
 
 export interface Suggestion {
@@ -78,7 +88,10 @@ export function suggererCharge(o: {
   /** 1RM récents des autres exercices du même muscle principal (charge effective), même équipement en priorité. */
   autres?: { unRm: number; memeEquipement: boolean }[];
   nomMuscle?: string;
+  /** Unité affichée (« kg/main », « kg lest »). */
+  unite?: string;
 }): Suggestion | null {
+  const u = o.unite ?? 'kg';
   if (o.mode === 'sans_charge' || o.reps < 1 || o.reps > 12) return null;
   const ref = unRmRecent(o.points);
   if (ref != null) {
@@ -86,7 +99,7 @@ export function suggererCharge(o: {
     return {
       chargeKg: solide + o.pas,
       solide,
-      texte: `D'après ton 1RM estimé récent (${Math.round(ref)} kg) : ${fmt(solide)} kg pour ${o.reps} reps, ${fmt(solide + o.pas)} kg pour tenter de progresser.`,
+      texte: `D'après ton 1RM estimé récent (${Math.round(ref)} kg) : ${fmt(solide)} ${u} pour ${o.reps} reps, ${fmt(solide + o.pas)} ${u} pour tenter de progresser.`,
       source: 'historique',
     };
   }
@@ -101,7 +114,7 @@ export function suggererCharge(o: {
   return {
     chargeKg: solide,
     solide,
-    texte: `Pas encore d'historique : estimation prudente d'après tes autres exercices${o.nomMuscle ? ` (${o.nomMuscle})` : ''}. Commence à ${fmt(solide)} kg et ajuste.`,
+    texte: `Pas encore d'historique : estimation prudente d'après tes autres exercices${o.nomMuscle ? ` (${o.nomMuscle})` : ''}. Commence à ${fmt(solide)} ${u} et ajuste.`,
     source: 'force_generale',
   };
 }
