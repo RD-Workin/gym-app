@@ -65,6 +65,13 @@
   box-sizing: border-box;
 }
 
+/* Pas de zoom au double tap (iOS/PWA) : touch-action n'est pas hérité, on l'applique partout. */
+*,
+*::before,
+*::after {
+  touch-action: manipulation;
+}
+
 html,
 body {
   margin: 0;
