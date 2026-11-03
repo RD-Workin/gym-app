@@ -1,5 +1,5 @@
 // Accueil : dit ce que fait l'app et quoi faire maintenant. Propriétaire : 01 (contenu et clarté : 11-ergonomie).
-import { Bouton, Carte, Puce } from '../../ui';
+import { Aide, Bouton, Carte, Puce } from '../../ui';
 import { db } from '../db';
 import { lien } from '../router';
 import { seanceEnCours, useRequete } from '../requetes';
@@ -143,8 +143,10 @@ function Semaine({ fait, affilee }: { fait: number; affilee: number }) {
         <span class="acc-sur">/ {vise}</span>
       </Anneau>
       <div class="acc-semaine-texte">
-        <span class="ui-attenue">séance{fait > 1 ? 's' : ''} cette semaine{fait >= vise ? ' : semaine réussie' : ''}</span>
-        {affilee > 0 && (
+        <span class="ui-attenue">séance{fait > 1 ? 's' : ''} cette semaine{fait >= vise ? ' : semaine réussie !' : `, sur ${vise} conseillées`}{' '}
+          <Aide texte="3 séances par semaine, c'est le repère conseillé pour progresser sur chaque muscle. L'anneau se remplit à chaque séance terminée." libelle="séances conseillées" />
+        </span>
+        {affilee >= 2 && (
           <span class="acc-affilee">
             <Flamme />
             <span>

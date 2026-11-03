@@ -144,7 +144,7 @@ function BilanAnime({ seance, duree }: { seance: Seance; duree?: number }) {
           {autres > 0 && <li class="bil-plus">et {autres} autre{autres > 1 ? 's' : ''} record{autres > 1 ? 's' : ''}</li>}
         </ul>
       )}
-      {b.semaines > 0 && (
+      {b.semaines >= 2 && (
         <div class="bil-flamme">
           <Flamme />
           <span>
