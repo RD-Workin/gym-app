@@ -143,7 +143,7 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     const seancesParId = new Map(d.seances.map((s) => [s.id, s]));
     const poids = poidsParSeance(d.seances);
     L.push('## Mes objectifs');
-    L.push('Valeurs comparables aux cibles : 1RM estimé et charge max en charge effective (les 2 haltères additionnées, poids du corps inclus pour les exercices lestés) ; reps = meilleure série de travail. « Actuel » = meilleure valeur des 8 dernières semaines. Objectif « N × X kg » (charge telle que notée) : « actuel » = charge que je tiendrais pour N reps d’après ma meilleure série récente (Epley) ; il n’est atteint que si j’ai vraiment fait une série d’au moins N reps à X kg.');
+    L.push('Valeurs comparables aux cibles : 1RM estimé et charge max en charge effective (les 2 haltères additionnées, poids du corps inclus pour les exercices lestés) ; reps = meilleure série de travail. « Actuel » = meilleure valeur des 8 dernières semaines. Objectifs « 1RM X kg » (1 rep au max visé) et « charge d’entraînement N × X kg » (charge telle que notée) : « actuel » = 1RM estimé ou charge que je tiendrais pour N reps d’après ma meilleure série récente (Epley) ; atteint seulement si j’ai vraiment fait la série.');
     for (const o of [...objectifs].sort((a, b) => (exo.get(a.exerciceId)?.nom ?? '').localeCompare(exo.get(b.exerciceId)?.nom ?? '', 'fr') || a.creeLe.localeCompare(b.creeLe))) {
       const { etat: e } = evaluerObjectif(o, { series: d.series, seancesParId, poids }, aujourdhui);
       const u = uniteMesure(o.mesure);
@@ -151,7 +151,7 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
       const variante = o.varianteId ? ` (${vari.get(o.varianteId) ?? 'variante'})` : '';
       const serie = o.mesure === 'serie';
       const actuel = (v: number) => (serie ? `équivalent actuel ${repsCible(o)} × ${nb(v)} kg` : `actuel ${nb(v)} ${u}`);
-      const morceaux = [`objectif ${libelleCible(o)}${o.echeance ? ` d’ici le ${jour(o.echeance)}` : ''}`];
+      const morceaux = [`objectif ${serie && repsCible(o) > 1 ? 'charge d’entraînement ' : ''}${libelleCible(o)}${o.echeance ? ` d’ici le ${jour(o.echeance)}` : ''}`];
       morceaux.push(
         e.actuel == null
           ? 'pas encore de mesure'

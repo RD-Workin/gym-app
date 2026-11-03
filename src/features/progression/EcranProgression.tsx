@@ -21,7 +21,7 @@ import {
 import { Barres } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { FicheProgression } from './FicheProgression';
-import { evaluerObjectif, LIBELLE_STATUT, NOM_MESURE, phraseMarge } from '../objectifs/calculs';
+import { evaluerObjectif, libelleCible, LIBELLE_STATUT, phraseCourte } from '../objectifs/calculs';
 import { CarteObjectif } from '../objectifs/CarteObjectif';
 import './progression.css';
 
@@ -138,7 +138,7 @@ function ObjectifsEnCours({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: I
             titre={nom}
             detail={
               <>
-                {o.mesure === 'serie' ? '' : `${NOM_MESURE[o.mesure]} · `}{phraseMarge(o, e)}
+                {libelleCible(o)} · {phraseCourte(o, e)}
                 <span class="obj-mini" aria-hidden="true" style={{ display: 'block' }}>
                   <span style={{ width: `${e.pourcentage}%` }} />
                 </span>

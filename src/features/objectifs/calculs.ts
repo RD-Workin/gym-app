@@ -298,10 +298,16 @@ export function evaluerObjectif(o: Objectif, d: DonneesObjectif, maintenant = ne
 /** Valeur affichée : même arrondi que la courbe (kg) ou entier (reps). */
 export const fmtValeur = (v: number, m: MesureObjectif) => (m === 'reps' ? String(Math.round(v)) : kg(v).replace(' kg', ''));
 
-/** « 8 × 75 kg », « 1RM estimé 100 kg », « 15 reps ». */
+/** Les deux types principaux : 1RM (1 rep au max visé) et charge d'entraînement (X kg pour Y reps). */
+export function typeObjectif(o: Pick<Objectif, 'mesure' | 'reps'>): string {
+  if (o.mesure === 'serie') return repsCible(o) === 1 ? '1RM' : 'Charge d’entraînement';
+  return o.mesure === 'reps' ? 'Reps max' : NOM_MESURE[o.mesure];
+}
+
+/** « 8 × 75 kg », « 1RM 100 kg », « 1RM estimé 100 kg », « 15 reps ». */
 export function libelleCible(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>): string {
   const f = fmtValeur(o.cible, o.mesure);
-  if (o.mesure === 'serie') return `${repsCible(o)} × ${f} kg`;
+  if (o.mesure === 'serie') return repsCible(o) === 1 ? `1RM ${f} kg` : `${repsCible(o)} × ${f} kg`;
   if (o.mesure === 'reps') return `${f} reps`;
   return `${NOM_MESURE[o.mesure]} ${f} kg`;
 }
@@ -312,6 +318,12 @@ export function phraseMarge(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>, e: E
   const f = (v: number) => fmtValeur(v, o.mesure);
   if (o.mesure === 'serie') {
     const r = repsCible(o);
+    if (r === 1) {
+      if (e.actuel == null) return `objectif 1RM ${f(o.cible)} kg, pas encore de mesure`;
+      if (e.atteint) return `1RM ${f(o.cible)} kg, atteint`;
+      if (e.reste === 0) return `1RM estimé ${f(e.actuel)} kg pour ${f(o.cible)} kg : à tenter`;
+      return `1RM estimé ${f(e.actuel)} / ${f(o.cible)} kg, reste ${f(e.reste)} kg (${Math.round(e.pourcentage)}\u00a0%)`;
+    }
     if (e.actuel == null) return `objectif ${r} × ${f(o.cible)} kg, pas encore de mesure`;
     if (e.atteint) return `${r} × ${f(o.cible)} kg, atteint`;
     if (e.reste === 0) return `équivalent ${r} × ${f(e.actuel)} kg pour ${r} × ${f(o.cible)} kg : à tenter`;
@@ -320,6 +332,24 @@ export function phraseMarge(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>, e: E
   if (e.actuel == null) return `objectif ${f(o.cible)} ${u}, pas encore de mesure`;
   if (e.atteint) return `${f(e.actuel)} / ${f(o.cible)} ${u}, atteint`;
   return `${f(e.actuel)} / ${f(o.cible)} ${u}, reste ${f(e.reste)} ${u} (${Math.round(e.pourcentage)}\u00a0%)`;
+}
+
+const dateCourte = (jour: string) => {
+  const d = new Date(`${jour}T12:00:00`);
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
+};
+
+/** Une seule ligne pour la carte : ce qu'il reste et quand, ou quoi faire. */
+export function phraseCourte(o: Pick<Objectif, 'mesure' | 'cible' | 'reps' | 'echeance'>, e: EtatObjectif): string {
+  const u = uniteMesure(o.mesure);
+  if (e.atteint) return 'Objectif atteint, bravo !';
+  if (e.actuel == null) return 'Note une série pour voir où tu en es';
+  if (e.statut === 'a_tenter') return o.mesure === 'serie' && repsCible(o) > 1 ? `Tu as le niveau : tente ${repsCible(o)} reps à ${fmtValeur(o.cible, o.mesure)} kg.` : 'Tu as le niveau : tente-le en début de séance.';
+  const morceaux = [`Reste ${fmtValeur(e.reste, o.mesure)} ${u}`];
+  if (e.projection) morceaux.push(`prévu vers le ${dateCourte(e.projection)}`);
+  else if (e.rythme != null) morceaux.push('pas de progrès ces dernières semaines');
+  if (o.echeance) morceaux.push(`objectif le ${dateCourte(o.echeance)}`);
+  return morceaux.join(' · ');
 }
 
 /** Phrase de rythme et de projection, ex. « +1,2 kg/sem. sur 12 semaines, objectif vers le 14 février 2027 ». */

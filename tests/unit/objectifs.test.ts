@@ -153,10 +153,10 @@ describe('objectifs dans les exports', () => {
   it('plusieurs objectifs sur un exercice : tous dans le résumé, séparés par | dans le CSV', () => {
     const d2 = { ...(d as object), objectifs: [obj({ id: 'a', mesure: 'serie', cible: 100, reps: 1, creeLe: '1' }), obj({ id: 'b', mesure: 'serie', cible: 75, reps: 8, creeLe: '2' })] } as never;
     const t = construireResume(d2, {}, AUJ);
-    expect(t).toContain('Développé couché : objectif 1 × 100 kg');
-    expect(t).toContain('Développé couché : objectif 8 × 75 kg');
+    expect(t).toContain('Développé couché : objectif 1RM 100 kg');
+    expect(t).toContain('Développé couché : objectif charge d’entraînement 8 × 75 kg');
     const l = lignesCsv(d2, {}, AUJ)[0];
-    expect(l[(COLONNES_CSV as readonly string[]).indexOf('objectif')]).toBe('1 × 100 kg | 8 × 75 kg');
+    expect(l[(COLONNES_CSV as readonly string[]).indexOf('objectif')]).toBe('1RM 100 kg | 8 × 75 kg');
   });
 
   it('sauvegarde v2 importée : table objectifs ajoutée vide', () => {
