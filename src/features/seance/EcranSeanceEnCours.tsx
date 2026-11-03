@@ -1,6 +1,7 @@
 // Séance en cours (propriétaire : 04-seance).
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Aide, PanneauConseils } from '../../ui';
+import { EQUIPEMENTS } from '../../data/groupes';
 import { CONSEILS_SEANCE, conseilsExercice } from '../../data/conseils';
 import { Bouton, Carte, ElementListe, IndicationLest, Liste, Onglets, Puce, Stepper, ToastRecord } from '../../ui';
 import { LEST_MAX_KG, LEST_MIN_KG, uniteCharge } from '../../core/calculs';
@@ -433,12 +434,15 @@ function SeanceActive({ seance }: { seance: Seance }) {
             <div class="sc-ligne">
               <span class="ui-surtitre">
                 Exercice {gi + 1} / {grps.length}
-                {grp.length > 1 ? ' · superset' : exercice ? ` · ${exercice.equipement.replace('_', ' ')}` : ''}
+                {grp.length > 1 ? ' · superset' : exercice ? ` · ${EQUIPEMENTS[exercice.equipement]}` : ''}
                 {grp.length > 1 && <Aide mot="superset" />}
               </span>
-              <button type="button" class="sc-puce-btn" onClick={reglage} aria-label="Réglage machine">
-                <Puce>{reglageAffiche ? `Réglage : ${reglageAffiche}` : '+ Réglage machine'}</Puce>
-              </button>
+              {/* Réglage machine : inutile au poids du corps, sauf s'il est déjà noté (11). */}
+              {(reglageAffiche || exercice?.equipement !== 'poids_du_corps') && (
+                <button type="button" class="sc-puce-btn" onClick={reglage} aria-label="Réglage machine">
+                  <Puce>{reglageAffiche ? `Réglage : ${reglageAffiche}` : '+ Réglage machine'}</Puce>
+                </button>
+              )}
             </div>
             {grp.length > 1 && (
               <Onglets

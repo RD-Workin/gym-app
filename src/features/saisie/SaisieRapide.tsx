@@ -192,7 +192,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
               <span class="sr-num">S{j + 1}</span>
               <span class="ui-chiffre">
                 {tenu ? `${l.dureeSec ?? 0} s` : `${l.reps} reps`}
-                {sansCharge ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
+                {sansCharge || (lest && !l.chargeKg) ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
               </span>
             </button>
           ))}
