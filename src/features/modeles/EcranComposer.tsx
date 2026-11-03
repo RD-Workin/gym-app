@@ -18,6 +18,7 @@ const TYPES: { type: TypeSeance; nom: string; detail: string }[] = [
   { type: 'push', nom: 'Push', detail: 'Pousser : pectoraux, épaules, triceps' },
   { type: 'pull', nom: 'Pull', detail: 'Tirer : dos, biceps' },
   { type: 'jambes', nom: 'Jambes', detail: 'Quadriceps, ischios, fessiers, mollets' },
+  { type: 'upper', nom: 'Full Upper', detail: 'Tout le haut du corps : pecs, dos, épaules, bras (sans les jambes)' },
   { type: 'full', nom: 'Full body', detail: 'Tout le corps en une séance' },
   { type: 'autre', nom: 'Libre', detail: 'Tu choisis les muscles, l’app te propose tes exercices habituels' },
 ];

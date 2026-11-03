@@ -103,6 +103,20 @@ export const MODELES_DEPART: ModeleDepart[] = [
       { cle: 'crunch', series: 2, reps: '12-15' },
     ],
   },
+  {
+    // Tout le haut du corps, sans les jambes (~1 h, 21 séries) : pousser et tirer en alternance, puis bras et arrière d'épaule.
+    nom: 'Full Upper',
+    blocs: [
+      { cle: 'dc', series: 3, reps: '6-8' },
+      { cle: 'lat-pulldown', series: 3, reps: '8-10' },
+      { cle: 'dev-incline-halt', series: 3, reps: '8-10' },
+      { cle: 'seated-row', series: 3, reps: '8-12' },
+      { cle: 'shoulder-press', series: 3, reps: '8-10' },
+      { cle: 'curl-incline', series: 2, reps: '10-12' },
+      { cle: 'extension-poulie', series: 2, reps: '10-12' },
+      { cle: 'rear-delt', series: 2, reps: '12-15' },
+    ],
+  },
 ];
 
 /** Blocs d'un modèle de départ (clé d'exercice + cibles), quelle que soit sa forme. */

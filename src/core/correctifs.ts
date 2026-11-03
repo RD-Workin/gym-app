@@ -73,6 +73,7 @@ function correctifAjoutModele(id: string, nomModele: string, description: string
 export const CORRECTIFS: Correctif[] = [
   correctifGroupes('2026-10-31-hip-abduction', 'hip-abduction', ['fessiers', 'adducteurs'], 'Hip abduction : muscles corrigés (abducteurs et fessiers, pas les adducteurs).'),
   correctifAjoutModele('2026-10-31-modele-full-body', 'Full body', 'Nouveau modèle de séance « Full body » (9 exercices, environ 1 h 10).'),
+  correctifAjoutModele('2026-11-03-modele-full-upper', 'Full Upper', 'Nouveau modèle de séance « Full Upper » : tout le haut du corps sans les jambes (8 exercices, environ 1 h).'),
   correctifGroupes('2026-10-31-rowing-barre', 'rowing-barre', ['dos'], 'Rowing barre : lombaires ajoutés aux muscles travaillés.'),
   {
     id: '2026-10-31-repos-polyarticulaires',

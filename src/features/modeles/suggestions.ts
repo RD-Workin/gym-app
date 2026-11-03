@@ -23,11 +23,12 @@ export interface Proposition {
 function cibles(type: TypeSeance): Record<string, number> {
   const c: Record<string, number> = {};
   const attendus = ATTENDUS[type];
-  attendus.forEach((g, i) => (c[g] = type === 'full' ? 4 : i === 0 ? 10 : 6));
+  attendus.forEach((g, i) => (c[g] = type === 'full' || type === 'upper' ? 4 : i === 0 ? 10 : 6));
   const bonus: Record<TypeSeance, string[]> = {
     push: [],
     pull: ['avant-bras'],
     jambes: ['mollets', 'abducteurs', 'abdos'],
+    upper: ['avant-bras', 'abdos'],
     full: ['fessiers', 'biceps', 'triceps', 'abdos'],
     autre: [],
   };
@@ -35,7 +36,7 @@ function cibles(type: TypeSeance): Record<string, number> {
   return c;
 }
 
-const PRINCIPAL: Record<TypeSeance, string | undefined> = { push: 'pectoraux', pull: 'dos', jambes: 'quadriceps', full: undefined, autre: undefined };
+const PRINCIPAL: Record<TypeSeance, string | undefined> = { push: 'pectoraux', pull: 'dos', jambes: 'quadriceps', upper: undefined, full: undefined, autre: undefined };
 
 /**
  * 3 ou 4 exercices de la bibliothèque à ajouter ensuite. Liste vide = la séance couvre déjà tout ce qui est attendu.
@@ -87,8 +88,8 @@ export function proposerExercices(
     .filter((x) => x.score > 0.5)
     .sort((a, b) => b.score - a.score || a.e.nom.localeCompare(b.e.nom));
 
-  // Variété : pas plus de deux propositions pour le même muscle principal (une seule en full body).
-  const maxParMuscle = type === 'full' ? 1 : 2;
+  // Variété : pas plus de deux propositions pour le même muscle principal (une seule en full body ou full upper).
+  const maxParMuscle = type === 'full' || type === 'upper' ? 1 : 2;
   const choisis: typeof notes = [];
   const parMuscle = new Map<string, number>();
   for (const x of notes) {

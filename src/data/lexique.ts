@@ -14,7 +14,7 @@ export const LEXIQUE = {
   },
   modele: {
     terme: 'Modèle',
-    definition: 'Une séance type déjà préparée (liste d’exercices, séries, repos). Push, Pull, Jambes et Full body sont fournis ; tu peux les modifier ou en créer.',
+    definition: 'Une séance type déjà préparée (liste d’exercices, séries, repos). Push, Pull, Jambes, Full Upper et Full body sont fournis ; tu peux les modifier ou en créer.',
   },
   composer: {
     terme: 'Composer ma séance',
@@ -26,7 +26,7 @@ export const LEXIQUE = {
   },
   objectif: {
     terme: 'Objectif',
-    definition: 'Force : charges lourdes, 1 à 6 reps, longs repos. Masse (hypertrophie) : 6 à 12 reps, pour prendre du muscle. Endurance : 15 à 20 reps, repos courts.',
+    definition: 'Force : charges lourdes, 1 à 6 reps, longs repos. Masse (hypertrophie) : 6 à 12 reps menées près de l’échec, pour prendre du muscle. Endurance : 15 à 20 reps, repos courts.',
   },
   avisSeance: {
     terme: 'Avis sur ta séance',

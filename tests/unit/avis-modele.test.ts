@@ -99,3 +99,40 @@ describe('propositions d’exercices', () => {
     expect(proposerExercices('push', blocs, biblio)).toEqual([]);
   });
 });
+
+describe('Full Upper', () => {
+  it('type reconnu au nom, avant « full »', () => {
+    expect(typeSeance('Full Upper', {})).toBe('upper');
+    expect(typeSeance('Haut du corps', {})).toBe('upper');
+    expect(typeSeance('Séance B', { pectoraux: 6, dos: 6, biceps: 2, triceps: 2 })).toBe('upper');
+  });
+
+  it('modèle de départ : adapté', () => {
+    const m = MODELES_DEPART.find((x) => x.nom === 'Full Upper')!;
+    const blocs = blocsDepart(m).map((b) => bloc(b.cle, b.series, b.reps));
+    const a = analyserModele(m.nom, blocs, parId);
+    expect(a.remarques.filter((r) => r.ton !== 'ok')).toEqual([]);
+    expect(a.verdict).toBe('adaptee');
+  });
+
+  it('propositions : haut du corps seulement, un muscle par proposition', () => {
+    const p = proposerExercices('upper', [], biblio);
+    expect(p.length).toBeGreaterThanOrEqual(3);
+    const muscles = p.map((x) => x.exercice.groupesMusculaires[0]);
+    expect(new Set(muscles).size).toBe(muscles.length);
+    expect(muscles.some((g) => ['quadriceps', 'ischios', 'fessiers', 'mollets'].includes(g))).toBe(false);
+  });
+
+  it('sans les jambes : pas de remarque sur les jambes', () => {
+    const a = analyserModele('Full Upper', [bloc('dc'), bloc('lat-pulldown')], parId);
+    expect(a.remarques.some((r) => /quadriceps|ischios/.test(r.texte))).toBe(false);
+  });
+
+  it('reps hautes : rien jusqu’à 30 (efficace près de l’échec), conseil au-delà', () => {
+    const base = [bloc('dc', 4, '6-10'), bloc('dev-incline-halt', 3), bloc('shoulder-press', 3), bloc('extension-poulie', 3, '10-12')];
+    const r25 = analyserModele('Push', [...base, bloc('pec-fly', 3, '20-25')], parId);
+    expect(r25.remarques.some((r) => /reps sur/.test(r.texte))).toBe(false);
+    const r40 = analyserModele('Push', [...base, bloc('pec-fly', 3, '30-40')], parId);
+    expect(r40.remarques.some((r) => /Plus de 30 reps/.test(r.texte))).toBe(true);
+  });
+});

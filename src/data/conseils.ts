@@ -1,6 +1,8 @@
 // Conseils du coach : contenu des panneaux « Conseils du coach » (objectifs, séance, muscles, matériel, exercices).
 // Propriétaire du contenu : 10-coach. L'affichage appartient aux écrans (02 composant, 03 fiches, 04 séance/modèles).
-// Fondé sur les consensus actuels (ACSM 2009/2026, Schoenfeld, Helms, Israetel, Pelland 2024, Singer 2024).
+// Fondé sur le consensus actuel, pas sur une étude isolée : ACSM 2026 (Currier et al., MSSE 58(3)), Schoenfeld 2017/2021 (continuum des reps),
+// Pelland 2024 et Remmert 2025 (volume), Robinson 2024 / Refalo 2023 (proximité de l'échec), Singer 2024 (repos), Morton 2018 (protéines),
+// Bell 2023 / Coleman 2024 (décharge), Nunes 2021 (ordre des exercices). Revue complète : 2026-11-03.
 import type { Equipement } from '../core/types';
 import type { Groupe } from './groupes';
 
@@ -17,7 +19,7 @@ export const CONSEILS_OBJECTIFS: Record<'force' | 'hypertrophie' | 'endurance', 
   force: {
     resume: 'Soulever plus lourd : charges élevées, peu de reps, longs repos.',
     sections: [
-      { titre: 'Cible', points: ['1 à 6 reps à 80–95 % du 1RM.', 'RIR 1 à 3 : on garde 1 à 3 reps en réserve, l’échec est rarement utile en force.', '3 à 5 séries par exercice principal.'] },
+      { titre: 'Cible', points: ['1 à 6 reps à 80–95 % du 1RM.', 'RIR 1 à 3 : on garde 1 à 3 reps en réserve, l’échec n’apporte rien de plus en force.', '2 à 5 séries par exercice principal : 2 ou 3 suffisent pour progresser, davantage pour les plus avancés.'] },
       { titre: 'Repos', points: ['3 à 5 min entre les séries lourdes : le système nerveux et la phosphocréatine doivent récupérer.', 'Couper le repos fait perdre des reps et de la qualité technique.'] },
       { titre: 'Astuces', points: ['La force est spécifique : pour progresser au développé couché, il faut pratiquer le développé couché lourd.', 'Échauffement progressif obligatoire (voir « Séance »).', 'Progresser par petits sauts (1–2,5 kg) quand toutes les reps cibles sont faites.'] },
     ],
@@ -25,15 +27,15 @@ export const CONSEILS_OBJECTIFS: Record<'force' | 'hypertrophie' | 'endurance', 
   hypertrophie: {
     resume: 'Prendre du muscle : séries proches de l’échec, volume suffisant, repos complets.',
     sections: [
-      { titre: 'Cible', points: ['6 à 12 reps en pratique ; de 5 à 30 reps fonctionnent si la série est menée près de l’échec.', 'RIR 0 à 3 : la proximité de l’échec compte plus que le nombre exact de reps.', '10 à 20 séries par muscle et par semaine, réparties sur 2 séances ou plus.'] },
-      { titre: 'Repos', points: ['2 à 3 min sur les polyarticulaires, 1 min 30 à 2 min sur l’isolation.', 'Des repos plus longs gardent plus de reps par série, donc plus de volume utile (Schoenfeld 2016, Singer 2024).'] },
+      { titre: 'Cible', points: ['6 à 12 reps en pratique ; de 5 à 30 reps fonctionnent aussi bien si la série est menée près de l’échec. Aucune plage précise (8-10, 8-12…) n’est meilleure qu’une autre.', 'Plus lourd (6-10) sur les gros exercices, plus léger (10-15) sur l’isolation : c’est plus confortable, pas plus efficace.', 'RIR 0 à 3, souvent 1 ou 2 : la proximité de l’échec compte plus que le nombre exact de reps.', 'Au moins 10 séries par muscle et par semaine, sur 2 séances ou plus. Plus de séries aide encore, mais de moins en moins ; au-delà d’une dizaine dans une même séance, le gain est faible.'] },
+      { titre: 'Repos', points: ['2 à 3 min sur les polyarticulaires, 1 min 30 à 2 min sur l’isolation.', 'Moins d’1 min fait perdre un peu de muscle ; au-delà d’1 min 30 le gain direct est faible, mais un repos plus long garde tes reps d’une série à l’autre.'] },
       { titre: 'Astuces', points: ['Surcharge progressive : ajouter une rep ou un peu de charge d’une séance à l’autre.', 'Contrôler la descente (2–3 s) et travailler en amplitude complète, surtout en position étirée.', 'Garder les mêmes exercices quelques semaines pour mesurer la progression.'] },
     ],
   },
   endurance: {
     resume: 'Tenir l’effort : charges légères, beaucoup de reps, repos courts.',
     sections: [
-      { titre: 'Cible', points: ['15 à 25 reps à 40–60 % du 1RM.', '2 à 4 séries.'] },
+      { titre: 'Cible', points: ['15 à 20 reps (jusqu’à 25) à 40–65 % du 1RM.', '2 à 4 séries.'] },
       { titre: 'Repos', points: ['30 à 60 s : l’objectif est justement de travailler fatigué.', 'Les supersets et circuits conviennent bien.'] },
       { titre: 'Astuces', points: ['La technique se dégrade avec la fatigue : arrêter la série quand la forme casse.', 'Peu efficace pour la force maximale, mais utile pour la capacité de travail et la récupération.'] },
     ],
@@ -66,7 +68,7 @@ export const CONSEILS_SEANCE: FicheConseil = {
       titre: 'Progression',
       points: [
         'Double progression : rester sur une charge jusqu’au haut de la fourchette de reps sur toutes les séries, puis augmenter de 2,5–5 %.',
-        'Si les reps baissent deux séances de suite : sommeil, alimentation, ou besoin d’une semaine plus légère (deload).',
+        'Si les reps baissent deux séances de suite : sommeil, alimentation, ou besoin d’une semaine plus légère (deload).', 'Le deload n’est pas obligatoire à date fixe : une semaine plus légère quand la fatigue s’accumule, souvent toutes les 4 à 8 semaines. Elle aide à récupérer, elle ne fait pas prendre plus de muscle.',
         'Le 1RM affiché est une estimation (formule d’Epley, séries de 12 reps au plus).',
       ],
     },
@@ -79,7 +81,7 @@ export const CONSEILS_SEANCE: FicheConseil = {
     },
     {
       titre: 'Récupération',
-      points: ['7 à 9 h de sommeil.', '1,6 à 2,2 g de protéines par kg de poids de corps et par jour.', 'Laisser 48 h environ avant de retravailler lourdement le même muscle.'],
+      points: ['7 à 9 h de sommeil.', '1,6 g de protéines par kg de poids de corps et par jour suffit à la plupart ; jusqu’à 2,2 g en sèche ou pour les plus avancés.', 'Laisser 48 h environ avant de retravailler lourdement le même muscle.'],
     },
   ],
 };
