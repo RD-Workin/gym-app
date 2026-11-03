@@ -1,7 +1,8 @@
 // Saisie rapide d'un set (séries × reps × kg) depuis la fiche d'un exercice. Propriétaire : 04-seance.
 // Stats et suggestions : 05-progression (suggestion.ts).
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { Aide, Bouton, Carte, Puce, Stepper, ToastRecord } from '../../ui';
+import { Aide, Bouton, Carte, IndicationLest, Puce, Stepper, ToastRecord } from '../../ui';
+import { LEST_MAX_KG, LEST_MIN_KG, signeLest, uniteCharge } from '../../core/calculs';
 import { eclatSur } from '../../anim';
 import { lien } from '../../core/router';
 import { useRequete } from '../../core/requetes';
@@ -71,7 +72,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     poidsCorporelKg: poidsActuel,
     autres,
     nomMuscle: exercice.groupesMusculaires[0] ? libelleGroupe(exercice.groupesMusculaires[0]) : undefined,
-    unite: modeCharge === 'par_main' ? 'kg/main' : modeCharge === 'lest' ? 'kg lest' : 'kg',
+    unite: uniteCharge(modeCharge),
   });
 
   // Préremplissage : les séries de la dernière fois (chacune avec ses reps et sa charge), sinon la suggestion.
@@ -88,8 +89,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const ref = unRmRecent(points);
   const projete = maxProjete(points);
   const sansCharge = modeCharge === 'sans_charge';
-  const unite = modeCharge === 'par_main' ? 'kg/main' : modeCharge === 'lest' ? 'kg lest' : 'kg';
-  const fmtKg = (v?: number) => (v ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  const lest = modeCharge === 'lest';
+  const unite = uniteCharge(modeCharge);
+  const fmtKg = (v?: number) => (lest ? signeLest(v ?? 0) : '') + (v ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 
   const enregistrer = async (e: Event) => {
     if (occupe) return;
@@ -125,7 +127,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   return (
     <Carte titre="Noter une perf" ton="mise-en-avant" aside={<Aide mot="noterExercice" />}>
       <div class="ui-pile">
-        <p class="ui-attenue sr-intro">Fait sans lancer de séance ? Touche une série (S1, S2…), règle ses reps et sa charge, puis enregistre.</p>
+        <p class="ui-attenue sr-intro">Fait sans lancer de séance ? Touche une série (S1, S2…), règle ses reps et {lest ? 'son lest' : 'sa charge'}, puis enregistre.</p>
         {(ref != null || !!avantVariante?.length) && (
           <div class="sr-stats">
             {avantVariante && avantVariante.length > 0 && (
@@ -191,7 +193,20 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
           </div>
           {/* key par série : le champ repart de la valeur de la série touchée, sans délai de synchro. */}
           <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
-          {!sansCharge && <Stepper key={`charge-${i}`} id="sr-charge" valeur={ligne.chargeKg ?? 0} onChange={(v) => majLigne({ chargeKg: v })} unite={unite} pas={pas} min={0} max={999} decimales={2} />}
+          {!sansCharge && (
+            <Stepper
+              key={`charge-${i}`}
+              id="sr-charge"
+              valeur={ligne.chargeKg ?? 0}
+              onChange={(v) => majLigne({ chargeKg: v })}
+              unite={unite}
+              pas={pas}
+              min={lest ? LEST_MIN_KG : 0}
+              max={lest ? LEST_MAX_KG : 999}
+              decimales={2}
+            />
+          )}
+          {lest && <IndicationLest lestKg={ligne.chargeKg ?? 0} poidsCorporelKg={poidsActuel} />}
         </div>
 
         {suggestion && (
@@ -200,13 +215,13 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }}>
               {suggestion.source === 'historique' && suggestion.solide !== ligne.chargeKg && (
                 <button type="button" class="prog-puce" onClick={() => majLigne({ chargeKg: suggestion.solide })}>
-                  {fmtKg(suggestion.solide)} kg
+                  {fmtKg(suggestion.solide)} {unite}
                 </button>
               )}
               {suggestion.chargeKg !== ligne.chargeKg && (
                 <button type="button" class="prog-puce" onClick={() => majLigne({ chargeKg: suggestion.chargeKg })}>
                   {suggestion.source === 'historique' ? 'À tester : ' : 'Essayer '}
-                  {fmtKg(suggestion.chargeKg)} kg
+                  {fmtKg(suggestion.chargeKg)} {unite}
                 </button>
               )}
             </div>

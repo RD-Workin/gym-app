@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Aide, PanneauConseils } from '../../ui';
 import { CONSEILS_SEANCE, conseilsExercice } from '../../data/conseils';
-import { Bouton, Carte, ElementListe, Liste, Onglets, Puce, Stepper, ToastRecord } from '../../ui';
+import { Bouton, Carte, ElementListe, IndicationLest, Liste, Onglets, Puce, Stepper, ToastRecord } from '../../ui';
+import { LEST_MAX_KG, LEST_MIN_KG, uniteCharge } from '../../core/calculs';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
@@ -300,6 +301,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const cibleTexte = bloc?.seriesCibles && bloc.repsCibles ? `${bloc.seriesCibles} séries de ${bloc.repsCibles} reps` : cible;
   const notes = [exercice?.note, bloc?.note].filter(Boolean);
   const sansCharge = saisie?.modeCharge === 'sans_charge';
+  const lest = saisie?.modeCharge === 'lest';
 
   return (
     <section class="sc sc-active">
@@ -415,13 +417,16 @@ function SeanceActive({ seance }: { seance: Seance }) {
                     id="sc-kg"
                     valeur={saisie.chargeKg ?? 0}
                     onChange={(v) => setSaisie({ ...saisie, chargeKg: v })}
-                    unite={saisie.modeCharge === 'par_main' ? 'kg/main' : saisie.modeCharge === 'lest' ? 'kg lest' : 'kg'}
+                    unite={uniteCharge(saisie.modeCharge)}
                     pas={pasCharge(exercice?.equipement)}
+                    min={lest ? LEST_MIN_KG : 0}
+                    max={lest ? LEST_MAX_KG : 999}
                     decimales={2}
                   />
                 )}
                 <Stepper id="sc-reps" valeur={saisie.reps} onChange={(v) => setSaisie({ ...saisie, reps: v })} unite="reps" min={0} max={200} decimales={0} />
               </div>
+              {lest && <IndicationLest lestKg={saisie.chargeKg ?? 0} poidsCorporelKg={seance.contexte?.poidsCorporelKg} />}
               {rirVisible && (
                 <Stepper id="sc-rir" valeur={saisie.rir ?? 2} onChange={(v) => setSaisie({ ...saisie, rir: v })} unite="reps en réserve" min={0} max={10} decimales={0} />
               )}

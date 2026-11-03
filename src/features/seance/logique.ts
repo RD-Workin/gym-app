@@ -3,6 +3,7 @@
 import Dexie from 'dexie';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
+import { signeLest, uniteCharge } from '../../core/calculs';
 import type { BlocModele, Exercice, Id, Modele, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 
@@ -164,15 +165,16 @@ const kg = (v?: number) => (v == null ? '' : v.toLocaleString('fr-FR', { maximum
 export function resumeSeries(series: Serie[]): string {
   if (!series.length) return '';
   const charges = [...new Set(series.map((s) => s.chargeKg))];
-  const unite = series[0].modeCharge === 'par_main' ? ' kg/main' : series[0].modeCharge === 'lest' ? ' kg lest' : ' kg';
-  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map(kg).join('/') + unite;
+  const lest = series[0].modeCharge === 'lest';
+  const unite = ` ${uniteCharge(series[0].modeCharge)}`;
+  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
   return `${ch} · ${series.map((s) => s.reps).join('-')}`;
 }
 
 export const formatCharge = (s: Pick<Serie, 'chargeKg' | 'modeCharge'>) =>
   s.modeCharge === 'sans_charge' || s.chargeKg == null
     ? 'PdC'
-    : `${s.modeCharge === 'lest' ? '+' : ''}${kg(s.chargeKg)} kg${s.modeCharge === 'par_main' ? '/main' : ''}`;
+    : `${s.modeCharge === 'lest' ? signeLest(s.chargeKg) : ''}${kg(s.chargeKg)} kg${s.modeCharge === 'lest' ? ' de lest' : s.modeCharge === 'par_main' ? '/main' : ''}`;
 
 /** Groupes d'affichage : blocs consécutifs au même `supersetId` = un superset. */
 export function groupes(blocs: BlocModele[]): number[][] {

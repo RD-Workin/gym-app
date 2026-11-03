@@ -1,5 +1,5 @@
 // Résumé texte d'une période, à coller dans un message à un coach ou à une IA. Propriétaire : 06-donnees.
-import { unRmEstime, volume } from '../../core/calculs';
+import { signeLest, unRmEstime, volume } from '../../core/calculs';
 import type { Exercice, Modele, Objectif, Seance, Serie, Variante } from '../../core/types';
 import { evaluerObjectif, libelleCible, LIBELLE_STATUT, repsCible, uniteMesure } from '../objectifs/calculs';
 import { poidsParSeance } from '../progression/calculs';
@@ -35,7 +35,7 @@ function ecart(a: number, b: number, unite: string, dec = 1): string {
 function serieCourte(s: Serie): string {
   const c = s.chargeKg;
   const charge =
-    s.modeCharge === 'sans_charge' ? 'PDC' : s.modeCharge === 'lest' ? (c ? `+${nb(c)}` : 'PDC') : c != null ? nb(c) : '?';
+    s.modeCharge === 'sans_charge' ? 'PDC' : s.modeCharge === 'lest' ? (c ? `${signeLest(c)}${nb(c)}` : 'PDC') : c != null ? nb(c) : '?';
   const extras: string[] = [];
   if (s.type === 'echec') extras.push('échec');
   if (s.type === 'degressive') extras.push('dégressive');
@@ -134,7 +134,7 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     L.push('- Poids de corps : non renseigné');
   }
   L.push('');
-  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
   L.push('');
 
   // --- Objectifs (état à aujourd'hui, sur tout l'historique : référentiel pour le coach / l'IA)

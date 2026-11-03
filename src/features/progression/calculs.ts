@@ -1,6 +1,6 @@
 // Calculs de progression : fonctions pures, sans accès à la base. Propriétaire : 05-progression.
 // Charge effective et 1RM : règles partagées de src/core/calculs.ts (01).
-import { chargeEffective, unRmEstime } from '../../core/calculs';
+import { chargeEffective, signeLest, unRmEstime } from '../../core/calculs';
 import type { Exercice, Id, Seance, Serie } from '../../core/types';
 
 export type Mesure = 'un_rm' | 'charge_max' | 'volume';
@@ -16,6 +16,8 @@ export interface PointSeance {
   volume: number;
   /** Poids corporel inconnu pour une série lestée ou au poids du corps : valeurs sous-estimées. */
   poidsInconnu: boolean;
+  /** Poids corporel retenu pour la séance (celui de la séance, sinon le dernier connu). */
+  poidsKg?: number;
   /** Séries de travail, dans l'ordre. */
   series: Serie[];
 }
@@ -76,6 +78,7 @@ export function pointsExercice(
       chargeMax,
       volume: vol,
       poidsInconnu: p == null && l.some(dependDuPoids),
+      poidsKg: p,
       series: l,
     });
   }
@@ -229,7 +232,7 @@ export function libelleRecord(r: RecordPerso, nomExercice: string): string {
     case 'charge_max':
       return `${nomExercice} · charge max ${kg(r.valeur)}`;
     case 'reps_a_charge':
-      return `${nomExercice} · ${r.valeur} reps à ${r.lestKg != null ? `+${kg(r.lestKg)}` : kg(r.chargeKg!)}`;
+      return `${nomExercice} · ${r.valeur} reps à ${r.lestKg != null ? `${signeLest(r.lestKg)}${kg(r.lestKg)} de lest` : kg(r.chargeKg!)}`;
     case 'volume_seance':
       return `${nomExercice} · volume ${nombre(r.valeur)} kg`;
   }

@@ -12,7 +12,9 @@ describe('suggestion de charge', () => {
   it('convertit selon le mode de charge', () => {
     expect(versChargeNotee(40, 'par_main')).toBe(20);
     expect(versChargeNotee(100, 'lest', 80)).toBe(20);
-    expect(versChargeNotee(70, 'lest', 80)).toBe(0);
+    expect(versChargeNotee(70, 'lest', 80)).toBe(-10); // aide de 10 kg
+    expect(versChargeNotee(70, 'lest')).toBe(70);
+    expect(arrondirAuPas(-11.2, 2.5, -80)).toBe(-10);
     expect(arrondirAuPas(71.2, 2.5)).toBe(70);
   });
   it('1RM récent = meilleur des 3 dernières séances', () => {

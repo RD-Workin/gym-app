@@ -13,6 +13,14 @@ describe('chargeEffective', () => {
     expect(chargeEffective({ chargeKg: 10, modeCharge: 'lest' }, 75)).toBe(85);
     expect(chargeEffective({ chargeKg: 10, modeCharge: 'lest' })).toBe(10);
   });
+  it('lest négatif : assistance retirée du poids du corps', () => {
+    expect(chargeEffective({ chargeKg: -15, modeCharge: 'lest' }, 75)).toBe(60);
+    expect(chargeEffective({ chargeKg: -90, modeCharge: 'lest' }, 75)).toBe(0);
+    // Sans poids du corps, une aide ne dit rien de la charge réelle.
+    expect(chargeEffective({ chargeKg: -15, modeCharge: 'lest' })).toBeNull();
+    expect(unRmEstime({ chargeKg: -15, modeCharge: 'lest', reps: 6, type: 'travail' })).toBeNull();
+    expect(unRmEstime({ chargeKg: -15, modeCharge: 'lest', reps: 6, type: 'travail' }, 75)).toBeCloseTo(72);
+  });
   it('sans charge : poids du corps', () => {
     expect(chargeEffective({ modeCharge: 'sans_charge' }, 75)).toBe(75);
   });

@@ -2,7 +2,8 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import type { Exercice, MesureObjectif, Objectif } from '../../core/types';
-import { Bouton, Carte, Onglets, Puce, Stepper } from '../../ui';
+import { Aide, Bouton, Carte, Onglets, Puce, Stepper } from '../../ui';
+import { LEST_MAX_KG, LEST_MIN_KG, signeLest } from '../../core/calculs';
 import type { DonneesProgression } from '../progression/donnees';
 import { conseilsObjectif, evaluerObjectif, fmtValeur, LIBELLE_STATUT, phraseCourte, phraseMarge, repsCible, typeObjectif, uniteMesure, type StatutObjectif } from './calculs';
 import { enregistrerObjectif, objectifsDe, supprimerObjectif } from './objectifs';
@@ -55,8 +56,9 @@ export function CarteObjectif({ exercice, d }: { exercice: Exercice; d: DonneesP
 function SuiviObjectif({ exercice, d, objectif, modifier }: { exercice: Exercice; d: DonneesProgression; objectif: Objectif; modifier: () => void }) {
   const { points, etat } = useMemo(() => evaluerObjectif(objectif, d), [objectif, d]);
   const conseils = useMemo(() => conseilsObjectif(objectif, etat, points, exercice.equipement, 2), [objectif, etat, points, exercice.equipement]);
-  const u = uniteMesure(objectif.mesure);
-  const fmt = (v: number) => fmtValeur(v, objectif.mesure);
+  const lest = exercice.modeCharge === 'lest' && objectif.mesure === 'serie';
+  const u = lest ? 'kg de lest' : uniteMesure(objectif.mesure);
+  const fmt = (v: number) => (lest ? signeLest(v) : '') + fmtValeur(v, objectif.mesure);
   const entrainement = objectif.mesure === 'serie' && repsCible(objectif) > 1;
   const sousTitre = objectif.mesure === 'serie' ? (entrainement ? 'ton niveau actuel' : '1RM estimé') : objectif.mesure === 'reps' ? 'meilleure série' : 'actuel';
   return (
@@ -92,6 +94,7 @@ function SuiviObjectif({ exercice, d, objectif, modifier }: { exercice: Exercice
 
 function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exercice; d: DonneesProgression; objectif?: Objectif; fermer: () => void }) {
   const sansCharge = exercice.modeCharge === 'sans_charge';
+  const lestEx = exercice.modeCharge === 'lest';
   // Un ancien objectif « 1RM estimé » ou « charge max » se modifie comme un objectif 1RM.
   const typeInitial: TypeForm = objectif
     ? objectif.mesure === 'reps' ? 'reps' : objectif.mesure === 'serie' && repsCible(objectif) > 1 ? 'entrainement' : '1rm'
@@ -108,12 +111,17 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
       return a ? Math.ceil(a * 1.25) : 10;
     }
     const a = actuelPour('serie', t === '1rm' ? 1 : r);
+    // Lest : 2,5 kg de plus que le niveau actuel (ou 2,5 kg d'aide en moins), la cible peut être 0 ou négative.
+    if (lestEx) return a != null ? Math.ceil((a + 2.5) / 2.5) * 2.5 : 10;
     return a ? Math.ceil((a * 1.05) / 2.5) * 2.5 : 50;
   };
   const [cible, setCible] = useState<number>(() => objectif?.cible ?? proposition(typeInitial, reps));
   const [echeance, setEcheance] = useState(objectif?.echeance ?? '');
   const actuel = actuelPour(mesure, reps);
-  const fmt = (v: number) => fmtValeur(v, mesure);
+  const lest = lestEx && mesure === 'serie';
+  const fmt = (v: number) => (lest ? signeLest(v) : '') + fmtValeur(v, mesure);
+  const uKg = lest ? 'kg de lest' : 'kg';
+  const cibleValide = lest ? Number.isFinite(cible) : cible > 0;
   const changerType = (t: TypeForm) => {
     setType(t);
     if (t !== typeInitial || !objectif) setCible(proposition(t, repsEntrainement));
@@ -125,7 +133,7 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
   };
   const valider = async (e: Event) => {
     e.preventDefault();
-    if (!(cible > 0)) return;
+    if (!cibleValide) return;
     await enregistrerObjectif(exercice.id, { mesure, cible, reps, echeance }, objectif);
     fermer();
   };
@@ -135,17 +143,30 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
     actuel == null
       ? 'Pas encore de mesure sur cet exercice.'
       : type === '1rm'
-        ? `Ton 1RM estimé aujourd'hui : ${fmt(actuel)} kg.`
+        ? `Ton 1RM estimé aujourd'hui : ${fmt(actuel)} ${uKg}.`
         : type === 'entrainement'
-          ? `Ton niveau aujourd'hui : ${reps} × ${fmt(actuel)} kg.`
+          ? `Ton niveau aujourd'hui : ${reps} × ${fmt(actuel)} ${uKg}.`
           : `Actuellement : ${fmt(actuel)} reps`;
   return (
     <Carte ton="progres" titre={objectif ? 'Modifier l’objectif' : 'Nouvel objectif'}>
       <form class="ui-pile" onSubmit={valider}>
         <Onglets label="Type d'objectif" options={options} valeur={type} onChange={changerType} />
         <div class="ex-champ">
-          <span class="ui-surtitre">{type === '1rm' ? 'Max visé (1 rep)' : type === 'entrainement' ? 'Charge' : 'Reps visées'}</span>
-          <Stepper id="obj-cible" valeur={cible} onChange={setCible} unite={enReps ? 'reps' : 'kg'} pas={enReps ? 1 : 2.5} min={enReps ? 1 : 0} max={enReps ? 200 : 600} decimales={enReps ? 0 : 1} />
+          <span class="ui-surtitre">
+            {type === '1rm' ? (lest ? 'Lest visé (1 rep)' : 'Max visé (1 rep)') : type === 'entrainement' ? (lest ? 'Lest' : 'Charge') : 'Reps visées'}
+            {lest && <Aide mot="lest" />}
+          </span>
+          <Stepper
+            id="obj-cible"
+            valeur={cible}
+            onChange={setCible}
+            unite={enReps ? 'reps' : uKg}
+            pas={enReps ? 1 : 2.5}
+            min={enReps ? 1 : lest ? LEST_MIN_KG : 0}
+            max={enReps ? 200 : lest ? LEST_MAX_KG : 600}
+            decimales={enReps ? 0 : 1}
+          />
+          {lest && <span class="ui-attenue obj-aide">Kg ajoutés à ton poids du corps. 0 = sans lest, en négatif = avec une aide (élastique, machine).</span>}
         </div>
         {type === 'entrainement' && (
           <div class="ex-champ">
@@ -159,7 +180,7 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
           <input type="date" value={echeance} onInput={(e) => setEcheance(e.currentTarget.value)} />
         </label>
         <div class="ui-ligne">
-          <Bouton type="submit" icone="valider" disabled={!(cible > 0)}>Enregistrer</Bouton>
+          <Bouton type="submit" icone="valider" disabled={!cibleValide}>Enregistrer</Bouton>
           <Bouton variante="contour" onClick={fermer}>Annuler</Bouton>
         </div>
         {objectif && (

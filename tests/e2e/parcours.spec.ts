@@ -122,3 +122,16 @@ test('modifier une séance type et revenir au modèle d’origine', async ({ pag
   await expect(page.locator('.sc-nom-bloc')).toHaveCount(avant);
   await expect(page.getByRole('button', { name: /Revenir au modèle d’origine/ })).toHaveCount(0);
 });
+
+// Exercice au poids du corps : on note le lest, négatif si on se fait aider (élastique, machine).
+test('tractions : lest négatif accepté et expliqué', async ({ page }) => {
+  await page.goto('./#/exercices');
+  await page.locator('.ui-liste a', { hasText: /^Tractions/ }).first().click();
+  await expect(page.locator('.ui-stepper-unite').filter({ hasText: 'kg de lest' }).first()).toBeVisible();
+  await page.locator('#sr-charge').fill('-15');
+  await page.locator('#sr-charge').blur();
+  await expect(page.locator('#sr-charge')).toHaveValue('-15');
+  await expect(page.locator('.ui-indication-lest')).toContainText('Aide');
+  await page.getByRole('button', { name: /^Enregistrer \d+ séries?/ }).click();
+  await expect(page.locator('.sr-confirmation')).toContainText('-15 kg de lest');
+});

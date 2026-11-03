@@ -325,3 +325,6 @@ button.ui-element:active { background: var(--c-surface-2); }
   letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
 }
 .ui-carte-titre:has(.ui-aide-bulle) { flex-wrap: wrap; }
+
+/* Indication sous le champ de lest (exercices au poids du corps). */
+.ui-indication-lest { margin: 0; font-size: var(--t-sm); line-height: 1.35; }
