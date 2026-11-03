@@ -245,6 +245,8 @@ export interface EtapeEchauffement {
  * Principe courant : quelques séries légères, reps en baisse quand la charge monte, sans fatigue avant
  * les séries de travail. Valeurs et sources à confirmer par 10-coach.
  */
+// 10-coach : montée classique 40/60/80 % à reps décroissantes (Helms, Muscle & Strength Pyramid ; NSCA) :
+// assez pour préparer articulations et système nerveux, trop peu pour fatiguer avant le travail.
 export const ECHAUFFEMENT: { pourcentage: number; reps: number }[] = [
   { pourcentage: 0.4, reps: 8 },
   { pourcentage: 0.6, reps: 5 },
