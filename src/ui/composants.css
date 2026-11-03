@@ -307,3 +307,21 @@ button.ui-element:active { background: var(--c-surface-2); }
 .ui-conseils-corps ul { margin: var(--e-1) 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; }
 .ui-conseils-corps li::marker { color: var(--c-action); }
 @keyframes ui-conseils-ouvre { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Aide « ? » (src/ui/Aide.tsx) : explication d'un terme, sous le texte. Cible tactile 44 px par la marge négative. */
+.ui-aide { display: contents; }
+.ui-aide-btn {
+  display: inline-grid; place-items: center; vertical-align: middle;
+  width: 20px; height: 20px; margin: -12px -10px -12px -8px; padding: 0; box-sizing: content-box;
+  border: 12px solid transparent; background-clip: padding-box;
+  border-radius: 50%; background-color: var(--c-surface-2); color: var(--c-attenue);
+  font-size: 13px; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: none; cursor: pointer;
+}
+.ui-aide.ouvert .ui-aide-btn { background-color: var(--c-action); color: var(--c-action-encre); }
+.ui-aide-bulle {
+  display: block; flex: 1 0 100%; grid-column: 1 / -1; box-sizing: border-box; margin: 6px 0 2px; padding: 8px 12px; border-radius: 10px;
+  background: var(--c-surface-2); color: var(--c-texte); border-left: 3px solid var(--c-action);
+  font-family: var(--f-texte); font-size: var(--t-sm, 14px); font-weight: 400; line-height: 1.4;
+  letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
+}
+.ui-carte-titre:has(.ui-aide-bulle) { flex-wrap: wrap; }

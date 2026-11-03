@@ -18,3 +18,9 @@
 .obj-mini { height: 6px; border-radius: 3px; background: var(--c-surface-2); overflow: hidden; margin-top: 4px; }
 .obj-mini span { display: block; height: 100%; background: var(--c-progres); }
 @media (prefers-reduced-motion: reduce) { .obj-jauge span { transition: none; } }
+.obj-reps { font-size: 1.3rem; font-weight: 700; }
+.obj-sous { margin-left: auto; font-size: 0.8rem; }
+.obj-conseils summary { cursor: pointer; font-weight: 600; color: var(--c-progres); min-height: 32px; display: flex; align-items: center; }
+.obj-modifier, .obj-supprimer { background: none; border: 0; padding: var(--e-2) 0; font: inherit; cursor: pointer; text-align: left; }
+.obj-modifier { color: var(--c-action); font-weight: 600; }
+.obj-supprimer { color: var(--c-danger); font-size: 0.9rem; }

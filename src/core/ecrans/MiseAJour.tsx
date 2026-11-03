@@ -30,6 +30,12 @@ export function BanniereMiseAJour() {
   );
 }
 
+/** Nouvel utilisateur : l'historique des versions ne lui parle pas. On le marque comme lu (correctifs appliqués : ils ne touchent que les valeurs par défaut). */
+export async function marquerNouveautesVues(): Promise<void> {
+  await traiterCorrectifs(true);
+  await db.reglages.put({ cle: CLE_NOUVEAUTES_VUES, valeur: DERNIERE_NOUVEAUTE });
+}
+
 /** Carte « Quoi de neuf » sur l'accueil, une fois par version, avec les corrections de contenu proposées. */
 export function CarteNouveautes() {
   const vue = useRequete(async () => ((await db.reglages.get(CLE_NOUVEAUTES_VUES))?.valeur as number | undefined) ?? 0);

@@ -26,6 +26,7 @@ export function EcranModeles() {
         </a>
       </div>
       <h1>Modèles de séance</h1>
+      <p class="sc-attenue sc-intro">Une séance type = une liste d'exercices avec leurs séries et leur repos. Touche-en une pour la modifier.</p>
       {modeles.length ? (
         <Liste label="Modèles">
           {modeles.map((m) => (

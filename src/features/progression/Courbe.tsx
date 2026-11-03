@@ -16,8 +16,8 @@ interface Props {
   format: (v: number) => string;
   label: string;
   couleur?: string;
-  /** Objectif : ligne pointillée horizontale. */
-  cible?: number;
+  /** Objectifs : lignes pointillées horizontales. */
+  cibles?: number[];
 }
 
 const L = 340;
@@ -25,13 +25,14 @@ const H = 170;
 const M = { h: 14, b: 24, g: 4, d: 44 };
 const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-export function Courbe({ points, format, label, couleur = 'var(--c-action)', cible }: Props) {
+export function Courbe({ points, format, label, couleur = 'var(--c-action)', cibles = [] }: Props) {
   const [choisi, setChoisi] = useState<number | null>(null);
   if (points.length === 0) return <p class="ui-attenue prog-vide">Pas encore de données.</p>;
 
   const ts = points.map((p) => new Date(p.date).getTime());
   const vs = points.map((p) => p.valeur);
-  const bornes = cible != null && cible > 0 ? [...vs, cible] : vs;
+  const lignes = cibles.filter((c) => c > 0);
+  const bornes = [...vs, ...lignes];
   const t0 = Math.min(...ts);
   const t1 = Math.max(...ts);
   let v0 = Math.min(...bornes);
@@ -69,18 +70,18 @@ export function Courbe({ points, format, label, couleur = 'var(--c-action)', cib
             <stop offset="1" stop-color={couleur} stop-opacity="0" />
           </linearGradient>
         </defs>
-        {graduations.map((g) => (
+        {graduations.filter((g) => lignes.every((c) => Math.abs(y(c) - y(g)) > 12)).map((g) => (
           <g key={g}>
             <line x1={M.g} x2={L - M.d} y1={y(g)} y2={y(g)} class="prog-grille" />
             <text x={L - M.d + 6} y={y(g) + 4} class="prog-axe">{format(g)}</text>
           </g>
         ))}
-        {cible != null && cible > 0 && (
-          <g class="prog-cible">
-            <line x1={M.g} x2={L - M.d} y1={y(cible)} y2={y(cible)} stroke="var(--c-progres)" stroke-width="1.5" stroke-dasharray="5 4" />
-            <text x={L - M.d + 6} y={y(cible) + 4} class="prog-axe" fill="var(--c-progres)">{format(cible)}</text>
+        {lignes.map((c) => (
+          <g key={c} class="prog-cible">
+            <line x1={M.g} x2={L - M.d} y1={y(c)} y2={y(c)} stroke="var(--c-progres)" stroke-width="1.5" stroke-dasharray="5 4" />
+            <text x={L - M.d + 6} y={y(c) + 4} class="prog-axe" fill="var(--c-progres)">{format(c)}</text>
           </g>
-        )}
+        ))}
         {points.length > 1 && <path d={aire} fill="url(#prog-degrade)" />}
         <path d={trace} fill="none" stroke={couleur} stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
         {points.map((p, i) => (

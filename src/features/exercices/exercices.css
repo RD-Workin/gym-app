@@ -86,3 +86,18 @@
 }
 .ex-titre-fiche { display: flex; align-items: center; justify-content: space-between; gap: var(--e-2); }
 .ex-titre-fiche h1 { margin: 0; }
+
+/* Édition repliée : la fiche sert d'abord à noter et consulter. */
+.ex-modifier { border: 1px solid var(--c-trait); border-radius: 16px; background: var(--c-surface); }
+.ex-modifier > summary {
+  display: grid; gap: 2px; padding: var(--e-4, 16px); cursor: pointer; list-style: none; min-height: 48px;
+  font-family: var(--f-titre); font-weight: 800; text-transform: uppercase; font-size: var(--t-md);
+}
+.ex-modifier > summary::-webkit-details-marker { display: none; }
+.ex-modifier > summary::after { content: '›'; position: absolute; right: var(--e-4, 16px); top: 50%; margin-top: -14px; font-size: 24px; line-height: 28px; color: var(--c-attenue); }
+.ex-modifier > summary { position: relative; padding-right: 40px; }
+.ex-modifier[open] > summary::after { transform: rotate(90deg); }
+.ex-modifier > summary .ui-attenue { font-family: var(--f-texte); font-weight: 400; text-transform: none; font-size: var(--t-sm); }
+.ex-modifier > .ui-pile { padding: 0 var(--e-4, 16px) var(--e-4, 16px); }
+.ex-aide-masquer { margin: 0; font-size: var(--t-sm); }
+.ex-intro { margin: 0; font-size: var(--t-sm); }

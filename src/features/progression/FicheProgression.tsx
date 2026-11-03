@@ -2,13 +2,14 @@
 // Réutilisable par 03 dans la fiche exercice : <FicheProgression exerciceId={id} />.
 import { useMemo, useState } from 'preact/hooks';
 import { useCompteur } from '../../anim';
-import { Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
+import { Aide, Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
 import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { useRequete } from '../../core/requetes';
-import { objectifDe } from '../objectifs/objectifs';
+import { objectifsDe } from '../objectifs/objectifs';
+import { epley, repsCible } from '../objectifs/calculs';
 import './progression.css';
 
 const MESURES: { valeur: Mesure; libelle: string }[] = [
@@ -54,8 +55,12 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const dernier = pc[pc.length - 1];
   const t = tendance(points, mesure);
   const f = fmt(mesure);
-  const objectif = useRequete(() => objectifDe(exerciceId), [exerciceId]);
-  const cible = objectif && objectif.mesure === mesure ? objectif.cible : undefined;
+  // Lignes d'objectif sur la courbe : objectifs de la même mesure ; « N reps × X kg » ramené au 1RM (charge totale seulement).
+  const objectifs = useRequete(() => objectifsDe(exerciceId), [exerciceId]);
+  const totale = d.exercices.get(exerciceId)?.modeCharge === 'total';
+  const cibles = (objectifs ?? []).flatMap((o) =>
+    o.mesure === mesure ? [o.cible] : mesure === 'un_rm' && o.mesure === 'serie' && totale ? [epley(o.cible, repsCible(o))] : [],
+  );
   const affiche = useCompteur(dernier?.valeur ?? 0, 700, mesure === 'volume' ? 0 : 1);
 
   if (seriesEx.filter((s) => s.type !== 'echauffement').length === 0) {
@@ -76,7 +81,9 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
       <Carte>
         <div class="ui-ligne-entre">
           <div>
-            <span class="ui-surtitre">{TITRE_MESURE[mesure]}</span>
+            <span class="ui-surtitre">
+              {TITRE_MESURE[mesure]} <Aide mot={mesure === 'un_rm' ? 'unRm' : mesure === 'volume' ? 'volume' : 'chargeMax'} />
+            </span>
             <div class="prog-grand">
               <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(affiche) : kg(affiche).replace(' kg', '')) : '–'}</span>
               <span class="ui-attenue">kg</span>
@@ -91,7 +98,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
           {t && t.delta === 0 && <Puce ton="alerte">stagne</Puce>}
         </div>
         <Onglets label="Mesure affichée" options={MESURES} valeur={mesure} onChange={setMesure} />
-        <Courbe points={pc} format={f} label={`Évolution : ${TITRE_MESURE[mesure]}`} cible={cible} />
+        <Courbe points={pc} format={f} label={`Évolution : ${TITRE_MESURE[mesure]}`} cibles={cibles} />
         {mesure === 'un_rm' && <p class="prog-note ui-attenue">Formule d'Epley, séries de 12 reps au plus.</p>}
       </Carte>
 

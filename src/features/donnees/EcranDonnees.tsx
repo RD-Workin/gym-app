@@ -128,14 +128,17 @@ export function EcranDonnees() {
       <Carte
         titre="État"
         ton={etat?.due ? 'alerte' : 'neutre'}
-        aside={etat && <Puce ton={etat.due ? 'alerte' : 'progres'}>{etat.due ? 'À faire' : 'À jour'}</Puce>}
+        aside={etat && <Puce ton={etat.due ? 'alerte' : 'progres'}>{etat.due ? 'À faire' : etat.aDesDonnees ? 'À jour' : 'Rien à sauver'}</Puce>}
       >
-        <p>{etat ? libelleDerniere(etat) : '…'}</p>
+        <p>{etat ? (etat.aDesDonnees ? libelleDerniere(etat) : 'Aucune série notée pour l’instant.') : '…'}</p>
+        <p class="ui-element-detail">
+          Une sauvegarde est un fichier à garder (Fichiers, iCloud, mail) : il permet de tout récupérer, par exemple sur un nouveau téléphone.
+        </p>
         <p class="ui-element-detail">Tes données ne quittent le téléphone que si tu les partages. Rappel tous les {JOURS_RAPPEL} jours.</p>
       </Carte>
 
       <Bouton taille="geant" icone="donnees" onClick={exportJson} disabled={occupe}>
-        Sauvegarder (JSON)
+        Sauvegarder mes données
       </Bouton>
       <Carte titre="Pour un coach ou une IA" aside={compte && <Puce>{compte.series} séries</Puce>}>
         <div class="dn-periode">
@@ -163,7 +166,7 @@ export function EcranDonnees() {
           </Bouton>
         </div>
       </Carte>
-      <Bouton variante="contour" taille="large" icone="importer" onClick={() => champFichier.current?.click()} disabled={occupe} detail="Depuis un fichier .json de sauvegarde">
+      <Bouton variante="contour" taille="large" icone="importer" onClick={() => champFichier.current?.click()} disabled={occupe} detail="Remplace tes données par celles d’un fichier de sauvegarde (.json)">
         Restaurer une sauvegarde
       </Bouton>
       <input ref={champFichier} type="file" accept="application/json,.json" hidden onChange={choisirFichier} />

@@ -87,6 +87,30 @@ describe('objectifs : calculs', () => {
     expect(e2.reste).toBe(3);
   });
 
+  it('objectif série N × X kg : équivalent Epley, « à tenter », puis atteint avec une vraie série', () => {
+    // 6 × 78 kg → 1RM ≈ 93,6 → équivalent 8 reps ≈ 73,9 kg
+    const h = historique('dc', [70, 72, 74, 76, 78], 6);
+    const o = obj({ mesure: 'serie', cible: 75, reps: 8 });
+    const r1 = evaluerObjectif(o, donnees(h), AUJ);
+    expect(r1.etat.actuel).toBeCloseTo(73.9, 1);
+    expect(r1.etat.atteint).toBe(false);
+    expect(r1.etat.statut).toBe('en_progres');
+    expect(phraseMarge(o, r1.etat)).toMatch(/^équivalent 8 × 74 \/ 75 kg, reste 1 kg/);
+    expect(conseilsObjectif(o, r1.etat, r1.points, 'barre', 5).map((c) => c.regle)).toContain('reps_cible');
+    // 5 × 82 kg : équivalent 8 reps > 75 kg, mais aucune vraie série de 8 à 75 kg.
+    const h2 = historique('dc', [76, 78, 80, 82], 5);
+    const r2 = evaluerObjectif(o, donnees(h2), AUJ);
+    expect(r2.etat.atteint).toBe(false);
+    expect(r2.etat.statut).toBe('a_tenter');
+    expect(conseilsObjectif(o, r2.etat, r2.points)[0].regle).toBe('tenter');
+    // 8 × 75 kg réellement fait.
+    const h3 = historique('dc', [70, 75], 8);
+    expect(evaluerObjectif(o, donnees(h3), AUJ).etat.atteint).toBe(true);
+    // 1 × 100 kg : 1 rep, équivalent = 1RM estimé.
+    const o1 = obj({ mesure: 'serie', cible: 100, reps: 1 });
+    expect(evaluerObjectif(o1, donnees(historique('dc', [90], 3)), AUJ).etat.actuel).toBeCloseTo(99, 0);
+  });
+
   it('pas assez de données : statut « à suivre » et conseil pour en avoir', () => {
     const h = historique('dc', [80]);
     const { etat, points } = evaluerObjectif(obj({}), donnees(h), AUJ);
@@ -109,7 +133,7 @@ describe('objectifs dans les exports', () => {
   it('résumé IA : section « Mes objectifs » et question qui y renvoie', () => {
     const t = construireResume(d, {}, AUJ);
     expect(t).toContain('## Mes objectifs');
-    expect(t).toContain('Développé couché — Charge max : objectif 100 kg d’ici le 01/03/2027 ; actuel 85 kg, reste 15 kg (85 % de la cible)');
+    expect(t).toContain('Développé couché : objectif Charge max 100 kg d’ici le 01/03/2027 ; actuel 85 kg, reste 15 kg (85 % de la cible)');
     expect(t).toContain('date estimée à ce rythme : 16/02/2027');
     expect(t).toContain('au regard de mes objectifs');
   });
@@ -118,12 +142,21 @@ describe('objectifs dans les exports', () => {
     const lignes = lignesCsv(d, {}, AUJ);
     const col = (c: string) => (COLONNES_CSV as readonly string[]).indexOf(c);
     expect(lignes[0].length).toBe(COLONNES_CSV.length);
-    expect(lignes[0][col('objectif')]).toBe('Charge max');
+    expect(lignes[0][col('objectif')]).toBe('Charge max 100 kg');
     expect(lignes[0][col('objectif_cible')]).toBe('100');
     expect(lignes[0][col('objectif_actuel')]).toBe('85');
     expect(lignes[0][col('objectif_reste')]).toBe('15');
     expect(lignes[0][col('objectif_date_visee')]).toBe('2027-03-01');
     expect(lignes[0][col('objectif_date_estimee')]).toBe('2027-02-16');
+  });
+
+  it('plusieurs objectifs sur un exercice : tous dans le résumé, séparés par | dans le CSV', () => {
+    const d2 = { ...(d as object), objectifs: [obj({ id: 'a', mesure: 'serie', cible: 100, reps: 1, creeLe: '1' }), obj({ id: 'b', mesure: 'serie', cible: 75, reps: 8, creeLe: '2' })] } as never;
+    const t = construireResume(d2, {}, AUJ);
+    expect(t).toContain('Développé couché : objectif 1RM 100 kg');
+    expect(t).toContain('Développé couché : objectif charge d’entraînement 8 × 75 kg');
+    const l = lignesCsv(d2, {}, AUJ)[0];
+    expect(l[(COLONNES_CSV as readonly string[]).indexOf('objectif')]).toBe('1RM 100 kg | 8 × 75 kg');
   });
 
   it('sauvegarde v2 importée : table objectifs ajoutée vide', () => {
