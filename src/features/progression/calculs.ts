@@ -321,3 +321,82 @@ export function resumeSeance(series: Serie[], poids: number | undefined) {
     volume: travail.reduce((v, s) => v + (chargeEffective(s, poids) ?? 0) * s.reps, 0),
   };
 }
+
+// ---------------------------------------------------------------- Calendrier : progrès par séance
+
+export interface ProgresSeance {
+  /** Exercices (ou variantes) travaillés, déjà faits au moins une fois avant. */
+  compares: number;
+  /** Mieux que la dernière fois : 1RM estimé, sinon charge max, sinon reps max. */
+  enHausse: number;
+  enBaisse: number;
+  /** Exercices avec au moins un record battu pendant la séance. */
+  records: number;
+}
+
+/**
+ * Pour chaque séance, combien d'exercices ont progressé par rapport à la séance précédente du même
+ * exercice (et de la même variante), et combien ont battu un record. Écart de moins de 0,5 % = stable.
+ */
+export function progresParSeance(series: Serie[], seances: Map<Id, Pick<Seance, 'debut'>>, poids: Map<Id, number | undefined>): Map<Id, ProgresSeance> {
+  const res = new Map<Id, ProgresSeance>();
+  const de = (id: Id) => {
+    let p = res.get(id);
+    if (!p) res.set(id, (p = { compares: 0, enHausse: 0, enBaisse: 0, records: 0 }));
+    return p;
+  };
+  // Meilleure valeur de chaque exercice dans chaque séance.
+  const parCle = new Map<string, Map<Id, { un: number | null; charge: number | null; reps: number }>>();
+  for (const s of series) {
+    if (!estDeTravail(s)) continue;
+    const cle = cleVariante(s);
+    let m = parCle.get(cle);
+    if (!m) parCle.set(cle, (m = new Map()));
+    const p = poids.get(s.seanceId);
+    const v = m.get(s.seanceId) ?? { un: null, charge: null, reps: 0 };
+    const r = unRmEstime(s, p);
+    const c = chargeEffective(s, p);
+    if (r != null && (v.un == null || r > v.un)) v.un = r;
+    if (c != null && c > 0 && (v.charge == null || c > v.charge)) v.charge = c;
+    v.reps = Math.max(v.reps, s.reps);
+    m.set(s.seanceId, v);
+  }
+  const date = (id: Id) => seances.get(id)?.debut ?? '';
+  for (const m of parCle.values()) {
+    const ordre = [...m.keys()].sort((a, b) => date(a).localeCompare(date(b)));
+    for (let i = 0; i < ordre.length; i++) {
+      de(ordre[i]);
+      if (i === 0) continue;
+      const a = m.get(ordre[i - 1])!;
+      const b = m.get(ordre[i])!;
+      // Même mesure des deux côtés : 1RM, sinon charge, sinon reps.
+      const [va, vb] = a.un != null && b.un != null ? [a.un, b.un] : a.charge != null && b.charge != null ? [a.charge, b.charge] : [a.reps, b.reps];
+      const p = de(ordre[i]);
+      p.compares++;
+      if (vb > va * 1.005) p.enHausse++;
+      else if (vb < va * 0.995) p.enBaisse++;
+    }
+  }
+  const avecRecord = new Map<Id, Set<string>>();
+  for (const r of bilanRecords(series, poids).evenements) {
+    const e = avecRecord.get(r.seanceId) ?? new Set();
+    e.add(`${r.exerciceId}|${r.varianteId ?? ''}`);
+    avecRecord.set(r.seanceId, e);
+  }
+  for (const [id, e] of avecRecord) de(id).records = e.size;
+  return res;
+}
+
+/** Jour local AAAA-MM-JJ (le calendrier compte en heure du téléphone). */
+export const jourLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Cases d'un mois, semaines du lundi au dimanche : `null` = case vide avant le 1er ou après le dernier jour. */
+export function joursDuMois(annee: number, mois: number): (Date | null)[] {
+  const premier = new Date(annee, mois, 1);
+  const decalage = (premier.getDay() + 6) % 7;
+  const nb = new Date(annee, mois + 1, 0).getDate();
+  const cases: (Date | null)[] = Array(decalage).fill(null);
+  for (let j = 1; j <= nb; j++) cases.push(new Date(annee, mois, j));
+  while (cases.length % 7) cases.push(null);
+  return cases;
+}

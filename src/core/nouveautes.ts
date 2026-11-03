@@ -9,7 +9,16 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
-    numero: 8,
+    numero: 11,
+    date: '2026-11-03',
+    points: [
+      'Pendant la séance, l’écran reste allumé : plus besoin de déverrouiller entre deux séries. Il se met en veille normalement dès que tu termines la séance ou que tu verrouilles le téléphone.',
+      'Échauffement proposé au premier exercice et aux exercices à la barre : 2 ou 3 séries légères calculées sur ta charge du jour. « Passer » si tu t’échauffes de ton côté ; Réglages pour ne plus le proposer.',
+      'Progrès › Calendrier : ton mois d’un coup d’œil. Chaque jour d’entraînement s’allume en vert si tu as progressé, en or si tu as battu un record. Touche un jour pour voir la séance.',
+    ],
+  },
+  {
+    numero: 10,
     date: '2026-11-03',
     points: [
       'Séances types refaites d’après les études récentes : Push, Pull et Jambes durent environ 1 h et travaillent tous les muscles (élévations latérales, extension triceps au-dessus de la tête, soulevé de terre roumain…). Si tu as déjà modifié une séance, elle reste comme tu l’as faite.',

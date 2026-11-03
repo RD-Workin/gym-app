@@ -11,7 +11,7 @@ import { seanceEnCours, useRequete } from '../../core/requetes';
 import { braisesSur, bulle, COULEURS_PROGRES, ecraser, eclatSur, feuArtifice, sauter, vibrer } from '../../anim';
 import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
-import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
+import type { Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
 import { origineDe } from '../modeles/modeles';
@@ -19,9 +19,16 @@ import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
 import { marquerBilan } from './bilan';
 import { ChoixRepos } from './ChoixRepos';
+import { useEcranAllume } from './ecranAllume';
 import {
   REPOS_DEFAUT_SEC,
+  REPOS_ECHAUFFEMENT_SEC,
+  REPOS_APRES_ECHAUFFEMENT_SEC,
   demarrerSeance,
+  echauffementActif,
+  echauffementAProposer,
+  pasCharge,
+  reglerEchauffement,
   derniereFois,
   dureeTexte,
   ecrirePlan,
@@ -172,9 +179,9 @@ const quoi = (m: Modele) => {
 
 /* ---------------- Séance active ---------------- */
 
-const pasCharge = (e?: Equipement) => (e === 'barre' || e === 'machine' || e === 'poulie' ? 2.5 : 1);
-
 function SeanceActive({ seance }: { seance: Seance }) {
+  // Écran allumé tant que la séance est ouverte (relâché quand elle se termine).
+  useEcranAllume();
   const [plan, setPlanLocal] = useState<PlanSeance>();
   useEffect(() => {
     void lirePlan(seance).then(setPlanLocal);
@@ -192,6 +199,9 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const exercice = bloc ? exercices?.get(bloc.exerciceId) : undefined;
   const avant = useRequete(() => (bloc ? derniereFois(bloc.exerciceId, seance.id) : []), [bloc?.exerciceId, seance.id]);
   const faites = bloc ? series.filter((s) => s.exerciceId === bloc.exerciceId) : [];
+  const travailFaites = faites.filter((s) => s.type !== 'echauffement');
+  const proposerEchauffement = useRequete(echauffementActif);
+  const etapesEchauf = bloc && plan?.echauffement?.blocId === bloc.id ? plan.echauffement.etapes : undefined;
 
   const [choix, setChoix] = useState(false);
   const [edition, setEdition] = useState<Serie>();
@@ -215,16 +225,17 @@ function SeanceActive({ seance }: { seance: Seance }) {
       setSaisie({ chargeKg: edition.chargeKg, reps: edition.reps, rir: edition.rir, type: edition.type, modeCharge: edition.modeCharge, reglagesMachine: edition.reglagesMachine });
       setRirVisible(edition.rir != null);
     } else {
-      setSaisie(preremplir(exercice, bloc, faites, avant));
+      setSaisie(preremplir(exercice, bloc, faites, avant, etapesEchauf));
     }
-  }, [bloc?.id, faites.length, avant, exercices, edition?.id]);
+  }, [bloc?.id, faites.length, avant, exercices, edition?.id, etapesEchauf]);
 
   const grps = useMemo(() => groupes(plan?.blocs ?? []), [plan?.blocs]);
   if (!plan || !exercices) return null;
   const gi = grps.findIndex((g) => g.includes(plan.actif));
   const grp = grps[gi] ?? [];
   const nom = (i: number) => exercices.get(plan.blocs[i]?.exerciceId)?.nom ?? 'Exercice';
-  const nbFaites = (i: number) => series.filter((s) => s.exerciceId === plan.blocs[i].exerciceId).length;
+  // Seules les séries de travail comptent pour la cible (l'échauffement est en plus).
+  const nbFaites = (i: number) => series.filter((s) => s.exerciceId === plan.blocs[i].exerciceId && s.type !== 'echauffement').length;
   const groupeFini = (g: number[]) => g.every((i) => nbFaites(i) >= (plan.blocs[i].seriesCibles ?? Infinity));
 
   const terminer = async () => {
@@ -263,15 +274,25 @@ function SeanceActive({ seance }: { seance: Seance }) {
       ecraser(bouton);
       vibrer(15);
       eclatSur(bouton, { nombre: 30, onde: true });
-      const rang = faites.filter((x) => x.type !== 'echauffement').length;
+      const rang = travailFaites.length;
       const serie = await enregistrerSerie(seance.id, bloc, saisie);
+      // Échauffement : on reste sur l'exercice. Repos court entre les étapes ; après la dernière étape
+      // proposée, repos normal du bloc (au moins 2 min) avant la 1re série de travail (avis 10-coach).
+      if (serie?.type === 'echauffement') {
+        setNouvelle(serie.id);
+        const nbFaits = faites.filter((s) => s.type === 'echauffement').length + 1;
+        const derniere = !!etapesEchauf && nbFaits >= etapesEchauf.length;
+        const duree = derniere ? Math.max(REPOS_APRES_ECHAUFFEMENT_SEC, plan.blocs[grp[0]]?.reposSec ?? 0) : REPOS_ECHAUFFEMENT_SEC;
+        setPlan({ ...plan, reposFin: Date.now() + duree * 1000, reposDuree: duree });
+        return;
+      }
       if (serie) {
         setNouvelle(serie.id);
         const mieux = avant ? progresVsDerniereFois(serie, avant, rang) : undefined;
         if (mieux) bulle(bouton, mieux, 'progres');
         // Exercice bouclé : toutes les séries cibles faites, à l'instant.
         const cibles = bloc.seriesCibles;
-        if (cibles && serie.type !== 'echauffement' && faites.length + 1 === cibles) {
+        if (cibles && travailFaites.length + 1 === cibles) {
           const point = document.querySelectorAll('.sc-points button')[gi];
           window.setTimeout(() => {
             sauter(point, 1.6);
@@ -343,6 +364,28 @@ function SeanceActive({ seance }: { seance: Seance }) {
     setEdition(undefined);
     setPlan({ ...plan, actif: grps[g][0] });
   };
+
+  // Échauffement proposé : premier exercice ou exercice à la barre, avant la 1re série, jamais imposé.
+  const chargeTravail = bloc && avant ? preremplir(exercice, bloc, travailFaites, avant).chargeKg : undefined;
+  const etapesProposees =
+    bloc && proposerEchauffement && !edition && !etapesEchauf && !plan.echauffementPasse?.includes(bloc.id)
+      ? echauffementAProposer(exercice, gi === 0, faites, chargeTravail)
+      : [];
+  const passerEchauffement = () => {
+    if (!bloc) return;
+    setPlan({ ...plan, echauffement: undefined, echauffementPasse: [...(plan.echauffementPasse ?? []), bloc.id] });
+  };
+  const faireEchauffement = () => {
+    if (!bloc) return;
+    setPlan({ ...plan, echauffement: { blocId: bloc.id, etapes: etapesProposees } });
+  };
+  const nePlusProposer = async () => {
+    if (!confirm("Ne plus proposer d'échauffement ? Tu pourras le remettre dans Réglages.")) return;
+    passerEchauffement();
+    await reglerEchauffement(false);
+  };
+  const nbEchauf = faites.filter((s) => s.type === 'echauffement').length;
+  const echauffementEnCours = !!etapesEchauf && saisie?.type === 'echauffement' && !travailFaites.length && nbEchauf < etapesEchauf.length;
 
   if (choix) return <ChoixExercice onChoix={ajouterExercice} onAnnuler={() => setChoix(false)} />;
 
@@ -421,18 +464,43 @@ function SeanceActive({ seance }: { seance: Seance }) {
               <p key={n} class="sc-note">{n}</p>
             ))}
 
-            {conseilsExercice(nom(plan.actif)) && <PanneauConseils key={nom(plan.actif)} fiche={conseilsExercice(nom(plan.actif))!} titre={`Conseils · ${nom(plan.actif)}`} />}          </div>
+          </div>
+
+          {etapesProposees.length > 0 && (
+            <div class="sc-echauf" role="group" aria-label="Échauffement proposé">
+              <div class="sc-ligne">
+                <span class="sc-echauf-titre">
+                  Échauffement proposé <Aide mot="echauffement" />
+                </span>
+                <button type="button" class="sc-lien sc-lien-inline sc-echauf-jamais" onClick={nePlusProposer}>
+                  Ne plus proposer
+                </button>
+              </div>
+              <p class="sc-attenue">
+                <b class="sc-num">{etapesProposees.map((e) => `${formatCharge({ chargeKg: e.chargeKg, modeCharge: saisie?.modeCharge ?? 'total' })}\u00a0×\u00a0${e.reps}`).join(' · ')}</b>, avant tes{' '}
+                {formatCharge({ chargeKg: chargeTravail, modeCharge: saisie?.modeCharge ?? 'total' })}
+              </p>
+              <div class="sc-echauf-actions">
+                <button type="button" class="sc-option sc-echauf-oui" onClick={faireEchauffement}>
+                  Faire l'échauffement
+                </button>
+                <button type="button" class="sc-option" onClick={passerEchauffement}>
+                  Passer
+                </button>
+              </div>
+            </div>
+          )}
 
           <ol class="sc-series">
-            {faites.map((s, i) => (
+            {faites.map((s) => (
               <li key={s.id} class={s.id === nouvelle ? 'anim-tampon' : undefined}>
                 <button type="button" class={`sc-serie fait${edition?.id === s.id ? ' cur' : ''}`} onClick={() => setEdition(edition?.id === s.id ? undefined : s)}>
-                  <span class="sc-n">{i + 1}</span>
+                  <span class="sc-n">{s.type === 'echauffement' ? 'É' : travailFaites.indexOf(s) + 1}</span>
                   <span class="sc-num">
                     {formatCharge(s)} × {s.reps}
                     {s.rir != null ? ` · RIR ${s.rir}` : ''}
                   </span>
-                  <span class="sc-ok">
+                  <span class={s.type === 'echauffement' ? 'sc-ok sc-echauf-fait' : 'sc-ok'}>
                     {s.type === 'echauffement' ? (
                       'échauf.'
                     ) : (
@@ -447,9 +515,17 @@ function SeanceActive({ seance }: { seance: Seance }) {
             {!edition && (
               <li>
                 <div class="sc-serie cur">
-                  <span class="sc-n">{faites.length + 1}</span>
-                  <span class="sc-attenue">série {faites.length + 1} : règle puis valide</span>
-                  <span />
+                  <span class="sc-n">{echauffementEnCours ? 'É' : travailFaites.length + 1}</span>
+                  <span class="sc-attenue">
+                    {echauffementEnCours ? `échauffement ${nbEchauf + 1} sur ${etapesEchauf!.length}` : `série ${travailFaites.length + 1} : règle puis valide`}
+                  </span>
+                  {echauffementEnCours ? (
+                    <button type="button" class="sc-lien sc-lien-inline" onClick={passerEchauffement}>
+                      Passer l'échauffement
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                 </div>
               </li>
             )}
@@ -549,6 +625,8 @@ function SeanceActive({ seance }: { seance: Seance }) {
             </Bouton>
           )}
         </div>
+        {/* Sous « Valider » : la saisie reste visible sans défiler (11). */}
+        {bloc && conseilsExercice(nom(plan.actif)) && <PanneauConseils key={nom(plan.actif)} fiche={conseilsExercice(nom(plan.actif))!} titre={`Conseils · ${nom(plan.actif)}`} />}
         <PanneauConseils fiche={CONSEILS_SEANCE} titre="Conseils de séance" />
       </div>
     </section>

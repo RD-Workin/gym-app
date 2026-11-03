@@ -133,3 +133,12 @@
 /* « Démarrer » reste visible en bas pendant qu'on parcourt la liste. */
 .ap-bas { position: sticky; bottom: var(--zone-bas); z-index: 2; padding: var(--e-4) 0 var(--e-2); background: linear-gradient(to bottom, transparent, var(--c-fond) 40%); }
 .ui-coquille.avec-barre .ap-bas { bottom: calc(var(--barre-onglets) + var(--zone-bas)); }
+
+/* Échauffement proposé (toujours facultatif) : compact, pour garder « Valider la série » visible */
+.sc-echauf { display: grid; gap: 6px; padding: 10px var(--e-3); border-radius: var(--r-sm); background: var(--c-surface); border: 1.5px dashed var(--c-trait); }
+.sc-echauf .sc-ligne { flex-wrap: nowrap; }
+.sc-echauf-titre { font-weight: 700; }
+.sc-echauf-jamais { color: var(--c-attenue); font-weight: 400; font-size: var(--t-xs); }
+.sc-echauf-actions { display: flex; gap: var(--e-2); }
+.sc-echauf-oui { border-color: var(--c-action); color: var(--c-action); font-weight: 600; }
+.sc-serie.fait .sc-ok.sc-echauf-fait { color: var(--c-attenue); } /* vert = progrès seulement (11) */
