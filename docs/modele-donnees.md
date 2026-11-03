@@ -93,8 +93,11 @@ Index : `id, seanceId, exerciceId, [exerciceId+faiteLe]`
 | id | string | |
 | exerciceId | string | |
 | varianteId | string? | absent = version standard |
-| mesure | `un_rm` \| `charge_max` \| `reps` | mêmes valeurs que la courbe de progression |
-| cible | number | kg (1RM estimé, charge max effective) ou reps (meilleure série) |
+| mesure | `serie` \| `un_rm` \| `charge_max` \| `reps` | `serie` = N reps à X kg ; les autres = valeurs de la courbe de progression |
+| cible | number | kg (serie : charge telle que notée ; 1RM estimé, charge max effective) ou reps (meilleure série) |
+| reps | number? | reps visées à la charge `cible` (serie) |
+
+Plusieurs objectifs par exercice. Champ `reps` ajouté sans nouvelle version de schéma (non indexé, optionnel).
 | echeance | string? | date visée AAAA-MM-JJ |
 | atteintLe | ISO? | première fois que la cible est atteinte |
 | creeLe, modifieLe | ISO | |

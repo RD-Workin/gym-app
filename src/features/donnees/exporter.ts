@@ -5,7 +5,7 @@ import { maintenant } from '../../core/ids';
 import type { ExportJson } from '../../core/migrations';
 import type { Exercice, Objectif, Seance, Serie, Variante, Modele } from '../../core/types';
 import { poidsParSeance } from '../progression/calculs';
-import { evaluerObjectif, NOM_MESURE } from '../objectifs/calculs';
+import { evaluerObjectif, libelleCible } from '../objectifs/calculs';
 
 /** Réglages propres à l'appareil : ni exportés ni restaurés. */
 export const REGLAGES_LOCAUX = new Set(['stockagePersistant', 'derniereSauvegarde', 'schemaVersion']);
@@ -138,20 +138,24 @@ export function lignesCsv(d: {
     if (!seanceParId.has(s.seanceId)) continue;
     (seriesParSeance.get(s.seanceId) ?? seriesParSeance.set(s.seanceId, []).get(s.seanceId)!).push(s);
   }
-  // Objectif de chaque exercice, état à la date de l'export (mêmes valeurs sur toutes ses lignes).
+  // Objectifs de chaque exercice, état à la date de l'export (mêmes valeurs sur toutes ses lignes).
+  // Plusieurs objectifs : valeurs séparées par « | », dans le même ordre d'une colonne à l'autre.
   const poids = poidsParSeance(d.seances);
-  const colonnesObjectif = new Map<string, (string | number | undefined | null)[]>();
-  for (const o of d.objectifs ?? []) {
+  const parExo = new Map<string, string[][]>();
+  const txt = (v: number | null | undefined) => (v == null ? '' : String(Math.round(v * 100) / 100));
+  for (const o of [...(d.objectifs ?? [])].sort((a, b) => a.creeLe.localeCompare(b.creeLe))) {
     const { etat } = evaluerObjectif(o, { series: d.series, seancesParId: seanceParId, poids }, aujourdhui);
-    colonnesObjectif.set(o.exerciceId, [
-      NOM_MESURE[o.mesure],
-      o.cible,
-      etat.actuel,
-      etat.actuel == null ? null : etat.reste,
-      o.echeance,
-      etat.atteint ? 'atteint' : etat.projection,
+    const l = parExo.get(o.exerciceId) ?? parExo.set(o.exerciceId, []).get(o.exerciceId)!;
+    l.push([
+      libelleCible(o),
+      txt(o.cible),
+      txt(etat.actuel),
+      etat.actuel == null ? '' : txt(etat.reste),
+      o.echeance ?? '',
+      etat.atteint ? 'atteint' : etat.statut === 'a_tenter' ? 'a_tenter' : etat.projection ?? '',
     ]);
   }
+  const colonnesObjectif = new Map([...parExo].map(([e, l]) => [e, l[0].map((_, i) => l.map((x) => x[i]).join(' | '))]));
   const lignes: string[][] = [];
   for (const seance of seancesTriees) {
     const liste = (seriesParSeance.get(seance.id) ?? []).sort((a, b) => a.ordre - b.ordre);

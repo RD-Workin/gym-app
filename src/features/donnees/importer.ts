@@ -227,7 +227,7 @@ function reglage(o: Obj, ou: string): Reglage {
   return { cle, valeur: v };
 }
 
-const MESURES_OBJECTIF = ['un_rm', 'charge_max', 'reps'] as const;
+const MESURES_OBJECTIF = ['serie', 'un_rm', 'charge_max', 'reps'] as const;
 const RE_JOUR = /^\d{4}-\d{2}-\d{2}$/;
 
 function objectif(o: Obj, ou: string): Objectif {
@@ -239,6 +239,7 @@ function objectif(o: Obj, ou: string): Objectif {
     varianteId: id(o, 'varianteId', ou),
     mesure: choix(o, 'mesure', ou, MESURES_OBJECTIF),
     cible: nombre(o, 'cible', ou, 0.1, 2000, true)!,
+    reps: nombre(o, 'reps', ou, 1, 1000),
     echeance,
     atteintLe: date(o, 'atteintLe', ou),
     ...horodatage(o, ou),

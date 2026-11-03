@@ -11,13 +11,39 @@ const FENETRE_ACTUEL = 56;
 const FENETRE_RYTHME = 84;
 
 export const NOM_MESURE: { [m in MesureObjectif]: string } = {
+  serie: 'Série',
   un_rm: '1RM estimé',
   charge_max: 'Charge max',
   reps: 'Reps (meilleure série)',
 };
 export const uniteMesure = (m: MesureObjectif) => (m === 'reps' ? 'reps' : 'kg');
 
-export function valeurPoint(p: PointSeance, m: MesureObjectif): number | null {
+/** Epley, avec 1 rep = la charge elle-même (même règle que src/core/calculs.ts). */
+export const epley = (charge: number, reps: number) => (reps <= 1 ? charge : charge * (1 + reps / 30));
+/** Charge équivalente pour `reps` reps à partir d'un 1RM estimé. */
+export const chargePourReps = (unRm: number, reps: number) => (reps <= 1 ? unRm : unRm / (1 + reps / 30));
+const REPS_MAX_EQUIVALENT = 20;
+
+type ObjectifCalc = Pick<Objectif, 'mesure' | 'cible' | 'echeance' | 'reps'>;
+export const repsCible = (o: Pick<Objectif, 'reps'>) => Math.max(1, o.reps ?? 1);
+
+/** Une série réelle remplit-elle l'objectif « N reps à X kg » ? (charge telle que notée) */
+export const remplitSerie = (s: Pick<Serie, 'chargeKg' | 'reps'>, o: Pick<Objectif, 'cible' | 'reps'>) =>
+  (s.chargeKg ?? 0) >= o.cible && s.reps >= repsCible(o);
+
+export function valeurPoint(p: PointSeance, o: MesureObjectif | Pick<Objectif, 'mesure' | 'reps'>): number | null {
+  const m = typeof o === 'string' ? o : o.mesure;
+  if (m === 'serie') {
+    // Meilleure série de la séance ramenée à l'équivalent « N reps » (Epley), charge telle que notée.
+    const r = typeof o === 'string' ? 1 : repsCible(o);
+    let best: number | null = null;
+    for (const s of p.series) {
+      if (!s.chargeKg || s.chargeKg <= 0 || s.reps < 1 || s.reps > REPS_MAX_EQUIVALENT) continue;
+      const v = chargePourReps(epley(s.chargeKg, s.reps), r);
+      if (best == null || v > best) best = v;
+    }
+    return best;
+  }
   if (m === 'un_rm') return p.unRm;
   if (m === 'charge_max') return p.chargeMax;
   return p.series.length ? Math.max(...p.series.map((s) => s.reps)) : null;
@@ -29,7 +55,7 @@ export function filtreObjectif(o: Pick<Objectif, 'exerciceId' | 'varianteId'>, s
   return series.some((s) => s.exerciceId === o.exerciceId && !s.varianteId && s.type !== 'echauffement') ? null : undefined;
 }
 
-export type StatutObjectif = 'atteint' | 'en_avance' | 'dans_les_temps' | 'en_retard' | 'en_progres' | 'stagne' | 'pas_assez';
+export type StatutObjectif = 'atteint' | 'a_tenter' | 'en_avance' | 'dans_les_temps' | 'en_retard' | 'en_progres' | 'stagne' | 'pas_assez';
 
 export interface EtatObjectif {
   /** Meilleure valeur des 8 dernières semaines (sinon dernière valeur connue). */
@@ -77,23 +103,30 @@ export function pente(pts: { t: number; v: number }[]): number | null {
   return den ? num / den : null;
 }
 
-export function etatObjectif(o: Pick<Objectif, 'mesure' | 'cible' | 'echeance'>, points: PointSeance[], maintenant = new Date()): EtatObjectif {
+export function etatObjectif(o: ObjectifCalc, points: PointSeance[], maintenant = new Date()): EtatObjectif {
   const now = maintenant.getTime();
   const pts = points
-    .map((p) => ({ t: new Date(p.date).getTime(), v: valeurPoint(p, o.mesure) }))
+    .map((p) => ({ t: new Date(p.date).getTime(), v: valeurPoint(p, o) }))
     .filter((p): p is { t: number; v: number } => p.v != null && p.t <= now)
     .sort((a, b) => a.t - b.t);
 
   const recents = pts.filter((p) => p.t >= now - FENETRE_ACTUEL * JOUR);
   const actuel = recents.length ? Math.max(...recents.map((p) => p.v)) : pts.length ? pts[pts.length - 1].v : null;
   const meilleur = pts.length ? Math.max(...pts.map((p) => p.v)) : null;
-  const atteint = actuel != null && actuel >= o.cible;
+  // Série : atteint seulement avec une vraie série N reps × X kg ces 8 dernières semaines (l'équivalent ne suffit pas).
+  const recent = (p: PointSeance) => {
+    const t = new Date(p.date).getTime();
+    return t >= now - FENETRE_ACTUEL * JOUR && t <= now;
+  };
+  const atteint =
+    o.mesure === 'serie' ? points.some((p) => recent(p) && p.series.some((s) => remplitSerie(s, o))) : actuel != null && actuel >= o.cible;
+  const pret = !atteint && actuel != null && actuel >= o.cible;
   const reste = actuel == null ? o.cible : Math.max(0, o.cible - actuel);
   const pourcentage = actuel == null || o.cible <= 0 ? 0 : Math.min(100, (actuel / o.cible) * 100);
 
   const rythme = pente(pts.filter((p) => p.t >= now - FENETRE_RYTHME * JOUR));
   let projection: string | null = null;
-  if (!atteint && rythme != null && rythme > 0) {
+  if (!atteint && !pret && rythme != null && rythme > 0) {
     const semaines = reste / rythme;
     if (semaines <= 104) projection = jourIso(now + semaines * SEMAINE);
   }
@@ -102,7 +135,7 @@ export function etatObjectif(o: Pick<Objectif, 'mesure' | 'cible' | 'echeance'>,
   let semainesRestantes: number | null = null;
   if (o.echeance) {
     semainesRestantes = (new Date(`${o.echeance}T23:59:59`).getTime() - now) / SEMAINE;
-    if (!atteint && semainesRestantes > 0) rythmeRequis = reste / Math.max(1, semainesRestantes);
+    if (!atteint && !pret && semainesRestantes > 0) rythmeRequis = reste / Math.max(1, semainesRestantes);
   }
 
   const frequence = pts.filter((p) => p.t >= now - 28 * JOUR).length / 4;
@@ -116,6 +149,7 @@ export function etatObjectif(o: Pick<Objectif, 'mesure' | 'cible' | 'echeance'>,
 
   let statut: StatutObjectif;
   if (atteint) statut = 'atteint';
+  else if (pret) statut = 'a_tenter';
   else if (pts.length < 3 || rythme == null) statut = 'pas_assez';
   else if (semainesSansProgres >= 3 || rythme <= 0) statut = 'stagne';
   else if (rythmeRequis != null) statut = rythme >= rythmeRequis * 1.15 ? 'en_avance' : rythme >= rythmeRequis * 0.9 ? 'dans_les_temps' : 'en_retard';
@@ -127,6 +161,7 @@ export function etatObjectif(o: Pick<Objectif, 'mesure' | 'cible' | 'echeance'>,
 
 export const LIBELLE_STATUT: { [s in StatutObjectif]: string } = {
   atteint: 'Atteint',
+  a_tenter: 'À tenter',
   en_avance: 'En avance',
   dans_les_temps: 'Dans les temps',
   en_retard: 'En retard',
@@ -155,7 +190,7 @@ export interface Conseil {
  * Fondés sur les repères de la fiche « Conseils du coach » (surcharge progressive, fréquence 2×/sem., décharge, plages de reps).
  */
 export function conseilsObjectif(
-  o: Pick<Objectif, 'mesure' | 'cible' | 'echeance'>,
+  o: ObjectifCalc,
   e: EtatObjectif,
   points: PointSeance[],
   equipement?: Equipement,
@@ -166,9 +201,18 @@ export function conseilsObjectif(
   const charge = o.mesure !== 'reps';
 
   if (e.atteint) {
-    const suivant = o.mesure === 'reps' ? o.cible + 2 : arrondiA(o.cible * 1.05, 2.5);
-    c.push({ regle: 'atteint', texte: `Objectif atteint ! Fixe le suivant un cran plus haut, par exemple ${nb(suivant)} ${u}.` });
+    const suivant =
+      o.mesure === 'serie'
+        ? `${repsCible(o)} × ${nb(o.cible + 2.5)} kg ou ${repsCible(o) + 1} × ${nb(o.cible)} kg`
+        : `${nb(o.mesure === 'reps' ? o.cible + 2 : arrondiA(o.cible * 1.05, 2.5))} ${u}`;
+    c.push({ regle: 'atteint', texte: `Objectif atteint ! Fixe le suivant un cran plus haut, par exemple ${suivant}.` });
     return c;
+  }
+  if (e.statut === 'a_tenter') {
+    c.push({
+      regle: 'tenter',
+      texte: `D’après ta meilleure série récente, tu as le niveau : tente ${libelleCible(o)} en début de séance, après l’échauffement et 2 à 3 min de repos.`,
+    });
   }
   if (e.nbSeances < 3) {
     c.push({ regle: 'donnees', texte: 'Fais au moins 3 séances de cet exercice sur 2 semaines : l’app pourra estimer ton rythme et une date d’atteinte.' });
@@ -199,7 +243,7 @@ export function conseilsObjectif(
     const repsMoy = recentes.reduce((a, s) => a + s.reps, 0) / recentes.length;
     const avecRir = recentes.filter((s) => s.rir != null);
     const rirMoy = avecRir.length ? avecRir.reduce((a, s) => a + s.rir!, 0) / avecRir.length : null;
-    if (charge && repsMoy >= 10 && e.actuel) {
+    if (charge && repsMoy >= 10 && e.actuel && (o.mesure !== 'serie' || repsCible(o) <= 6)) {
       const cibleCharge = o.mesure === 'un_rm' ? ` (vers ${nb(arrondiA(e.actuel * 0.85, 2.5))} kg)` : '';
       c.push({ regle: 'plage', texte: `Tes séries tournent autour de ${Math.round(repsMoy)} reps. Pour gagner en force, ajoute des séries lourdes de 3 à 6 reps${cibleCharge}.` });
     }
@@ -208,7 +252,14 @@ export function conseilsObjectif(
     }
   }
 
-  if (!e.atteint && e.actuel != null && e.reste / o.cible <= 0.05) {
+  if (o.mesure === 'serie' && e.statut !== 'a_tenter' && e.nbSeances >= 1) {
+    // Travail ciblé : la charge de l'objectif sur des séries plus courtes, puis une rep de plus par séance.
+    const r = repsCible(o);
+    if (r >= 3) {
+      c.push({ regle: 'reps_cible', texte: `Travaille directement à ${nb(o.cible)} kg : séries de ${Math.max(1, r - 3)} à ${r - 1} reps, puis ajoute une rep par séance jusqu’à ${r}.` });
+    }
+  }
+  if (!e.atteint && e.statut !== 'a_tenter' && e.actuel != null && e.reste / o.cible <= 0.05) {
     c.push({
       regle: 'proche',
       texte: charge
@@ -247,10 +298,25 @@ export function evaluerObjectif(o: Objectif, d: DonneesObjectif, maintenant = ne
 /** Valeur affichée : même arrondi que la courbe (kg) ou entier (reps). */
 export const fmtValeur = (v: number, m: MesureObjectif) => (m === 'reps' ? String(Math.round(v)) : kg(v).replace(' kg', ''));
 
-/** Phrase de marge, ex. « 82 / 100 kg, reste 18 kg (82 %) ». */
-export function phraseMarge(o: Pick<Objectif, 'mesure' | 'cible'>, e: EtatObjectif): string {
+/** « 8 × 75 kg », « 1RM estimé 100 kg », « 15 reps ». */
+export function libelleCible(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>): string {
+  const f = fmtValeur(o.cible, o.mesure);
+  if (o.mesure === 'serie') return `${repsCible(o)} × ${f} kg`;
+  if (o.mesure === 'reps') return `${f} reps`;
+  return `${NOM_MESURE[o.mesure]} ${f} kg`;
+}
+
+/** Phrase de marge, ex. « 82 / 100 kg, reste 18 kg (82 %) » ; série : « équivalent 8 × 71 / 75 kg… ». */
+export function phraseMarge(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>, e: EtatObjectif): string {
   const u = uniteMesure(o.mesure);
   const f = (v: number) => fmtValeur(v, o.mesure);
+  if (o.mesure === 'serie') {
+    const r = repsCible(o);
+    if (e.actuel == null) return `objectif ${r} × ${f(o.cible)} kg, pas encore de mesure`;
+    if (e.atteint) return `${r} × ${f(o.cible)} kg, atteint`;
+    if (e.reste === 0) return `équivalent ${r} × ${f(e.actuel)} kg pour ${r} × ${f(o.cible)} kg : à tenter`;
+    return `équivalent ${r} × ${f(e.actuel)} / ${f(o.cible)} kg, reste ${f(e.reste)} kg (${Math.round(e.pourcentage)}\u00a0%)`;
+  }
   if (e.actuel == null) return `objectif ${f(o.cible)} ${u}, pas encore de mesure`;
   if (e.atteint) return `${f(e.actuel)} / ${f(o.cible)} ${u}, atteint`;
   return `${f(e.actuel)} / ${f(o.cible)} ${u}, reste ${f(e.reste)} ${u} (${Math.round(e.pourcentage)}\u00a0%)`;
@@ -261,7 +327,8 @@ export function phraseProjection(o: Pick<Objectif, 'mesure' | 'echeance'>, e: Et
   const u = uniteMesure(o.mesure);
   const morceaux: string[] = [];
   if (e.rythme != null) morceaux.push(`${e.rythme >= 0 ? '+' : ''}${nb(e.rythme)} ${u}/sem. ces 12 dernières semaines`);
-  if (!e.atteint) {
+  if (e.statut === 'a_tenter') morceaux.push('niveau suffisant, reste à faire la série');
+  else if (!e.atteint) {
     if (e.projection) morceaux.push(`objectif estimé vers le ${dateFr(e.projection)}`);
     else if (e.rythme != null) morceaux.push('pas atteignable au rythme actuel');
     else morceaux.push('pas encore assez de séances pour estimer une date');

@@ -1,7 +1,7 @@
 // Résumé texte d'une période, à coller dans un message à un coach ou à une IA. Propriétaire : 06-donnees.
 import { unRmEstime, volume } from '../../core/calculs';
 import type { Exercice, Modele, Objectif, Seance, Serie, Variante } from '../../core/types';
-import { evaluerObjectif, LIBELLE_STATUT, NOM_MESURE, uniteMesure } from '../objectifs/calculs';
+import { evaluerObjectif, libelleCible, LIBELLE_STATUT, repsCible, uniteMesure } from '../objectifs/calculs';
 import { poidsParSeance } from '../progression/calculs';
 import { dansPeriode, type Periode } from './exporter';
 
@@ -143,20 +143,30 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     const seancesParId = new Map(d.seances.map((s) => [s.id, s]));
     const poids = poidsParSeance(d.seances);
     L.push('## Mes objectifs');
-    L.push('Valeurs comparables aux cibles : 1RM estimé et charge max en charge effective (les 2 haltères additionnées, poids du corps inclus pour les exercices lestés) ; reps = meilleure série de travail. « Actuel » = meilleure valeur des 8 dernières semaines.');
-    for (const o of [...objectifs].sort((a, b) => (exo.get(a.exerciceId)?.nom ?? '').localeCompare(exo.get(b.exerciceId)?.nom ?? '', 'fr'))) {
+    L.push('Valeurs comparables aux cibles : 1RM estimé et charge max en charge effective (les 2 haltères additionnées, poids du corps inclus pour les exercices lestés) ; reps = meilleure série de travail. « Actuel » = meilleure valeur des 8 dernières semaines. Objectif « N × X kg » (charge telle que notée) : « actuel » = charge que je tiendrais pour N reps d’après ma meilleure série récente (Epley) ; il n’est atteint que si j’ai vraiment fait une série d’au moins N reps à X kg.');
+    for (const o of [...objectifs].sort((a, b) => (exo.get(a.exerciceId)?.nom ?? '').localeCompare(exo.get(b.exerciceId)?.nom ?? '', 'fr') || a.creeLe.localeCompare(b.creeLe))) {
       const { etat: e } = evaluerObjectif(o, { series: d.series, seancesParId, poids }, aujourdhui);
       const u = uniteMesure(o.mesure);
       const nom = exo.get(o.exerciceId)?.nom ?? '(exercice supprimé)';
       const variante = o.varianteId ? ` (${vari.get(o.varianteId) ?? 'variante'})` : '';
-      const morceaux = [`objectif ${nb(o.cible)} ${u}${o.echeance ? ` d’ici le ${jour(o.echeance)}` : ''}`];
-      morceaux.push(e.actuel == null ? 'pas encore de mesure' : e.atteint ? `actuel ${nb(e.actuel)} ${u}, atteint` : `actuel ${nb(e.actuel)} ${u}, reste ${nb(e.reste)} ${u} (${Math.round(e.pourcentage)} % de la cible)`);
+      const serie = o.mesure === 'serie';
+      const actuel = (v: number) => (serie ? `équivalent actuel ${repsCible(o)} × ${nb(v)} kg` : `actuel ${nb(v)} ${u}`);
+      const morceaux = [`objectif ${libelleCible(o)}${o.echeance ? ` d’ici le ${jour(o.echeance)}` : ''}`];
+      morceaux.push(
+        e.actuel == null
+          ? 'pas encore de mesure'
+          : e.atteint
+            ? serie ? 'atteint (série réellement faite)' : `${actuel(e.actuel)}, atteint`
+            : e.statut === 'a_tenter'
+              ? `${actuel(e.actuel)} : niveau suffisant, série pas encore réalisée`
+              : `${actuel(e.actuel)}, reste ${nb(e.reste)} ${u} (${Math.round(e.pourcentage)} % de la cible)`,
+      );
       if (e.rythme != null) morceaux.push(`rythme ${e.rythme >= 0 ? '+' : ''}${nb(e.rythme)} ${u}/semaine sur 12 semaines`);
       if (!e.atteint && e.projection) morceaux.push(`date estimée à ce rythme : ${jour(e.projection)}`);
       if (e.rythmeRequis != null) morceaux.push(`rythme nécessaire pour la date visée : +${nb(e.rythmeRequis)} ${u}/semaine`);
       morceaux.push(`${nb(e.frequence)} séance(s)/semaine sur cet exercice ce dernier mois`);
       morceaux.push(`statut : ${LIBELLE_STATUT[e.statut].toLowerCase()}`);
-      L.push(`- ${nom}${variante} — ${NOM_MESURE[o.mesure]} : ${morceaux.join(' ; ')}`);
+      L.push(`- ${nom}${variante} : ${morceaux.join(' ; ')}`);
     }
     L.push('');
   }

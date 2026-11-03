@@ -123,7 +123,7 @@ function VueExercices({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) =
 function ObjectifsEnCours({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => void }) {
   const objectifs = useRequete(() => db.objectifs.toArray(), []);
   const lignes = useMemo(
-    () => (objectifs ?? []).map((o) => ({ o, e: evaluerObjectif(o, d).etat, nom: d.exercices.get(o.exerciceId)?.nom ?? 'Exercice' })).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')),
+    () => (objectifs ?? []).map((o) => ({ o, e: evaluerObjectif(o, d).etat, nom: d.exercices.get(o.exerciceId)?.nom ?? 'Exercice' })).sort((a, b) => a.nom.localeCompare(b.nom, 'fr') || a.o.creeLe.localeCompare(b.o.creeLe)),
     [objectifs, d],
   );
   if (!lignes.length) return null;
@@ -138,13 +138,13 @@ function ObjectifsEnCours({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: I
             titre={nom}
             detail={
               <>
-                {NOM_MESURE[o.mesure]} · {phraseMarge(o, e)}
+                {o.mesure === 'serie' ? '' : `${NOM_MESURE[o.mesure]} · `}{phraseMarge(o, e)}
                 <span class="obj-mini" aria-hidden="true" style={{ display: 'block' }}>
                   <span style={{ width: `${e.pourcentage}%` }} />
                 </span>
               </>
             }
-            fin={<Puce ton={e.atteint ? 'record' : e.statut === 'en_retard' || e.statut === 'stagne' ? 'alerte' : e.statut === 'pas_assez' ? undefined : 'progres'}>{LIBELLE_STATUT[e.statut]}</Puce>}
+            fin={<Puce ton={e.atteint || e.statut === 'a_tenter' ? 'record' : e.statut === 'en_retard' || e.statut === 'stagne' ? 'alerte' : e.statut === 'pas_assez' ? undefined : 'progres'}>{LIBELLE_STATUT[e.statut]}</Puce>}
           />
         ))}
       </Liste>
