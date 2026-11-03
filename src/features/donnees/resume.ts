@@ -40,7 +40,9 @@ function serieCourte(s: Serie): string {
   if (s.type === 'echec') extras.push('échec');
   if (s.type === 'degressive') extras.push('dégressive');
   if (s.rir != null) extras.push(`RIR ${s.rir}`);
-  return `${s.type === 'echauffement' ? 'échauff. ' : ''}${charge}×${s.reps}${extras.length ? ` (${extras.join(', ')})` : ''}`;
+  // Série tenue : « 45 s », « +10 45 s » (lest).
+  const coeur = s.dureeSec != null ? `${charge === 'PDC' ? '' : `${charge} `}${s.dureeSec} s` : `${charge}×${s.reps}`;
+  return `${s.type === 'echauffement' ? 'échauff. ' : ''}${coeur}${extras.length ? ` (${extras.join(', ')})` : ''}`;
 }
 
 interface Passage {
@@ -56,13 +58,19 @@ function indicateurs(p: Passage) {
   let charge = 0;
   let vol = 0;
   let reps = 0;
+  let duree = 0;
   for (const s of travail) {
+    if (s.dureeSec != null) {
+      duree = Math.max(duree, s.dureeSec);
+      charge = Math.max(charge, s.chargeKg ?? 0);
+      continue;
+    }
     rm = Math.max(rm, unRmEstime(s, pc) ?? 0);
     charge = Math.max(charge, s.chargeKg ?? 0); // telle que saisie : par haltère, lest seul…
     vol += volume(s, pc);
     reps = Math.max(reps, s.reps);
   }
-  return { rm, charge, vol, reps, nbSeries: travail.length };
+  return { rm, charge, vol, reps, duree, nbSeries: travail.length };
 }
 
 function precisionCharge(e: Exercice | undefined): string {
@@ -81,7 +89,7 @@ function precisionCharge(e: Exercice | undefined): string {
 /**
  * Texte prêt à coller : contexte de la période, poids de corps début → fin, puis pour chaque exercice
  * le nombre de séances, la 1re et la dernière fois, et l'évolution (1RM estimé, charge max, reps, volume).
- * Le détail séance par séance suit, puis une question pour l'IA.
+ * Le détail séance par séance suit. Données seulement : la question, c'est l'utilisateur qui la pose.
  */
 export function construireResume(d: DonneesResume, periode: Periode = {}, aujourdhui = new Date()): string {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
@@ -134,7 +142,7 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     L.push('- Poids de corps : non renseigné');
   }
   L.push('');
-  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. « 45 s » = série tenue 45 secondes (gainage, dead hang…). RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
   L.push('');
 
   // --- Objectifs (état à aujourd'hui, sur tout l'historique : référentiel pour le coach / l'IA)
@@ -204,7 +212,8 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     if (ia.rm && ib.rm) evol.push(`1RM estimé ${ecart(ia.rm, ib.rm, 'kg')}`);
     const libCharge = e?.modeCharge === 'lest' ? 'lest max' : e?.modeCharge === 'par_main' ? 'charge max par haltère' : 'charge max';
     if (ia.charge && ib.charge) evol.push(`${libCharge} ${ecart(ia.charge, ib.charge, 'kg')}`);
-    evol.push(`reps max ${ia.reps} → ${ib.reps}`);
+    if (ia.duree || ib.duree) evol.push(`temps tenu max ${ia.duree} → ${ib.duree} s`);
+    else evol.push(`reps max ${ia.reps} → ${ib.reps}`);
     if (ia.vol && ib.vol) evol.push(`volume de la séance ${ecart(ia.vol, ib.vol, 'kg', 0)}`);
     L.push(`- Évolution : ${evol.join(' ; ')}`);
     const meilleur = ps.reduce((m, p) => (indicateurs(p).rm > indicateurs(m).rm ? p : m), a);
@@ -243,11 +252,96 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
       );
     }
   }
+  return L.join('\n') + '\n';
+}
+
+/**
+ * Résumé d'une seule séance (libre ou issue d'un modèle) : contexte, puis pour chaque exercice les séries,
+ * la dernière fois qu'il a été fait avant et l'écart (1RM estimé, charge, reps, volume), et s'il bat le record.
+ */
+export function construireResumeSeance(d: DonneesResume, seanceId: string): string {
+  const seance = d.seances.find((s) => s.id === seanceId);
+  if (!seance) return 'Séance introuvable.';
+  const exo = new Map(d.exercices.map((e) => [e.id, e]));
+  const vari = new Map(d.variantes.map((v) => [v.id, v.nom]));
+  const nomModele = seance.modeleId ? d.modeles.find((m) => m.id === seance.modeleId)?.nom ?? 'Séance' : 'Séance libre';
+  const seancesParId = new Map(d.seances.map((s) => [s.id, s]));
+  const siennes = d.series.filter((s) => s.seanceId === seanceId).sort((a, b) => a.ordre - b.ordre);
+  if (!siennes.length) return 'Aucune série enregistrée dans cette séance.';
+  const nomExo = (id: string) => exo.get(id)?.nom ?? '(exercice supprimé)';
+
+  const L: string[] = [];
+  const dt = new Date(seance.debut);
+  const jourSemaine = Number.isNaN(dt.getTime()) ? '' : `${dt.toLocaleDateString('fr-FR', { weekday: 'long' })} `;
+  L.push(`# Ma séance de musculation : ${nomModele}, ${jourSemaine}${jour(seance.debut)}`);
   L.push('');
-  L.push(
-    objectifs.length
-      ? 'Peux-tu analyser ma progression sur cette période au regard de mes objectifs ci-dessus, me dire s’ils sont réalistes, repérer les exercices qui stagnent ou régressent, et me proposer des charges, des reps et une fréquence pour mes prochaines séances afin de les atteindre ?'
-      : 'Peux-tu analyser ma progression sur cette période, repérer les exercices qui stagnent ou régressent, et me proposer des charges et des reps pour mes prochaines séances ?',
-  );
+  const ctx: string[] = [`- Début ${seance.debut.slice(11, 16)}`];
+  if (seance.fin) {
+    const min = Math.round((Date.parse(seance.fin) - Date.parse(seance.debut)) / 60_000);
+    if (min > 0) ctx[0] += `, durée ${min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`}`;
+  }
+  L.push(ctx[0]);
+  if (seance.contexte?.poidsCorporelKg != null) L.push(`- Poids de corps : ${nb(seance.contexte.poidsCorporelKg)} kg`);
+  if (seance.contexte?.temperatureC != null) L.push(`- Température : ${nb(seance.contexte.temperatureC, 0)} °C`);
+  if (seance.contexte?.lieu) L.push(`- Lieu : ${seance.contexte.lieu}`);
+  if (seance.note) L.push(`- Ressenti : « ${seance.note} »`);
+  const ordre: string[] = [];
+  for (const s of siennes) if (!ordre.includes(s.exerciceId)) ordre.push(s.exerciceId);
+  const travail = siennes.filter((s) => s.type !== 'echauffement');
+  L.push(`- ${pluriel(ordre.length, 'exercice')}, ${pluriel(travail.length, 'série')} de travail`);
+  L.push('');
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail. « La fois d’avant » = la dernière séance précédente où j’ai fait l’exercice.');
+  L.push('');
+  L.push('## Exercices, dans l’ordre');
+
+  // Séances antérieures, par exercice
+  const avant = new Map<string, Map<string, Serie[]>>(); // exerciceId → seanceId → séries
+  for (const s of d.series) {
+    if (s.seanceId === seanceId || !ordre.includes(s.exerciceId)) continue;
+    const se = seancesParId.get(s.seanceId);
+    if (!se || se.debut >= seance.debut) continue;
+    const m = avant.get(s.exerciceId) ?? avant.set(s.exerciceId, new Map()).get(s.exerciceId)!;
+    (m.get(s.seanceId) ?? m.set(s.seanceId, []).get(s.seanceId)!).push(s);
+  }
+
+  for (const id of ordre) {
+    const e = exo.get(id);
+    const l = siennes.filter((s) => s.exerciceId === id);
+    const p: Passage = { seance, series: l };
+    const i = indicateurs(p);
+    const vid = l.find((s) => s.varianteId)?.varianteId;
+    const reglage = l.find((s) => s.reglagesMachine)?.reglagesMachine;
+    L.push('');
+    L.push(`### ${nomExo(id)}${vid ? ` (${vari.get(vid) ?? 'variante'})` : ''}${precisionCharge(e)}${l[0].supersetId ? ' — en superset' : ''}`);
+    L.push(`- Séries : ${l.map(serieCourte).join(' · ')}${reglage ? ` [${reglage}]` : ''}`);
+    const notes = l.map((s) => s.note).filter(Boolean);
+    if (notes.length) L.push(`- Notes : ${notes.join(' ; ')}`);
+    const precedentes = [...(avant.get(id) ?? new Map<string, Serie[]>())]
+      .map(([sid, ss]) => ({ seance: seancesParId.get(sid)!, series: ss.sort((a, b) => a.ordre - b.ordre) }))
+      .sort((a, b) => a.seance.debut.localeCompare(b.seance.debut));
+    if (!precedentes.length) {
+      L.push('- Première fois que je fais cet exercice dans l’app');
+      continue;
+    }
+    const prec = precedentes[precedentes.length - 1];
+    const ip = indicateurs(prec);
+    L.push(`- La fois d’avant (${jourCourt(prec.seance.debut)}, il y a ${pluriel(Math.max(0, Math.round((Date.parse(seance.debut) - Date.parse(prec.seance.debut)) / 86_400_000)), 'jour')}) : ${prec.series.map(serieCourte).join(' · ')}`);
+    const evol: string[] = [];
+    if (ip.rm && i.rm) evol.push(`1RM estimé ${ecart(ip.rm, i.rm, 'kg')}`);
+    const libCharge = e?.modeCharge === 'lest' ? 'lest max' : e?.modeCharge === 'par_main' ? 'charge max par haltère' : 'charge max';
+    if (ip.charge && i.charge) evol.push(`${libCharge} ${ecart(ip.charge, i.charge, 'kg')}`);
+    evol.push(`reps max ${ip.reps} → ${i.reps}`);
+    if (ip.vol && i.vol) evol.push(`volume ${ecart(ip.vol, i.vol, 'kg', 0)}`);
+    L.push(`- Écart : ${evol.join(' ; ')}`);
+    const record = Math.max(...precedentes.map((x) => indicateurs(x).rm));
+    if (i.rm && record) {
+      L.push(
+        i.rm > record
+          ? `- Nouveau record de 1RM estimé (ancien : ${nb(record)} kg)`
+          : `- Record de 1RM estimé : ${nb(record)} kg (${Math.round((i.rm / record) * 100)} % atteint aujourd’hui)`,
+      );
+    }
+    L.push(`- Déjà fait ${precedentes.length} fois avant cette séance`);
+  }
   return L.join('\n') + '\n';
 }

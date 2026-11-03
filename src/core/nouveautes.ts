@@ -9,6 +9,14 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 12,
+    date: '2026-11-03',
+    points: [
+      'Gainage, dead hang et autres exercices qu’on tient : ils se notent en secondes au lieu de répétitions, avec un chrono en séance (⏱ Lancer le chrono, 3 s pour te mettre en place). Un lest reste possible.',
+      'Nouveaux exercices : gainage (planche), gainage latéral et dead hang. Pour tout autre exercice : fiche exercice › Modifier › « Se mesure en : Secondes ».',
+    ],
+  },
+  {
     numero: 11,
     date: '2026-11-03',
     points: [

@@ -3,14 +3,14 @@ import { useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import type { Exercice, MesureObjectif, Objectif } from '../../core/types';
 import { Aide, Bouton, Carte, Onglets, Puce, Stepper } from '../../ui';
-import { LEST_MAX_KG, LEST_MIN_KG, signeLest } from '../../core/calculs';
+import { fmtDuree, LEST_MAX_KG, LEST_MIN_KG, signeLest } from '../../core/calculs';
 import type { DonneesProgression } from '../progression/donnees';
 import { conseilsObjectif, evaluerObjectif, fmtValeur, LIBELLE_STATUT, phraseCourte, phraseMarge, repsCible, typeObjectif, uniteMesure, type StatutObjectif } from './calculs';
 import { enregistrerObjectif, objectifsDe, supprimerObjectif } from './objectifs';
 import './objectifs.css';
 
 /** Types proposés : 1RM (1 rep au max visé) et charge d'entraînement (X kg pour Y reps), tous deux en mesure `serie`. */
-type TypeForm = '1rm' | 'entrainement' | 'reps';
+type TypeForm = '1rm' | 'entrainement' | 'reps' | 'duree';
 const TYPES: { valeur: TypeForm; libelle: string }[] = [
   { valeur: '1rm', libelle: '1RM' },
   { valeur: 'entrainement', libelle: 'Charge d’entraînement' },
@@ -60,7 +60,8 @@ function SuiviObjectif({ exercice, d, objectif, modifier }: { exercice: Exercice
   const u = lest ? 'kg de lest' : uniteMesure(objectif.mesure);
   const fmt = (v: number) => (lest ? signeLest(v) : '') + fmtValeur(v, objectif.mesure);
   const entrainement = objectif.mesure === 'serie' && repsCible(objectif) > 1;
-  const sousTitre = objectif.mesure === 'serie' ? (entrainement ? 'ton niveau actuel' : '1RM estimé') : objectif.mesure === 'reps' ? 'meilleure série' : 'actuel';
+  const sousTitre =
+    objectif.mesure === 'serie' ? (entrainement ? 'ton niveau actuel' : '1RM estimé') : objectif.mesure === 'reps' ? 'meilleure série' : objectif.mesure === 'duree' ? 'meilleure tenue' : 'actuel';
   return (
     <Carte
       ton="progres"
@@ -96,19 +97,24 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
   const sansCharge = exercice.modeCharge === 'sans_charge';
   const lestEx = exercice.modeCharge === 'lest';
   // Un ancien objectif « 1RM estimé » ou « charge max » se modifie comme un objectif 1RM.
+  // Exercice tenu (gainage, dead hang…) : un seul type d'objectif, le temps tenu.
   const typeInitial: TypeForm = objectif
-    ? objectif.mesure === 'reps' ? 'reps' : objectif.mesure === 'serie' && repsCible(objectif) > 1 ? 'entrainement' : '1rm'
-    : sansCharge ? 'reps' : '1rm';
+    ? objectif.mesure === 'duree' ? 'duree' : objectif.mesure === 'reps' ? 'reps' : objectif.mesure === 'serie' && repsCible(objectif) > 1 ? 'entrainement' : '1rm'
+    : exercice.enSecondes ? 'duree' : sansCharge ? 'reps' : '1rm';
   const [type, setType] = useState<TypeForm>(typeInitial);
   const [repsEntrainement, setReps] = useState<number>(objectif?.reps && objectif.reps > 1 ? objectif.reps : 8);
   const reps = type === '1rm' ? 1 : repsEntrainement;
-  const mesure: MesureObjectif = type === 'reps' ? 'reps' : 'serie';
+  const mesure: MesureObjectif = type === 'reps' ? 'reps' : type === 'duree' ? 'duree' : 'serie';
   const actuelPour = (m: MesureObjectif, r: number) =>
     evaluerObjectif({ id: '', exerciceId: exercice.id, mesure: m, cible: 1, reps: r, creeLe: '', modifieLe: '' }, d).etat.actuel;
   const proposition = (t: TypeForm, r: number) => {
     if (t === 'reps') {
       const a = actuelPour('reps', 1);
       return a ? Math.ceil(a * 1.25) : 10;
+    }
+    if (t === 'duree') {
+      const a = actuelPour('duree', 1);
+      return a ? Math.ceil((a * 1.2) / 5) * 5 : 60;
     }
     const a = actuelPour('serie', t === '1rm' ? 1 : r);
     // Lest : 2,5 kg de plus que le niveau actuel (ou 2,5 kg d'aide en moins), la cible peut être 0 ou négative.
@@ -138,7 +144,11 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
     fermer();
   };
   const enReps = type === 'reps';
-  const options = sansCharge || objectif?.mesure === 'reps' ? [...TYPES, { valeur: 'reps' as const, libelle: 'Reps max' }] : TYPES;
+  const enDuree = type === 'duree';
+  const options: { valeur: TypeForm; libelle: string }[] =
+    exercice.enSecondes || enDuree
+      ? [{ valeur: 'duree', libelle: 'Temps tenu' }]
+      : sansCharge || objectif?.mesure === 'reps' ? [...TYPES, { valeur: 'reps' as const, libelle: 'Reps max' }] : TYPES;
   const aide =
     actuel == null
       ? 'Pas encore de mesure sur cet exercice.'
@@ -146,25 +156,27 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
         ? `Ton 1RM estimé aujourd'hui : ${fmt(actuel)} ${uKg}.`
         : type === 'entrainement'
           ? `Ton niveau aujourd'hui : ${reps} × ${fmt(actuel)} ${uKg}.`
-          : `Actuellement : ${fmt(actuel)} reps`;
+          : enDuree
+            ? `Ta meilleure tenue récente : ${fmtDuree(actuel)}.`
+            : `Actuellement : ${fmt(actuel)} reps`;
   return (
     <Carte ton="progres" titre={objectif ? 'Modifier l’objectif' : 'Nouvel objectif'}>
       <form class="ui-pile" onSubmit={valider}>
-        <Onglets label="Type d'objectif" options={options} valeur={type} onChange={changerType} />
+        {options.length > 1 && <Onglets label="Type d'objectif" options={options} valeur={type} onChange={changerType} />}
         <div class="ex-champ">
           <span class="ui-surtitre">
-            {type === '1rm' ? (lest ? 'Lest visé (1 rep)' : 'Max visé (1 rep)') : type === 'entrainement' ? (lest ? 'Lest' : 'Charge') : 'Reps visées'}
+            {type === '1rm' ? (lest ? 'Lest visé (1 rep)' : 'Max visé (1 rep)') : type === 'entrainement' ? (lest ? 'Lest' : 'Charge') : enDuree ? 'Temps à tenir' : 'Reps visées'}
             {lest && <Aide mot="lest" />}
           </span>
           <Stepper
             id="obj-cible"
             valeur={cible}
             onChange={setCible}
-            unite={enReps ? 'reps' : uKg}
-            pas={enReps ? 1 : 2.5}
-            min={enReps ? 1 : lest ? LEST_MIN_KG : 0}
-            max={enReps ? 200 : lest ? LEST_MAX_KG : 600}
-            decimales={enReps ? 0 : 1}
+            unite={enDuree ? 'secondes' : enReps ? 'reps' : uKg}
+            pas={enDuree ? 5 : enReps ? 1 : 2.5}
+            min={enDuree ? 5 : enReps ? 1 : lest ? LEST_MIN_KG : 0}
+            max={enDuree ? 3600 : enReps ? 200 : lest ? LEST_MAX_KG : 600}
+            decimales={enDuree || enReps ? 0 : 1}
           />
           {lest && <span class="ui-attenue obj-aide">Kg ajoutés à ton poids du corps. 0 = sans lest, en négatif = avec une aide (élastique, machine).</span>}
         </div>

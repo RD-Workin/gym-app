@@ -132,6 +132,7 @@ function exercice(o: Obj, ou: string): Exercice {
     note: texte(o, 'note', ou),
     photo: photo(o, ou),
     favori: booleen(o, 'favori', ou) || undefined,
+    enSecondes: booleen(o, 'enSecondes', ou) || undefined,
     archive: booleen(o, 'archive', ou),
     ...horodatage(o, ou),
   });
@@ -207,6 +208,7 @@ function serie(o: Obj, ou: string): Serie {
     chargeKg: nombre(o, 'chargeKg', ou, -500, 1000),
     modeCharge: choix(o, 'modeCharge', ou, MODES),
     reps: nombre(o, 'reps', ou, 0, 1000, true)!,
+    dureeSec: nombre(o, 'dureeSec', ou, 0, 86_400),
     rir: nombre(o, 'rir', ou, 0, 50),
     type: choix(o, 'type', ou, TYPES),
     reglagesMachine: texte(o, 'reglagesMachine', ou),
@@ -227,7 +229,7 @@ function reglage(o: Obj, ou: string): Reglage {
   return { cle, valeur: v };
 }
 
-const MESURES_OBJECTIF = ['serie', 'un_rm', 'charge_max', 'reps'] as const;
+const MESURES_OBJECTIF = ['serie', 'un_rm', 'charge_max', 'reps', 'duree'] as const;
 const RE_JOUR = /^\d{4}-\d{2}-\d{2}$/;
 
 function objectif(o: Obj, ou: string): Objectif {
@@ -238,7 +240,7 @@ function objectif(o: Obj, ou: string): Objectif {
     exerciceId: id(o, 'exerciceId', ou, true),
     varianteId: id(o, 'varianteId', ou),
     mesure: choix(o, 'mesure', ou, MESURES_OBJECTIF),
-    cible: nombre(o, 'cible', ou, 0.1, 2000, true)!,
+    cible: nombre(o, 'cible', ou, 0.1, 86_400, true)!,
     reps: nombre(o, 'reps', ou, 1, 1000),
     echeance,
     atteintLe: date(o, 'atteintLe', ou),

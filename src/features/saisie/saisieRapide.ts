@@ -14,6 +14,8 @@ export const CLE_SEANCE_RAPIDE = 'saisie.seanceDuJour';
 export interface LigneSet {
   reps: number;
   chargeKg?: number;
+  /** Série tenue (exercice en secondes) : secondes ; `reps` est alors ignoré. */
+  dureeSec?: number;
 }
 
 export interface SetRapide {
@@ -21,6 +23,8 @@ export interface SetRapide {
   varianteId?: Id;
   series: LigneSet[];
   modeCharge: ModeCharge;
+  /** Exercice tenu (gainage, dead hang…) : les lignes portent des secondes. */
+  enSecondes?: boolean;
 }
 
 const memeJour = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -33,7 +37,7 @@ export interface ResultatRapide {
 
 export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide> {
   const t = maintenant();
-  const lignes = s.series.filter((l) => l.reps >= 1).slice(0, 30);
+  const lignes = s.series.filter((l) => (s.enSecondes ? (l.dureeSec ?? 0) >= 1 : l.reps >= 1)).slice(0, 30);
   if (!lignes.length) throw new Error('Aucune série à enregistrer');
   let creee: Seance | undefined;
   const res = await db.transaction('rw', db.seances, db.series, db.reglages, async () => {
@@ -71,7 +75,8 @@ export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide
       ordre: ++ordre,
       chargeKg: s.modeCharge === 'sans_charge' ? undefined : l.chargeKg,
       modeCharge: s.modeCharge,
-      reps: l.reps,
+      reps: s.enSecondes ? 0 : l.reps,
+      ...(s.enSecondes ? { dureeSec: l.dureeSec } : {}),
       type: 'travail',
       faiteLe: t,
       creeLe: t,

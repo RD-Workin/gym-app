@@ -18,9 +18,20 @@ export function chargeEffective(serie: Pick<Serie, 'chargeKg' | 'modeCharge'>, p
   }
 }
 
-/** 1RM estimé (Epley). `null` au-delà de 12 reps, pour l'échauffement ou sans charge. */
-export function unRmEstime(serie: Pick<Serie, 'chargeKg' | 'modeCharge' | 'reps' | 'type'>, poidsCorporelKg?: number): number | null {
-  if (serie.type === 'echauffement' || serie.reps < 1 || serie.reps > 12) return null;
+/** Série tenue en secondes (gainage, dead hang…) plutôt qu'en reps. */
+export const enDuree = (serie: Pick<Serie, 'dureeSec'>) => serie.dureeSec != null;
+
+/** « 45 s », « 1 min », « 1 min 30 ». */
+export function fmtDuree(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  if (s < 60) return `${s} s`;
+  const r = s % 60;
+  return `${Math.floor(s / 60)} min${r ? ` ${String(r).padStart(2, '0')}` : ''}`;
+}
+
+/** 1RM estimé (Epley). `null` au-delà de 12 reps, pour l'échauffement, sans charge ou pour une série en durée. */
+export function unRmEstime(serie: Pick<Serie, 'chargeKg' | 'modeCharge' | 'reps' | 'type' | 'dureeSec'>, poidsCorporelKg?: number): number | null {
+  if (serie.type === 'echauffement' || serie.dureeSec != null || serie.reps < 1 || serie.reps > 12) return null;
   const charge = chargeEffective(serie, poidsCorporelKg);
   if (!charge) return null;
   return serie.reps === 1 ? charge : charge * (1 + serie.reps / 30);

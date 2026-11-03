@@ -22,8 +22,10 @@ export async function creerModeleDepuisSeance(seanceId: Id, nom: string): Promis
   for (const s of series) {
     if (blocs.some((b) => b.exerciceId === s.exerciceId)) continue;
     const sx = series.filter((x) => x.exerciceId === s.exerciceId);
-    const min = Math.min(...sx.map((x) => x.reps));
-    const max = Math.max(...sx.map((x) => x.reps));
+    // Séries tenues : la plage de secondes (« 30-45 »), sinon la plage de reps.
+    const vals = sx.map((x) => x.dureeSec ?? x.reps);
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
     let supersetId: string | undefined;
     if (s.supersetId) {
       if (!supersets.has(s.supersetId)) supersets.set(s.supersetId, nouvelId());

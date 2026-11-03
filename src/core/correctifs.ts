@@ -5,6 +5,7 @@ import { db } from './db';
 import { maintenant } from './ids';
 import { BIBLIOTHEQUE, MODELES_DEPART, MODELES_DEPART_V1, REPOS_POLYARTICULAIRE_SEC, blocsDepart, reposDepart } from '../data/bibliotheque';
 import { nouvelId } from './ids';
+import { basculerEnSecondes, semblerTenu } from './duree';
 
 export interface Correctif {
   id: string;
@@ -93,6 +94,7 @@ function correctifAjoutExercices(id: string, description: string): Correctif {
             groupesMusculaires: [...x.groupes],
             reglagesMachine: x.reglagesMachine,
             note: x.note,
+            ...(x.enSecondes ? { enSecondes: true } : {}),
             archive: false,
             creeLe: t,
             modifieLe: t,
@@ -179,6 +181,18 @@ export const CORRECTIFS: Correctif[] = [
   correctifSeancesTypes('2026-11-03-seances-types-v2', 'Séances types refaites d’après les études récentes : Push, Pull et Jambes plus courtes et complètes (environ 1 h), Full body et Full Upper ajustés. Tes séances déjà modifiées ne changent pas.'),
   correctifAjoutModele('2026-11-03-modele-home-gym', 'Home Gym', 'Nouvelle séance « Home Gym » : sans matériel de salle, avec ce qu’on trouve à la maison (environ 1 h).'),
   correctifAjoutModele('2026-11-03-modele-callisthenie', 'Callisthénie', 'Nouvelle séance « Callisthénie » : street workout au parc, barre fixe et barres parallèles (environ 1 h).'),
+  // Exercices tenus en secondes. L'ordre compte : on marque d'abord les exercices existants (ex. un « Gainage » créé
+  // à la main et noté en reps faute de mieux), puis on ajoute ceux de départ qui manquent.
+  {
+    id: '2026-11-03-exercices-en-secondes',
+    description: 'Gainage, dead hang et autres exercices tenus : ils se notent maintenant en secondes. Tes séries déjà notées gardent leur nombre (45 reps → 45 s).',
+    async executer(simuler) {
+      const cibles = (await db.exercices.toArray()).filter((x) => !x.enSecondes && semblerTenu(x.nom));
+      if (!simuler) for (const x of cibles) await basculerEnSecondes(x.id, true);
+      return cibles.length;
+    },
+  },
+  correctifAjoutExercices('2026-11-03-exercices-tenus', 'Nouveaux exercices notés en secondes : gainage (planche), gainage latéral et dead hang.'),
 ];
 
 async function dejaAppliques(): Promise<string[]> {
@@ -199,7 +213,7 @@ export async function correctifsEnAttente(): Promise<{ correctif: Correctif; nom
 
 /** Applique (ou ignore si `appliquer` = false) tous les correctifs en attente, puis les marque comme traités. */
 export async function traiterCorrectifs(appliquer: boolean): Promise<number> {
-  return db.transaction('rw', db.exercices, db.variantes, db.modeles, db.reglages, async () => {
+  return db.transaction('rw', [db.exercices, db.variantes, db.modeles, db.series, db.reglages], async () => {
     let total = 0;
     if (appliquer) for (const c of CORRECTIFS) if (!(await dejaAppliques()).includes(c.id)) total += await c.executer(false);
     await db.reglages.put({ cle: CLE_CORRECTIFS, valeur: CORRECTIFS.map((c) => c.id) });

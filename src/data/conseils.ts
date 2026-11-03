@@ -559,6 +559,25 @@ export const CONSEILS_EXERCICES: Record<string, FicheConseil> = {
     ['Plus dur : jambes tendues, puis pieds jusqu’à la barre.'],
     ['Balancer le corps pour prendre de l’élan.', 'Monter les jambes sans enrouler le bassin.'],
   ),
+  // Exercices tenus, notés en secondes (2026-11-03, à relire par 10-coach)
+  'Gainage (planche)': ex(
+    'Gainage du tronc : abdos profonds et lombaires travaillent ensemble pour garder le corps droit.',
+    ['Avant-bras au sol, coudes sous les épaules, pieds joints ou écartés de la largeur du bassin.', 'Corps droit des épaules aux talons : serrer fesses et ventre, regarder le sol.', 'Respirer normalement ; arrêter dès que le bassin tombe ou que le bas du dos se creuse.'],
+    ['Au-delà de 60 s propres, passer à plus dur plutôt que tenir plus longtemps : disque sur le dos, pieds surélevés, un bras ou une jambe levé.', '3 séries tenues à 1 ou 2 s de la limite suffisent.'],
+    ['Bassin qui tombe (dos creusé) ou fesses trop hautes.', 'Bloquer sa respiration.'],
+  ),
+  'Gainage latéral': ex(
+    'Gainage sur le côté : obliques et muscles qui stabilisent le bassin.',
+    ['Sur un avant-bras, coude sous l’épaule, jambes tendues l’une sur l’autre.', 'Monter le bassin jusqu’à aligner chevilles, hanches et épaules, tenir.', 'Faire les deux côtés ; noter le temps du côté le plus faible.'],
+    ['Plus facile : genou du dessous au sol. Plus dur : jambe du dessus levée, ou un poids sur la hanche.'],
+    ['Bassin qui recule ou s’affaisse.', 'Épaule qui s’enfonce vers l’oreille.'],
+  ),
+  'Dead hang': ex(
+    'Suspension à la barre : force de prise (avant-bras), épaules, et décompression du dos.',
+    ['Mains en pronation largeur d’épaules, se suspendre bras tendus, pieds décollés.', 'Épaules légèrement engagées (pas collées aux oreilles), corps calme, sans balancer.', 'Lâcher avant que la prise ne glisse.'],
+    ['Utile pour tenir plus longtemps aux tractions et aux tirages lourds.', 'Plus dur : un lest, puis une main à la fois (en alternant).', 'Magnésie si les mains glissent.'],
+    ['Épaules totalement relâchées sur une longue durée si elles sont sensibles.', 'Se laisser tomber sans contrôle à la fin.'],
+  ),
   // Ajouts des séances types (10-coach, 2026-11-03)
   'Élévations latérales': ex(
     'Deltoïde latéral : la largeur des épaules, peu travaillée par les développés.',

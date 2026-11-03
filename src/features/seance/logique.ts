@@ -3,7 +3,7 @@
 import Dexie from 'dexie';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
-import { signeLest, uniteCharge } from '../../core/calculs';
+import { fmtDuree, signeLest, uniteCharge } from '../../core/calculs';
 import type { BlocModele, Exercice, Id, Modele, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 
@@ -87,6 +87,8 @@ export async function supprimerSeance(seanceId: Id) {
 export interface Saisie {
   chargeKg?: number;
   reps: number;
+  /** Série tenue (exercice en secondes) : durée en secondes, `reps` vaut alors 0. */
+  dureeSec?: number;
   rir?: number;
   type: TypeSerie;
   modeCharge: ModeCharge;
@@ -96,7 +98,8 @@ export interface Saisie {
 export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: Saisie, existante?: Serie): Promise<Serie | undefined> {
   const t = maintenant();
   if (existante) {
-    await db.series.update(existante.id, { ...saisie, modifieLe: t });
+    // `dureeSec` absent de la saisie : on l'efface aussi de la série (Dexie ignore les clés absentes).
+    await db.series.update(existante.id, { dureeSec: undefined, ...saisie, modifieLe: t });
     return;
   }
   const dernier = await db.series.where('seanceId').equals(seanceId).reverse().sortBy('ordre');
@@ -131,7 +134,7 @@ export async function derniereFois(exerciceId: Id, saufSeanceId?: Id): Promise<S
   return toutes.filter((s) => s.exerciceId === exerciceId && s.type !== 'echauffement');
 }
 
-/** Premier nombre de « 8-10 », « 12 », sinon `undefined`. */
+/** Premier nombre de « 8-10 », « 12 », « 30-45 s », sinon `undefined`. */
 export const repsDepuisCible = (cible?: string) => {
   const m = cible?.match(/\d+/);
   return m ? Number(m[0]) : undefined;
@@ -145,6 +148,7 @@ export const repsDepuisCible = (cible?: string) => {
  */
 export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, faites: Serie[], avant: Serie[], echauffement?: EtapeEchauffement[]): Saisie {
   const modeCharge = exercice?.modeCharge ?? 'total';
+  const duree = !!exercice?.enSecondes;
   // Échauffement accepté et pas fini : la prochaine série est l'étape suivante.
   const etape = echauffement?.[faites.filter((s) => s.type === 'echauffement').length];
   if (etape && !faites.some((s) => s.type !== 'echauffement')) {
@@ -155,13 +159,24 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
   const n = travail.length;
   const precJour = travail[n - 1];
   const memeRang = avant[n];
-  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'modeCharge' | 'reglagesMachine'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
+  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'modeCharge' | 'reglagesMachine'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
   if (memeRang && precJour && avant[n - 1] && precJour.chargeKg !== avant[n - 1].chargeKg) {
     ref = { ...memeRang, chargeKg: precJour.chargeKg, reglagesMachine: precJour.reglagesMachine ?? memeRang.reglagesMachine };
   }
+  if (duree) {
+    // Exercice tenu : la durée de la dernière fois, sinon la cible (« 30-45 s » → 30 s), sinon 30 s.
+    return {
+      chargeKg: ref?.chargeKg ?? (modeCharge === 'sans_charge' ? undefined : 0),
+      reps: 0,
+      dureeSec: ref?.dureeSec ?? repsDepuisCible(bloc.repsCibles) ?? 30,
+      type: 'travail',
+      modeCharge: ref?.modeCharge ?? modeCharge,
+      reglagesMachine: ref?.reglagesMachine,
+    };
+  }
   return {
     chargeKg: ref?.chargeKg ?? (modeCharge === 'sans_charge' ? undefined : 0),
-    reps: ref?.reps ?? repsDepuisCible(bloc.repsCibles) ?? 10,
+    reps: (ref?.dureeSec == null ? ref?.reps : undefined) || repsDepuisCible(bloc.repsCibles) || 10,
     type: 'travail',
     modeCharge: ref?.modeCharge ?? modeCharge,
     reglagesMachine: ref?.reglagesMachine,
@@ -170,15 +185,31 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
 
 const kg = (v?: number) => (v == null ? '' : v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }));
 
-/** « 73 kg · 9-8-8-7 » ou « 70/73 kg · 10-8 ». */
+/** « 73 kg · 9-8-8-7 » ou « 70/73 kg · 10-8 » ; en durée : « 45-40-30 s » ou « +10 kg de lest · 30-25 s ». */
 export function resumeSeries(series: Serie[]): string {
   if (!series.length) return '';
   const charges = [...new Set(series.map((s) => s.chargeKg))];
   const lest = series[0].modeCharge === 'lest';
   const unite = ` ${uniteCharge(series[0].modeCharge)}`;
+  if (series.some((s) => s.dureeSec != null)) {
+    const durees = `${series.map((s) => s.dureeSec ?? 0).join('-')} s`;
+    if (charges.every((c) => !c) || series[0].modeCharge === 'sans_charge') return durees;
+    return `${charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c ?? 0)).join('/')}${unite} · ${durees}`;
+  }
   const ch = charges.every((c) => c == null) ? 'PdC' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
   return `${ch} · ${series.map((s) => s.reps).join('-')}`;
 }
+
+/** Une série en une ligne : « 20 kg × 10 », ou pour une série tenue « 45 s » / « 45 s · +10 kg de lest ». */
+export function formatSerie(s: Pick<Serie, 'chargeKg' | 'modeCharge' | 'reps' | 'dureeSec'>): string {
+  if (s.dureeSec != null) return s.modeCharge === 'sans_charge' || !s.chargeKg ? fmtDuree(s.dureeSec) : `${fmtDuree(s.dureeSec)} · ${formatCharge(s)}`;
+  return `${formatCharge(s)} × ${s.reps}`;
+}
+
+/** « 3 séries de 8-10 reps », « 3 séries de 30-45 s » (exercice tenu). */
+export const uniteCible = (enSecondes?: boolean) => (enSecondes ? 's' : 'reps');
+/** Cible du modèle sans unité recopiée (« 30-45 s » → « 30-45 »), pour y ajouter la bonne. */
+export const cibleSansUnite = (cible: string) => cible.replace(/\s*(s|sec|secondes?|reps?)\.?$/i, '').trim();
 
 export const formatCharge = (s: Pick<Serie, 'chargeKg' | 'modeCharge'>) =>
   s.modeCharge === 'sans_charge' || s.chargeKg == null
@@ -222,11 +253,21 @@ export const objectifDepuisRepos = (sec?: number): Objectif => (sec == null ? 'h
  * Progrès d'une série de travail par rapport à la série de même rang la dernière fois (bulle « Strava »).
  * Plus de charge (ou moins d'aide) d'abord, sinon plus de reps à charge égale. `undefined` sinon.
  */
-export function progresVsDerniereFois(serie: Pick<Serie, 'chargeKg' | 'reps' | 'type' | 'modeCharge'>, avant: Serie[], rang: number): string | undefined {
+export function progresVsDerniereFois(serie: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'type' | 'modeCharge'>, avant: Serie[], rang: number): string | undefined {
   if (serie.type === 'echauffement') return undefined;
   const ref = avant[rang];
   if (!ref) return undefined;
   const dc = Math.round(((serie.chargeKg ?? 0) - (ref.chargeKg ?? 0)) * 100) / 100;
+  // Série tenue : plus de charge sans perdre plus d'un quart du temps, sinon plus de secondes à charge égale.
+  if (serie.dureeSec != null || ref.dureeSec != null) {
+    if (serie.dureeSec == null || ref.dureeSec == null) return undefined;
+    if (serie.modeCharge !== 'sans_charge' && dc > 0 && serie.dureeSec >= ref.dureeSec * 0.75) {
+      return `+${dc.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg vs la dernière fois`;
+    }
+    const dd = serie.dureeSec - ref.dureeSec;
+    if (dd > 0 && dc >= 0) return `+${fmtDuree(dd)} vs la dernière fois`;
+    return undefined;
+  }
   if (serie.modeCharge !== 'sans_charge' && dc > 0 && serie.reps >= Math.max(1, ref.reps - 2)) {
     return `+${dc.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg vs la dernière fois`;
   }
@@ -292,7 +333,7 @@ export function echauffementAProposer(
   faites: Serie[],
   chargeTravailKg: number | undefined,
 ): EtapeEchauffement[] {
-  if (!exercice || faites.length) return [];
+  if (!exercice || faites.length || exercice.enSecondes) return [];
   if (exercice.modeCharge !== 'total' && exercice.modeCharge !== 'par_main') return [];
   if (!premierExercice && exercice.equipement !== 'barre') return [];
   return etapesEchauffement(chargeTravailKg, exercice.equipement);

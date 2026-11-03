@@ -24,6 +24,7 @@ Code correspondant : `src/core/types.ts`, `src/core/db.ts`, `src/core/calculs.ts
 | photo | Blob? | v2 — photo de référence de la machine, JPEG ~1080 px (compressée par 03). Exclue du CSV ; encodée en base64 (`data:image/jpeg;base64,…`) dans le JSON par 06 |
 | note | string? | |
 | favori | boolean? | en haut des listes ; absent = non favori. Non indexé, sans changement de version |
+| enSecondes | boolean? | se mesure en secondes tenues (gainage, dead hang…) au lieu de reps ; absent = en reps. Non indexé, sans changement de version. Basculer convertit les séries de l'exercice nombre pour nombre (`src/core/duree.ts`) |
 | archive | boolean | |
 Index Dexie : `id, nom, equipement, *groupesMusculaires, archive`
 
@@ -78,7 +79,8 @@ Index : `id, debut, modeleId`
 | supersetId | string? | même valeur pour les séries enchaînées |
 | chargeKg | number? | **propre à chaque série** ; pour `lest`, c'est le lest seul |
 | modeCharge | `'total' \| 'par_main' \| 'lest' \| 'sans_charge'` | copié de l'exercice, modifiable |
-| reps | number | |
+| reps | number | 0 pour une série tenue |
+| dureeSec | number? | série tenue (exercice `enSecondes`) : secondes. Présent = série en durée ; pas de 1RM ni de volume, record « temps tenu max » |
 | rir | number? | répétitions en réserve (optionnel) |
 | type | `'travail' \| 'echauffement' \| 'degressive' \| 'echec'` | défaut `travail` |
 | reglagesMachine | string? | si différent du réglage par défaut |
@@ -95,7 +97,7 @@ Index : `id, seanceId, exerciceId, [exerciceId+faiteLe]`
 | id | string | |
 | exerciceId | string | |
 | varianteId | string? | absent = version standard |
-| mesure | `serie` \| `un_rm` \| `charge_max` \| `reps` | `serie` = N reps à X kg ; les autres = valeurs de la courbe de progression |
+| mesure | `serie` \| `un_rm` \| `charge_max` \| `reps` \| `duree` | `serie` = N reps à X kg ; `duree` = secondes tenues (meilleure série) ; les autres = valeurs de la courbe de progression |
 | cible | number | kg (serie : charge telle que notée ; 1RM estimé, charge max effective) ou reps (meilleure série) |
 | reps | number? | reps visées à la charge `cible` (serie) |
 

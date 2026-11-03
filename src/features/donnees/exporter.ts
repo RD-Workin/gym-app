@@ -64,6 +64,7 @@ export const COLONNES_CSV = [
   'poids_kg',
   'lest_kg',
   'reps',
+  'duree_s',
   'rir',
   'poids_corps_kg',
   'charge_effective_kg',
@@ -176,7 +177,8 @@ export function lignesCsv(d: {
         s.modeCharge,
         lest ? null : s.chargeKg,
         lest ? s.chargeKg : null,
-        s.reps,
+        s.dureeSec != null ? null : s.reps,
+        s.dureeSec,
         s.rir,
         pc,
         chargeEffective(s, pc),
@@ -266,6 +268,19 @@ export async function construireResumePeriode(periode: Periode): Promise<string>
     db.objectifs.toArray(),
   ]);
   return construireResume({ exercices, variantes, modeles, seances, series, objectifs }, periode);
+}
+
+/** Résumé d'une seule séance, comparée à la fois d'avant pour chaque exercice (voir resume.ts). */
+export async function construireResumeUneSeance(seanceId: string): Promise<string> {
+  const { construireResumeSeance } = await import('./resume');
+  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+    db.exercices.toArray(),
+    db.variantes.toArray(),
+    db.modeles.toArray(),
+    db.seances.toArray(),
+    db.series.toArray(),
+  ]);
+  return construireResumeSeance({ exercices, variantes, modeles, seances, series }, seanceId);
 }
 
 /** Copie le résumé ; si le presse-papier est refusé, le partage ou le télécharge en .txt. */

@@ -14,16 +14,17 @@ export function IndicationLest({ lestKg, poidsCorporelKg }: { lestKg: number; po
       ? `Aidé de ${kg(-lestKg)} (élastique ou machine).`
       : lestKg > 0
         ? `${kg(lestKg)} ajoutés à ton poids (ceinture, gilet, haltère).`
-        : 'Poids du corps seul. Monte avec + pour un lest, descends sous 0 si un élastique ou une machine t’aide.';
+        : 'Poids du corps seul. + pour un lest, sous 0 si on t’aide (élastique, machine).';
+  // À 0, la charge réelle n'apprend rien de plus : phrase courte (11).
   const calcul =
-    poidsCorporelKg == null
+    lestKg === 0
+      ? ''
+      : poidsCorporelKg == null
       ? 'Note ton poids au début d’une séance (« Ton poids ? ») pour voir la charge réelle.'
-      : lestKg === 0
-        ? `Charge réelle : ${kg(poidsCorporelKg)}.`
         : `Charge réelle : ${kg(poidsCorporelKg)} ${lestKg > 0 ? '+' : '−'} ${kg(Math.abs(lestKg))} = ${kg(reelle ?? 0)}.`;
   return (
     <p class="ui-attenue ui-indication-lest">
-      {ce} {calcul} <Aide mot="lest" />
+      {ce} {calcul ? `${calcul} ` : ''}<Aide mot="lest" />
     </p>
   );
 }

@@ -5,7 +5,7 @@ import { nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
 import type { BlocModele } from '../../core/types';
 import { ChoixExercice } from '../seance/ChoixExercice';
-import { OBJECTIFS, demarrerSeance, dureeTexte, type Objectif } from '../seance/logique';
+import { OBJECTIFS, cibleSansUnite, demarrerSeance, dureeTexte, uniteCible, type Objectif } from '../seance/logique';
 import { analyserModele, poly, type TypeSeance } from './avis';
 import { CarteAvis } from './CarteAvis';
 import { enregistrerModele, nouveauModele } from './modeles';
@@ -85,7 +85,7 @@ export function EcranComposer() {
       <ChoixExercice
         onAnnuler={() => setChoix(false)}
         onChoix={(e) => {
-          setBlocs([...blocs, blocPropose(e.id, poly(e), objectif, nouvelId())]);
+          setBlocs([...blocs, blocPropose(e.id, poly(e), objectif, nouvelId(), e.enSecondes)]);
           setChoix(false);
         }}
       />
@@ -131,7 +131,7 @@ export function EcranComposer() {
         blocs={blocs}
         bibliotheque={biblio.exercices}
         frequence={biblio.frequence}
-        onChoix={(p) => setBlocs([...blocs, blocPropose(p.exercice.id, p.gros, objectif, nouvelId())])}
+        onChoix={(p) => setBlocs([...blocs, blocPropose(p.exercice.id, p.gros, objectif, nouvelId(), p.exercice.enSecondes)])}
         onAutre={() => setChoix(true)}
       />
       <Carte titre={`Ta séance${blocs.length ? ` · ${blocs.length} exercice${blocs.length > 1 ? 's' : ''}` : ''}`}>
@@ -147,7 +147,7 @@ export function EcranComposer() {
                   <span class="mo-ligne-texte">
                     <b>{e?.nom ?? 'Exercice supprimé'}</b>
                     <span class="sc-attenue">
-                      {b.seriesCibles} séries de {b.repsCibles} reps · repos {dureeTexte(b.reposSec ?? 90)}
+                      {b.seriesCibles} séries de {cibleSansUnite(b.repsCibles ?? '')} {uniteCible(e?.enSecondes)} · repos {dureeTexte(b.reposSec ?? 90)}
                     </span>
                   </span>
                   <span class="mo-ligne-actions">

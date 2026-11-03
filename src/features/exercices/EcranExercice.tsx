@@ -17,10 +17,12 @@ import {
   masquerExercice,
   prendreNomPropose,
   modifierExercice,
+  nbSeries,
   supprimerVariante,
   type BrouillonExercice,
 } from './exercices';
 import { enregistrerPhoto, retirerPhoto } from './photo';
+import { semblerTenu } from '../../core/duree';
 import { EcranCatalogue } from './EcranCatalogue';
 import { CorpsMuscles } from './CorpsMuscles';
 import { BoutonFavori } from './BoutonFavori';
@@ -59,8 +61,8 @@ function FicheExercice({ id }: { id: string }) {
   useEffect(() => () => urlPhoto && URL.revokeObjectURL(urlPhoto), [urlPhoto]);
   useEffect(() => {
     if (ex && !modifie) {
-      const { nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note } = ex;
-      setB({ nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note });
+      const { nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes } = ex;
+      setB({ nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes });
     }
   }, [ex?.modifieLe]);
 
@@ -79,6 +81,12 @@ function FicheExercice({ id }: { id: string }) {
       const nid = await creerExercice(b);
       naviguer(`/exercices/${nid}`);
     } else {
+      // Changer reps ↔ secondes convertit l'historique : on prévient s'il y en a un.
+      if (!!ex?.enSecondes !== !!b.enSecondes) {
+        const n = await nbSeries(id);
+        const vers = b.enSecondes ? 'secondes (10 reps → 10 s)' : 'reps (10 s → 10 reps)';
+        if (n && !confirm(`Tes ${n} série${n > 1 ? 's' : ''} déjà notée${n > 1 ? 's' : ''} passeront en ${vers}. Continuer ?`)) return;
+      }
       await modifierExercice(id, b);
       setMessage('Enregistré');
     }
@@ -125,7 +133,7 @@ function FicheExercice({ id }: { id: string }) {
         <details class="ex-modifier">
           <summary>
             <span>Modifier l'exercice</span>
-            <span class="ui-attenue">Nom, matériel, muscles, réglage machine, photo, variantes</span>
+            <span class="ui-attenue">Nom, matériel, reps ou secondes, muscles, réglage machine, photo, variantes</span>
           </summary>
           <div class="ui-pile">
             {formulaire()}
@@ -141,7 +149,16 @@ function FicheExercice({ id }: { id: string }) {
       <form class="ui-pile" onSubmit={enregistrer}>
         <label class="ex-champ">
           <span class="ui-surtitre">Nom</span>
-          <input value={b.nom} required maxLength={80} onInput={(e) => maj({ nom: e.currentTarget.value })} />
+          <input
+            value={b.nom}
+            required
+            maxLength={80}
+            onInput={(e) => {
+              const nom = e.currentTarget.value;
+              // Nouvel exercice « Gainage », « Dead hang »… : proposé en secondes d'emblée (modifiable juste en dessous).
+              maj({ nom, ...(nouveau && semblerTenu(nom) ? { enSecondes: true } : {}) });
+            }}
+          />
         </label>
         <div class="ui-ligne" style={{ alignItems: 'start' }}>
           <label class="ex-champ" style={{ flex: 1 }}>
@@ -168,6 +185,19 @@ function FicheExercice({ id }: { id: string }) {
               ))}
             </select>
           </label>
+        </div>
+        <div class="ex-champ">
+          <span class="ui-surtitre">
+            Se mesure en <Aide mot="enSecondes" />
+          </span>
+          <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }} role="group" aria-label="Se mesure en">
+            <button type="button" class="ex-filtre" aria-pressed={!b.enSecondes} onClick={() => maj({ enSecondes: undefined })}>
+              Répétitions
+            </button>
+            <button type="button" class="ex-filtre" aria-pressed={!!b.enSecondes} onClick={() => maj({ enSecondes: true })}>
+              Secondes (gainage, dead hang…)
+            </button>
+          </div>
         </div>
         <div class="ex-champ">
           <span class="ui-surtitre">Muscles (ou touche le corps plus haut)</span>

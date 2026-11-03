@@ -13,7 +13,7 @@ import { blocsOrigine, enregistrerModele, memesBlocs, nouveauModele, origineDe }
 import { analyserModele, LIBELLES_VERDICT, type TypeSeance } from './avis';
 import { CarteAvis } from './CarteAvis';
 import { Propositions, useBibliotheque } from './Propositions';
-import { BUT_OBJECTIF, NOMS_OBJECTIF, blocPropose } from './suggestions';
+import { BUT_OBJECTIF, CIBLE_SECONDES, NOMS_OBJECTIF, blocPropose } from './suggestions';
 import '../seance/seance.css';
 import './modeles.css';
 
@@ -81,7 +81,7 @@ function EditeurModele({ initial, onFin, onSupprime = onFin }: { initial: Modele
       <ChoixExercice
         onAnnuler={() => setChoix(false)}
         onChoix={(e) => {
-          setM({ ...m, blocs: [...m.blocs, { id: nouvelId(), exerciceId: e.id, seriesCibles: 3, repsCibles: OBJECTIFS[objectif].reps, reposSec: OBJECTIFS[objectif].reposSec }] });
+          setM({ ...m, blocs: [...m.blocs, { id: nouvelId(), exerciceId: e.id, seriesCibles: 3, repsCibles: e.enSecondes ? CIBLE_SECONDES : OBJECTIFS[objectif].reps, reposSec: OBJECTIFS[objectif].reposSec }] });
           setChoix(false);
         }}
       />
@@ -163,8 +163,8 @@ function EditeurModele({ initial, onFin, onSupprime = onFin }: { initial: Modele
                 <input class="sc-champ" inputMode="numeric" value={b.seriesCibles ?? ''} onInput={(e) => majBloc(i, { seriesCibles: num((e.target as HTMLInputElement).value) })} />
               </label>
               <label>
-                Reps
-                <input class="sc-champ" value={b.repsCibles ?? ''} placeholder="8-10" onInput={(e) => majBloc(i, { repsCibles: (e.target as HTMLInputElement).value.trim() || undefined })} />
+                {exercices.get(b.exerciceId)?.enSecondes ? 'Secondes' : 'Reps'}
+                <input class="sc-champ" value={b.repsCibles ?? ''} placeholder={exercices.get(b.exerciceId)?.enSecondes ? CIBLE_SECONDES : '8-10'} onInput={(e) => majBloc(i, { repsCibles: (e.target as HTMLInputElement).value.trim() || undefined })} />
               </label>
               <label>
                 Repos (s)
@@ -199,7 +199,7 @@ function EditeurModele({ initial, onFin, onSupprime = onFin }: { initial: Modele
           blocs={m.blocs}
           bibliotheque={biblio.exercices}
           frequence={biblio.frequence}
-          onChoix={(p) => setM({ ...m, blocs: [...m.blocs, blocPropose(p.exercice.id, p.gros, objectif, nouvelId())] })}
+          onChoix={(p) => setM({ ...m, blocs: [...m.blocs, blocPropose(p.exercice.id, p.gros, objectif, nouvelId(), p.exercice.enSecondes)] })}
           onAutre={() => setChoix(true)}
         />
       ) : (
