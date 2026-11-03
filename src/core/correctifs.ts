@@ -63,7 +63,7 @@ function correctifAjoutModele(id: string, nomModele: string, description: string
       if (blocs.length === 0) return 0;
       if (!simuler) {
         const t = maintenant();
-        await db.modeles.add({ id: nouvelId(), nom: nomModele, blocs, archive: false, creeLe: t, modifieLe: t });
+        await db.modeles.add({ id: nouvelId(), nom: nomModele, origine: nomModele, blocs, archive: false, creeLe: t, modifieLe: t });
       }
       return 1;
     },

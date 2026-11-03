@@ -50,6 +50,10 @@ export interface Modele extends Horodatage {
   nom: string;
   blocs: BlocModele[];
   archive: boolean;
+  /** Type choisi dans « Composer ma séance » (push, pull, jambes, full, autre) ; sinon déduit du nom et du contenu. */
+  type?: string;
+  /** Nom du modèle de départ dont il vient (Push, Pull…), pour « Revenir au modèle d'origine ». */
+  origine?: string;
 }
 
 export interface Contexte {

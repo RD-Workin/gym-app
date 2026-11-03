@@ -49,11 +49,11 @@ function Demarrage() {
     for (const s of seances) if (s.modeleId && !derniere.has(s.modeleId)) derniere.set(s.modeleId, s.debut);
     // Rotation : le modèle le moins récemment fait d'abord (jamais fait = en premier).
     modeles.sort((a, b) => (derniere.get(a.id) ?? '').localeCompare(derniere.get(b.id) ?? ''));
-    return { modeles, derniere, recentes: seances.filter((s) => s.fin).slice(0, 5) };
+    return { modeles, derniere, recentes: seances.filter((s) => s.fin).slice(0, 5), premiere: seances.length === 0 };
   });
   const [occupe, setOccupe] = useState(false);
   if (!donnees) return null;
-  const { modeles, derniere, recentes } = donnees;
+  const { modeles, derniere, recentes, premiere } = donnees;
 
   const lancer = async (m?: Modele) => {
     if (occupe) return;
@@ -73,18 +73,36 @@ function Demarrage() {
       <p class="sc-attenue sc-intro">
         Choisis une séance type <Aide mot="modele" /> : l'app te guide exercice par exercice, avec le minuteur de repos.
       </p>
+      {premiere && (
+        <Carte titre="Ta première séance" ton="mise-en-avant">
+          <p class="sc-attenue sc-intro">
+            Compose-la à ton goût <Aide mot="composer" /> : l’app te propose les exercices un par un. Ou démarre directement une séance type ci-dessous.
+          </p>
+          <Bouton taille="geant" icone="plus" href={lien('/modeles/composer')}>
+            Composer ma séance
+          </Bouton>
+        </Carte>
+      )}
       {modeles.length > 0 ? (
         <>
-          <Carte titre="À faire ensuite" aside={<Puce>{ilYa(derniere.get(modeles[0].id))}</Puce>} ton="mise-en-avant">
-            <Bouton taille="geant" onClick={() => lancer(modeles[0])} disabled={occupe}>
+          <Carte titre={premiere ? 'Séances types prêtes' : 'À faire ensuite'} aside={premiere ? undefined : <Puce>{ilYa(derniere.get(modeles[0].id))}</Puce>} ton={premiere ? 'neutre' : 'mise-en-avant'}>
+            <Bouton taille={premiere ? 'large' : 'geant'} variante={premiere ? 'secondaire' : 'primaire'} onClick={() => lancer(modeles[0])} disabled={occupe} detail={premiere ? `${modeles[0].blocs.length} exercices` : undefined}>
               Démarrer {modeles[0].nom}
             </Bouton>
+            <a class="sc-lien" href={lien(`/modeles/${modeles[0].id}`)}>
+              Modifier {modeles[0].nom} (exercices, séries, reps)
+            </a>
           </Carte>
           {modeles.length > 1 && <span class="ui-surtitre">Autres séances types</span>}
           {modeles.slice(1).map((m) => (
-            <Bouton key={m.id} variante="secondaire" taille="large" detail={`${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} onClick={() => lancer(m)}>
-              {m.nom}
-            </Bouton>
+            <div key={m.id} class="sc-modele-ligne">
+              <Bouton variante="secondaire" taille="large" detail={`${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} onClick={() => lancer(m)}>
+                {m.nom}
+              </Bouton>
+              <a class="sc-lien" href={lien(`/modeles/${m.id}`)} aria-label={`Modifier ${m.nom}`}>
+                Modifier
+              </a>
+            </div>
           ))}
           <Bouton variante="contour" taille="large" onClick={() => lancer()} detail="Sans modèle : tu ajoutes les exercices au fur et à mesure">
             Séance libre
@@ -101,8 +119,13 @@ function Demarrage() {
       <Bouton variante="contour" taille="large" href={lien('/exercices')} detail="Une perf faite sans lancer de séance ni de chrono">
         Noter un exercice
       </Bouton>
+      {!premiere && (
+        <Bouton variante="contour" icone="plus" href={lien('/modeles/composer')} detail="L’app te propose les exercices un par un">
+          Composer une nouvelle séance
+        </Bouton>
+      )}
       <Bouton variante="contour" href={lien('/modeles')}>
-        Modifier ou créer des séances types
+        Toutes mes séances types
       </Bouton>
       {recentes.length > 0 && (
         <>

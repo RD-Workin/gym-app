@@ -94,3 +94,31 @@ test('aide « ? » : explique un terme au toucher', async ({ page }) => {
   await page.getByRole('button', { name: 'Explication : RIR' }).click();
   await expect(page.getByRole('note')).toContainText('Reps en réserve');
 });
+
+test('composer ma séance : propositions, avis, enregistrer et démarrer', async ({ page }) => {
+  page.on('dialog', (d) => d.accept());
+  await page.goto('./#/seance');
+  await page.getByRole('link', { name: 'Composer ma séance' }).click();
+  await page.getByRole('button', { name: /^Push/ }).click();
+  await expect(page.getByText('Choisis ton premier exercice')).toBeVisible();
+  // Trois exercices proposés, choisis l'un après l'autre.
+  for (let i = 0; i < 3; i++) await page.locator('.mo-propositions .ui-bouton').first().click();
+  await expect(page.locator('.mo-ligne')).toHaveCount(3);
+  await expect(page.getByText('Avis sur ta séance')).toBeVisible();
+  await page.getByRole('button', { name: /^Descendre / }).first().click();
+  await page.getByRole('button', { name: 'Enregistrer et démarrer' }).click();
+  await expect(page.getByRole('button', { name: 'Valider la série' })).toBeVisible();
+});
+
+test('modifier une séance type et revenir au modèle d’origine', async ({ page }) => {
+  page.on('dialog', (d) => d.accept());
+  await page.goto('./#/seance');
+  await page.getByRole('link', { name: 'Modifier Pull' }).click();
+  await expect(page.getByText('Avis sur ta séance')).toBeVisible();
+  const avant = await page.locator('.sc-nom-bloc').count();
+  await page.getByRole('button', { name: 'Retirer l’exercice' }).first().click();
+  await expect(page.locator('.sc-nom-bloc')).toHaveCount(avant - 1);
+  await page.getByRole('button', { name: /Revenir au modèle d’origine/ }).click();
+  await expect(page.locator('.sc-nom-bloc')).toHaveCount(avant);
+  await expect(page.getByRole('button', { name: /Revenir au modèle d’origine/ })).toHaveCount(0);
+});

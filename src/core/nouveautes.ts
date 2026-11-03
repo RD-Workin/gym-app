@@ -9,6 +9,15 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 5,
+    date: '2026-11-03',
+    points: [
+      'Composer ma séance : choisis Push, Pull, Jambes, Full body ou libre, puis l’app te propose les exercices un par un. Tu gardes ceux qui te plaisent, tu changes l’ordre, et tu enregistres.',
+      'Chaque séance type se modifie depuis l’écran Séance (« Modifier ») : exercices, ordre, séries, reps. Push, Pull, Jambes et Full body peuvent revenir au modèle d’origine.',
+      'Avis sur ta séance : adaptée, à ajuster, incomplète ou trop chargée, avec les raisons (muscle oublié, trop de séries, durée…).',
+    ],
+  },
+  {
     numero: 4,
     date: '2026-11-03',
     points: [

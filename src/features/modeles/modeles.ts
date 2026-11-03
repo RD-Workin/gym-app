@@ -1,7 +1,8 @@
 // Modèles de séance (propriétaire : 04-seance).
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
-import type { BlocModele, Id, Modele } from '../../core/types';
+import type { BlocModele, Exercice, Id, Modele } from '../../core/types';
+import { BIBLIOTHEQUE, MODELES_DEPART, blocsDepart, reposDepart } from '../../data/bibliotheque';
 
 export async function enregistrerModele(m: Omit<Modele, 'creeLe' | 'modifieLe'> & Partial<Modele>) {
   const t = maintenant();
@@ -34,3 +35,24 @@ export async function creerModeleDepuisSeance(seanceId: Id, nom: string): Promis
   await db.modeles.add(m);
   return m.id;
 }
+
+/** Nom du modèle de départ d'un modèle (champ `origine`, ou même nom qu'un modèle de départ pour les installations d'avant). */
+export const origineDe = (m: Pick<Modele, 'nom' | 'origine'>): string | undefined =>
+  m.origine ?? (MODELES_DEPART.some((d) => d.nom === m.nom) ? m.nom : undefined);
+
+/** Blocs du modèle de départ `origine`, reliés aux exercices de la bibliothèque par leur nom. Un exercice supprimé est sauté. */
+export function blocsOrigine(origine: string, exercices: Pick<Exercice, 'id' | 'nom' | 'archive'>[]): BlocModele[] {
+  const depart = MODELES_DEPART.find((d) => d.nom === origine);
+  if (!depart) return [];
+  const parNom = new Map(exercices.filter((x) => !x.archive).map((x) => [x.nom, x.id]));
+  return blocsDepart(depart).flatMap((b) => {
+    const nom = BIBLIOTHEQUE.find((x) => x.cle === b.cle)?.nom;
+    const exerciceId = nom ? parNom.get(nom) : undefined;
+    return exerciceId ? [{ id: nouvelId(), exerciceId, seriesCibles: b.series, repsCibles: b.reps, reposSec: reposDepart(b.cle) }] : [];
+  });
+}
+
+/** Mêmes exercices, dans le même ordre, avec les mêmes cibles. */
+export const memesBlocs = (a: BlocModele[], b: BlocModele[]) =>
+  a.length === b.length &&
+  a.every((x, i) => x.exerciceId === b[i].exerciceId && x.seriesCibles === b[i].seriesCibles && x.repsCibles === b[i].repsCibles && x.reposSec === b[i].reposSec);

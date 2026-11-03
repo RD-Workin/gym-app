@@ -1,0 +1,16 @@
+/* Composer ma séance, avis (propriétaire : 04-seance). */
+.mo-propositions { display: grid; gap: var(--e-2); }
+.mo-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-2); }
+.mo-ligne { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--e-2); }
+.mo-num { font-family: var(--f-titre); font-size: var(--t-lg); color: var(--c-attenue); min-width: 1.5em; text-align: center; }
+.mo-ligne-texte { display: grid; gap: 2px; min-width: 0; }
+.mo-ligne-texte b { overflow: hidden; text-overflow: ellipsis; }
+.mo-ligne-texte .sc-attenue { font-size: var(--t-xs); }
+.mo-ligne-actions { display: flex; gap: var(--e-1); }
+.mo-ligne-actions .sc-lien { min-width: 36px; font-size: var(--t-md); }
+.mo-remarques { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-2); }
+.mo-remarque { display: grid; grid-template-columns: 1.2em 1fr; gap: var(--e-2); font-size: var(--t-sm); line-height: 1.4; }
+.mo-remarque > span:first-child { font-weight: 700; text-align: center; }
+.mo-remarque.ok > span:first-child { color: var(--c-progres); }
+.mo-remarque.conseil > span:first-child { color: var(--c-alerte); }
+.mo-remarque.probleme > span:first-child { color: var(--c-danger); }

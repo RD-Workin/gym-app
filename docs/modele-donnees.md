@@ -44,6 +44,8 @@ Index : `id, exerciceId`
 | nom | string | |
 | blocs | `BlocModele[]` | ordre = ordre d'affichage |
 | archive | boolean | |
+| type | string? | type choisi dans « Composer ma séance » : push, pull, jambes, full, autre (sinon déduit du nom et du contenu) |
+| origine | string? | nom du modèle de départ (Push, Pull…) pour « Revenir au modèle d'origine » ; absent = même nom qu'un modèle de départ |
 
 `BlocModele` = `{ id, supersetId?, exerciceId, varianteId?, seriesCibles?, repsCibles?: string, reposSec?, note? }`
 - `repsCibles` est un texte libre (« 8-10 », « max »).

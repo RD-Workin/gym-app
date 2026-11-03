@@ -16,6 +16,22 @@ export const LEXIQUE = {
     terme: 'Modèle',
     definition: 'Une séance type déjà préparée (liste d’exercices, séries, repos). Push, Pull, Jambes et Full body sont fournis ; tu peux les modifier ou en créer.',
   },
+  composer: {
+    terme: 'Composer ma séance',
+    definition: 'L’app te propose 3 ou 4 exercices selon ce qui manque à ta séance ; tu en choisis un, puis elle propose le suivant, jusqu’à ce que ta séance te plaise.',
+  },
+  grosExercice: {
+    terme: 'Gros exercice',
+    definition: 'Un exercice qui fait travailler plusieurs muscles à la fois (développé, tirage, presse, squat). À faire en début de séance, quand tu es frais. Le contraire : l’isolation, un seul muscle (curl, leg extension).',
+  },
+  objectif: {
+    terme: 'Objectif',
+    definition: 'Force : charges lourdes, 1 à 6 reps, longs repos. Muscle (hypertrophie) : 6 à 12 reps, pour prendre du volume. Endurance : 15 à 20 reps, repos courts.',
+  },
+  avisSeance: {
+    terme: 'Avis sur ta séance',
+    definition: 'Calculé par l’app à partir de repères d’entraînement : muscles travaillés, nombre de séries par muscle (un muscle travaillé en second compte pour une demi-série), durée, ordre et repos. C’est un conseil, tu restes libre.',
+  },
   seanceLibre: { terme: 'Séance libre', definition: 'Une séance sans modèle : tu ajoutes les exercices au fur et à mesure.' },
   noterExercice: {
     terme: 'Noter un exercice',
