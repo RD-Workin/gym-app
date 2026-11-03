@@ -29,6 +29,20 @@ const donnees = (h: { seances: Seance[]; series: Serie[] }) => ({
 });
 const obj = (p: Partial<Objectif>): Objectif => ({ id: 'o1', exerciceId: 'dc', mesure: 'charge_max', cible: 100, creeLe: '', modifieLe: '', ...p });
 
+describe('objectifs : lest négatif (tractions aidées)', () => {
+  it('équivalence et jauge calculées sur la charge réelle', () => {
+    const h = historique('tr', [-20, -15, -10], 5, 7, { modeCharge: 'lest', exerciceId: 'tr' });
+    const d = { ...donnees(h), poids: new Map<string, number | undefined>(h.seances.map((s) => [s.id, 80])) };
+    const { etat } = evaluerObjectif(obj({ exerciceId: 'tr', mesure: 'serie', reps: 5, cible: 0 }), d, AUJ);
+    expect(etat.actuel).toBeCloseTo(-10);
+    expect(etat.reste).toBeCloseTo(10);
+    expect(etat.pourcentage).toBeCloseTo(87.5); // 70 kg réels sur 80
+    expect(etat.atteint).toBe(false);
+    const { etat: e2 } = evaluerObjectif(obj({ exerciceId: 'tr', mesure: 'serie', reps: 5, cible: -10 }), d, AUJ);
+    expect(e2.atteint).toBe(true);
+  });
+});
+
 describe('objectifs : calculs', () => {
   it('pente des moindres carrés par semaine', () => {
     const w = 7 * 864e5;

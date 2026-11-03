@@ -77,3 +77,37 @@
 .sc-options-wrap { flex-wrap: wrap; }
 .sc-intro { margin: 0; font-size: var(--t-sm); }
 .sc-modele-ligne { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--e-2); }
+
+/* Dynamisme (09) : la pastille d'un exercice bouclé se remplit, le repos qui finit s'illumine. */
+.sc-points button::before { transform-origin: left center; }
+.sc-points button.fait::before { animation: sc-remplit 520ms cubic-bezier(0.3, 1.2, 0.4, 1) both; box-shadow: 0 0 8px rgb(61 220 151 / 0.5); }
+.sc-points button.cur::before { animation: sc-cur 1.8s ease-in-out infinite; }
+@keyframes sc-remplit { from { transform: scaleX(0); } }
+@keyframes sc-cur { 50% { opacity: 0.55; } }
+.sc-repos { transition: color 200ms; }
+.sc-repos.fini { animation: sc-repos-fini 700ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes sc-repos-fini { 30% { transform: scale(1.04); } }
+.sc-serie.fait .sc-ok { display: inline-flex; }
+@media (prefers-reduced-motion: reduce) {
+  .sc-points button.fait::before, .sc-points button.cur::before, .sc-repos.fini { animation: none; }
+}
+
+/* Bilan de fin de séance (effets : 09). */
+.bil { display: grid; gap: var(--e-3); padding: var(--e-4); border-radius: var(--r-lg); background: radial-gradient(120% 90% at 50% 0%, rgb(255 122 61 / 0.22), transparent 60%), var(--c-surface); border: 1px solid rgb(255 122 61 / 0.35); overflow: hidden; }
+.bil-titre { font-family: var(--f-titre); font-weight: 800; font-size: var(--t-2xl); text-transform: uppercase; line-height: 1; text-align: center; color: var(--c-action); }
+.bil-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: var(--e-2); text-align: center; }
+.bil-tuiles > div { display: grid; gap: 2px; padding: var(--e-3) var(--e-1); border-radius: var(--r-sm); background: var(--c-surface-2); }
+.bil-chiffre { font-family: var(--f-titre); font-weight: 800; font-size: var(--t-xl); font-variant-numeric: tabular-nums; line-height: 1; }
+.bil-lib { font-size: var(--t-xs); color: var(--c-attenue); text-transform: uppercase; letter-spacing: 0.05em; }
+.bil-records { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-2); }
+.bil-record { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-2) var(--e-3); border-radius: var(--r-sm); background: rgb(255 212 94 / 0.08); border: 1px solid rgb(255 212 94 / 0.3); font-size: var(--t-sm); animation: bil-tombe 560ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.bil-record b { color: var(--c-record); text-transform: uppercase; font-family: var(--f-titre); margin-right: 4px; }
+.bil-record.d0 { animation-delay: 500ms; } .bil-record.d0 .ui-medaille { animation-delay: 500ms; }
+.bil-record.d1 { animation-delay: 800ms; } .bil-record.d1 .ui-medaille { animation-delay: 800ms; }
+.bil-record.d2 { animation-delay: 1100ms; } .bil-record.d2 .ui-medaille { animation-delay: 1100ms; }
+.bil-record.d3 { animation-delay: 1400ms; } .bil-record.d3 .ui-medaille { animation-delay: 1400ms; }
+.bil-plus { font-size: var(--t-sm); color: var(--c-attenue); padding-left: var(--e-3); }
+@keyframes bil-tombe { from { opacity: 0; transform: translateY(-24px) scale(0.9); } }
+.bil-flamme { display: flex; align-items: center; gap: var(--e-2); justify-content: center; font-size: var(--t-sm); color: var(--c-attenue); animation: anim-monte 500ms 1.2s both; }
+.bil-flamme b { color: var(--c-texte); font-family: var(--f-titre); font-size: var(--t-lg); }
+@media (prefers-reduced-motion: reduce) { .bil-record, .bil-flamme { animation: none; } }

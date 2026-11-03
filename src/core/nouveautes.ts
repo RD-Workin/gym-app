@@ -9,6 +9,13 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 8,
+    date: '2026-11-03',
+    points: [
+      'Tractions, dips, pompes, muscle-up… : tu notes le lest, c’est-à-dire seulement ce que tu ajoutes à ton poids (+10 kg à la ceinture). Aidé par un élastique ou une machine ? Note-le en négatif (−15 kg). L’app affiche la charge réelle si tu as noté ton poids du corps.',
+    ],
+  },
+  {
     numero: 7,
     date: '2026-11-03',
     points: ['Conseils du coach relus d’après les dernières études : pour la masse, 6 à 12 reps restent un bon repère (5 à 30 marchent si tu vas près de l’échec), au moins 10 séries par muscle et par semaine, et une semaine plus légère quand la fatigue s’accumule.'],

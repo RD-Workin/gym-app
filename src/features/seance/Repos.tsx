@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { bulle, COULEURS_PROGRES, eclatSur, vibrer } from '../../anim';
 import { dureeTexte } from './logique';
 
 interface Props {
@@ -20,15 +21,15 @@ export function Repos({ fin, duree, onAjouter, onPasser, onRegler }: Props) {
     return () => clearInterval(t);
   }, [fin]);
 
+  const anneau = useRef<SVGSVGElement>(null);
   const reste = Math.max(0, (fin - now) / 1000);
   useEffect(() => {
     if (reste === 0 && !vibre.current) {
       vibre.current = true;
-      try {
-        navigator.vibrate?.([200, 100, 200]);
-      } catch {
-        /* non supporté */
-      }
+      vibrer([200, 100, 200]);
+      // Fin du repos vécue en direct : l'anneau éclate, et on relance.
+      eclatSur(anneau.current, { nombre: 22, force: 4, couleurs: COULEURS_PROGRES, onde: true });
+      bulle(anneau.current, "C'est reparti !", 'progres');
     }
   }, [reste]);
 
@@ -36,10 +37,11 @@ export function Repos({ fin, duree, onAjouter, onPasser, onRegler }: Props) {
   const tour = 2 * Math.PI * r;
   const part = duree > 0 ? reste / duree : 0;
   const fini = reste === 0;
+  const imminent = !fini && reste <= 3.2;
 
   return (
     <div class={`sc-repos${fini ? ' fini' : ''}`} role="timer" aria-live="off">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
+      <svg ref={anneau} class={imminent ? 'anim-bat' : undefined} viewBox="0 0 40 40" aria-hidden="true">
         <circle cx="20" cy="20" r={r} fill="none" stroke="var(--c-surface-2)" stroke-width="4" />
         <circle
           cx="20"

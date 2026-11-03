@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { rouler, vibrer } from '../anim';
 
 interface Props {
   valeur: number;
@@ -23,6 +24,7 @@ const formater = (v: number, d: number) => arrondir(v, d).toLocaleString('fr-FR'
 export function Stepper({ valeur, onChange, unite, pas = 1, min = 0, max = 999, decimales = 1, id }: Props) {
   const [texte, setTexte] = useState(formater(valeur, decimales));
   const minuterie = useRef<number | undefined>(undefined);
+  const champ = useRef<HTMLInputElement>(null);
   const courant = useRef(valeur);
   courant.current = valeur;
 
@@ -31,16 +33,13 @@ export function Stepper({ valeur, onChange, unite, pas = 1, min = 0, max = 999, 
   const borner = (v: number) => Math.min(max, Math.max(min, arrondir(v, decimales)));
   const bouger = (sens: 1 | -1) => {
     const v = borner(courant.current + sens * pas);
+    if (v !== courant.current) rouler(champ.current, sens);
     courant.current = v;
     onChange(v);
   };
   const debut = (sens: 1 | -1) => {
     bouger(sens);
-    try {
-      navigator.vibrate?.(8);
-    } catch {
-      /* non supporté */
-    }
+    vibrer(8);
     let delai = 400;
     const repeter = () => {
       bouger(sens);
@@ -86,6 +85,7 @@ export function Stepper({ valeur, onChange, unite, pas = 1, min = 0, max = 999, 
       {bouton(-1)}
       <label class="ui-stepper-valeur" for={id}>
         <input
+          ref={champ}
           id={id}
           inputMode="decimal"
           enterKeyHint="done"

@@ -1,7 +1,17 @@
 /* Styles des composants de src/ui/. */
 
 /* ---- Coquille : zones sûres iPhone + barre d'onglets ---- */
-.ui-coquille { min-height: 100%; display: flex; flex-direction: column; }
+/* iOS (app installée, barre d'état translucide) : sur une page qui ne défile pas, le repère
+   des éléments fixes est raccourci de la hauteur de l'encoche, et la barre d'onglets remonte
+   d'autant (≈ 47 pt) par rapport aux pages longues. Toujours dépasser l'écran de cette
+   hauteur + 1 px force le même repère partout : la barre reste en bas, comme sur l'écran
+   Séance. En unités d'écran : #app n'a pas de hauteur, un pourcentage ne marcherait pas. */
+.ui-coquille {
+  min-height: calc(100vh + var(--zone-haut) + 1px);
+  min-height: calc(100lvh + var(--zone-haut) + 1px);
+  display: flex;
+  flex-direction: column;
+}
 .ui-coquille-contenu {
   flex: 1;
   padding: calc(var(--zone-haut) + var(--e-3)) var(--e-4) var(--e-5);
@@ -256,9 +266,13 @@ button.ui-element:active { background: var(--c-surface-2); }
   color: var(--c-record);
 }
 .ui-toast-texte { font-size: var(--t-sm); }
+.ui-toast.objectif { border-color: rgb(61 220 151 / 0.45); background: linear-gradient(120deg, #0b3324, #0c1a14); }
+.ui-toast.objectif .ui-toast-titre { color: var(--c-progres); }
+.ui-toast.objectif .ui-medaille { background: rgb(61 220 151 / 0.2); color: var(--c-progres); }
 @keyframes ui-toast-entree {
-  from { transform: translateY(calc(-100% - 60px)); }
-  to { transform: none; }
+  0% { transform: translateY(calc(-100% - 60px)) scale(0.9); }
+  60% { transform: translateY(6px) scale(1.03); }
+  100% { transform: none; }
 }
 
 /* Apparition d'une ligne (ex. série validée). */
@@ -325,3 +339,6 @@ button.ui-element:active { background: var(--c-surface-2); }
   letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
 }
 .ui-carte-titre:has(.ui-aide-bulle) { flex-wrap: wrap; }
+
+/* Indication sous le champ de lest (exercices au poids du corps). */
+.ui-indication-lest { margin: 0; font-size: var(--t-sm); line-height: 1.35; }

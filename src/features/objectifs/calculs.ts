@@ -38,8 +38,17 @@ export function valeurPoint(p: PointSeance, o: MesureObjectif | Pick<Objectif, '
     const r = typeof o === 'string' ? 1 : repsCible(o);
     let best: number | null = null;
     for (const s of p.series) {
-      if (!s.chargeKg || s.chargeKg <= 0 || s.reps < 1 || s.reps > REPS_MAX_EQUIVALENT) continue;
-      const v = chargePourReps(epley(s.chargeKg, s.reps), r);
+      if (s.reps < 1 || s.reps > REPS_MAX_EQUIVALENT) continue;
+      let v: number;
+      if (s.modeCharge === 'lest' && p.poidsKg != null) {
+        // Lest (négatif = aide) : l'équivalence se calcule sur la charge réelle (poids du corps + lest), puis on retire le poids.
+        const reelle = p.poidsKg + (s.chargeKg ?? 0);
+        if (reelle <= 0) continue;
+        v = chargePourReps(epley(reelle, s.reps), r) - p.poidsKg;
+      } else {
+        if (!s.chargeKg || s.chargeKg <= 0) continue;
+        v = chargePourReps(epley(s.chargeKg, s.reps), r);
+      }
       if (best == null || v > best) best = v;
     }
     return best;
@@ -47,6 +56,15 @@ export function valeurPoint(p: PointSeance, o: MesureObjectif | Pick<Objectif, '
   if (m === 'un_rm') return p.unRm;
   if (m === 'charge_max') return p.chargeMax;
   return p.series.length ? Math.max(...p.series.map((s) => s.reps)) : null;
+}
+
+/** Dernier poids du corps connu si l'exercice se note en lest, sinon 0. */
+function poidsLest(points: PointSeance[]): number {
+  for (let i = points.length - 1; i >= 0; i--) {
+    if (points[i].series[0]?.modeCharge !== 'lest') return 0;
+    if (points[i].poidsKg != null) return points[i].poidsKg!;
+  }
+  return 0;
 }
 
 /** Filtre de variante d'un objectif : sa variante, sinon le standard s'il existe, sinon tout. */
@@ -122,7 +140,9 @@ export function etatObjectif(o: ObjectifCalc, points: PointSeance[], maintenant 
     o.mesure === 'serie' ? points.some((p) => recent(p) && p.series.some((s) => remplitSerie(s, o))) : actuel != null && actuel >= o.cible;
   const pret = !atteint && actuel != null && actuel >= o.cible;
   const reste = actuel == null ? o.cible : Math.max(0, o.cible - actuel);
-  const pourcentage = actuel == null || o.cible <= 0 ? 0 : Math.min(100, (actuel / o.cible) * 100);
+  // Lest : la jauge compare les charges réelles (poids du corps + lest), car la cible peut valoir 0 ou être négative.
+  const decalage = o.mesure === 'serie' ? poidsLest(points) : 0;
+  const pourcentage = actuel == null || o.cible + decalage <= 0 ? 0 : Math.max(0, Math.min(100, ((actuel + decalage) / (o.cible + decalage)) * 100));
 
   const rythme = pente(pts.filter((p) => p.t >= now - FENETRE_RYTHME * JOUR));
   let projection: string | null = null;

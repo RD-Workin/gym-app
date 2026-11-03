@@ -1,4 +1,5 @@
 // Suggestions de la saisie rapide : fonctions pures, testées. Propriétaire : 05-progression.
+import { signeLest } from '../../core/calculs';
 import type { ModeCharge, Serie } from '../../core/types';
 import type { PointSeance } from '../progression/calculs';
 
@@ -8,11 +9,12 @@ export const chargePourReps = (unRm: number, reps: number) => (reps <= 1 ? unRm 
 /** Charge effective (kg réellement déplacés) → valeur à noter selon le mode de charge. */
 export function versChargeNotee(effective: number, mode: ModeCharge, poidsCorporelKg?: number): number {
   if (mode === 'par_main') return effective / 2;
-  if (mode === 'lest') return Math.max(0, effective - (poidsCorporelKg ?? 0));
+  // Lest : négatif si la charge visée est sous le poids du corps (aide d'un élastique ou d'une machine).
+  if (mode === 'lest') return poidsCorporelKg != null ? effective - poidsCorporelKg : Math.max(0, effective);
   return effective;
 }
 
-export const arrondirAuPas = (v: number, pas: number) => Math.max(0, Math.round(v / pas) * pas);
+export const arrondirAuPas = (v: number, pas: number, min = 0) => Math.max(min, Math.round(v / pas) * pas);
 
 /** 1RM de référence : le meilleur des `n` dernières séances (forme récente, pas un vieux record). */
 export function unRmRecent(points: PointSeance[], n = 3): number | null {
@@ -62,7 +64,7 @@ export function resumeLignes(l: LignePrerempli[], unite = 'kg'): string {
     if (d && d.c === x.chargeKg) d.reps.push(x.reps);
     else parts.push({ c: x.chargeKg, reps: [x.reps] });
   }
-  return parts.map((p) => `${p.c == null ? '' : `${fmt(p.c)} ${unite} · `}${p.reps.join('-')}`).join(' / ');
+  return parts.map((p) => `${p.c == null ? '' : `${unite.includes('lest') ? signeLest(p.c) : ''}${fmt(p.c)} ${unite} · `}${p.reps.join('-')}`).join(' / ');
 }
 
 export interface Suggestion {
@@ -93,13 +95,15 @@ export function suggererCharge(o: {
 }): Suggestion | null {
   const u = o.unite ?? 'kg';
   if (o.mode === 'sans_charge' || o.reps < 1 || o.reps > 12) return null;
+  const f = (v: number) => (o.mode === 'lest' ? signeLest(v) : '') + fmt(v);
+  const minNote = o.mode === 'lest' && o.poidsCorporelKg != null ? -o.poidsCorporelKg : 0;
   const ref = unRmRecent(o.points);
   if (ref != null) {
-    const solide = arrondirAuPas(versChargeNotee(chargePourReps(ref, o.reps), o.mode, o.poidsCorporelKg), o.pas);
+    const solide = arrondirAuPas(versChargeNotee(chargePourReps(ref, o.reps), o.mode, o.poidsCorporelKg), o.pas, minNote);
     return {
       chargeKg: solide + o.pas,
       solide,
-      texte: `D'après ton 1RM estimé récent (${Math.round(ref)} kg) : ${fmt(solide)} ${u} pour ${o.reps} reps, ${fmt(solide + o.pas)} ${u} pour tenter de progresser.`,
+      texte: `D'après ton 1RM estimé récent (${Math.round(ref)} kg${o.mode === 'lest' ? ', poids du corps compris' : ''}) : ${f(solide)} ${u} pour ${o.reps} reps, ${f(solide + o.pas)} ${u} pour tenter de progresser.`,
       source: 'historique',
     };
   }
@@ -110,11 +114,11 @@ export function suggererCharge(o: {
   const mediane = tri[Math.floor(tri.length / 2)];
   // Exercice nouveau : marge de 30 % (technique, angle, machine différente).
   const est = mediane * 0.7;
-  const solide = arrondirAuPas(versChargeNotee(chargePourReps(est, o.reps), o.mode, o.poidsCorporelKg), o.pas);
+  const solide = arrondirAuPas(versChargeNotee(chargePourReps(est, o.reps), o.mode, o.poidsCorporelKg), o.pas, minNote);
   return {
     chargeKg: solide,
     solide,
-    texte: `Pas encore d'historique : estimation prudente d'après tes autres exercices${o.nomMuscle ? ` (${o.nomMuscle})` : ''}. Commence à ${fmt(solide)} ${u} et ajuste.`,
+    texte: `Pas encore d'historique : estimation prudente d'après tes autres exercices${o.nomMuscle ? ` (${o.nomMuscle})` : ''}. Commence à ${f(solide)} ${u} et ajuste.`,
     source: 'force_generale',
   };
 }

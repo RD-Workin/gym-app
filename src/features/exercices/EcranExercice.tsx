@@ -160,7 +160,7 @@ function FicheExercice({ id }: { id: string }) {
           </label>
           <label class="ex-champ" style={{ flex: 1 }}>
             <span class="ui-surtitre">
-              Charge notée <Aide texte="Ce que tu notes comme poids. Charge totale : tout le poids soulevé. Par main : un seul haltère. Lest : le poids ajouté au poids du corps. Sans charge : seulement les reps." libelle="Charge notée" />
+              Charge notée <Aide texte="Ce que tu notes comme poids. Charge totale : tout le poids soulevé. Par main : un seul haltère. Lest (tractions, dips, pompes…) : seulement le poids ajouté à ton corps, en négatif si un élastique ou une machine t’aide. Sans charge : seulement les reps." libelle="Charge notée" />
             </span>
             <select value={b.modeCharge} onChange={(e) => maj({ modeCharge: e.currentTarget.value as ModeCharge })}>
               {Object.entries(MODES_CHARGE).map(([v, l]) => (

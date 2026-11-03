@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useCompteur } from '../../anim';
 import { Aide, Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
+import { signeLest } from '../../core/calculs';
 import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
@@ -115,7 +116,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
               <summary>Meilleures séries par charge</summary>
               <Liste>
                 {recs.repsACharge.slice(0, 12).map((r) => (
-                  <ElementListe key={r.chargeKg} titre={<span class="ui-chiffre">{r.lestKg != null ? `+${kg(r.lestKg)}` : kg(r.chargeKg!)}</span>} detail={dateLongue(r.date)} fin={<span class="ui-chiffre prog-val">{r.valeur} reps</span>} />
+                  <ElementListe key={r.chargeKg} titre={<span class="ui-chiffre">{r.lestKg != null ? `${signeLest(r.lestKg)}${kg(r.lestKg)} de lest` : kg(r.chargeKg!)}</span>} detail={dateLongue(r.date)} fin={<span class="ui-chiffre prog-val">{r.valeur} reps</span>} />
                 ))}
               </Liste>
             </details>
@@ -130,7 +131,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
           const temp = s?.contexte?.temperatureC;
           const charges = [...new Set(p.series.map((x) => x.chargeKg ?? 0))];
           const lest = p.series[0]?.modeCharge === 'lest';
-          const charge = charges.length === 1 ? `${lest ? '+' : ''}${kg(charges[0])}${p.series[0].modeCharge === 'par_main' ? ' /main' : ''}` : 'charges variées';
+          const charge = charges.length === 1 ? `${lest ? signeLest(charges[0]) : ''}${kg(charges[0])}${lest ? ' de lest' : p.series[0].modeCharge === 'par_main' ? ' /main' : ''}` : 'charges variées';
           return (
             <ElementListe
               key={p.seanceId}

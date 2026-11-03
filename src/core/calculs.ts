@@ -9,7 +9,10 @@ export function chargeEffective(serie: Pick<Serie, 'chargeKg' | 'modeCharge'>, p
     case 'par_main':
       return serie.chargeKg == null ? null : c * 2;
     case 'lest':
-      return poidsCorporelKg != null ? poidsCorporelKg + c : c;
+      // Lest négatif = assistance (élastique, machine) : la charge réelle est le poids du corps moins l'aide.
+      // Sans poids du corps connu, un lest négatif ne dit rien de la charge réelle.
+      if (poidsCorporelKg != null) return Math.max(0, poidsCorporelKg + c);
+      return c >= 0 ? c : null;
     case 'sans_charge':
       return poidsCorporelKg ?? 0;
   }
@@ -26,3 +29,13 @@ export function unRmEstime(serie: Pick<Serie, 'chargeKg' | 'modeCharge' | 'reps'
 export function volume(serie: Pick<Serie, 'chargeKg' | 'modeCharge' | 'reps'>, poidsCorporelKg?: number): number {
   return (chargeEffective(serie, poidsCorporelKg) ?? 0) * serie.reps;
 }
+
+/** Bornes du lest saisi : négatif jusqu'à −150 kg d'assistance, positif jusqu'à 300 kg ajoutés. */
+export const LEST_MIN_KG = -150;
+export const LEST_MAX_KG = 300;
+
+/** Signe à placer devant un lest affiché (« +10 », « −15 », « 0 ») : le « − » vient déjà du nombre. */
+export const signeLest = (lestKg: number) => (lestKg > 0 ? '+' : '');
+
+/** Unité affichée à côté de la charge saisie. */
+export const uniteCharge = (mode: Serie['modeCharge']) => (mode === 'par_main' ? 'kg/main' : mode === 'lest' ? 'kg de lest' : 'kg');

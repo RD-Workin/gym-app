@@ -13,3 +13,4 @@ export { ToastRecord } from './ToastRecord';
 export { Coquille, BarreOnglets, type OngletNav } from './Coquille';
 export { PanneauConseils, type ContenuConseils } from './PanneauConseils';
 export { Aide } from './Aide';
+export { IndicationLest } from './IndicationLest';

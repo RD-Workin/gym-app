@@ -45,7 +45,11 @@ export const LEXIQUE = {
   pdc: { terme: 'Poids du corps', definition: 'Ton poids le jour de la séance. Facultatif, il sert à suivre ton évolution et les exercices au poids du corps.' },
   chargeTotale: { terme: 'Charge totale', definition: 'Tu notes le poids total soulevé (barre comprise, ou ce qu’affiche la machine).' },
   parMain: { terme: 'Par main', definition: 'Tu notes le poids d’un seul haltère.' },
-  lest: { terme: 'Lest', definition: 'Pour un exercice au poids du corps : tu notes seulement le poids ajouté (ceinture, gilet). 0 = sans lest.' },
+  lest: {
+    terme: 'Lest',
+    definition:
+      'Pour un exercice au poids du corps (tractions, dips, pompes, muscle-up…) : tu notes seulement ce que tu ajoutes, pas ton poids. +10 = 10 kg à la ceinture, 0 = poids du corps seul, −15 = aidé de 15 kg (élastique, machine). L’app ajoute ton poids du corps pour le 1RM et les records.',
+  },
   variante: { terme: 'Variante', definition: 'Une façon différente de faire l’exercice (prise large, unilatéral…). Ses progrès sont suivis à part.' },
   bibliotheque: {
     terme: 'Bibliothèque et catalogue',

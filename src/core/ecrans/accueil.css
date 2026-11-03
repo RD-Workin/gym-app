@@ -19,3 +19,12 @@
 .reg-lexique { margin: 0 0 var(--e-3, 12px); display: grid; gap: var(--e-3, 12px); }
 .reg-lexique dt { font-weight: 700; }
 .reg-lexique dd { margin: 2px 0 0; color: var(--c-attenue); font-size: var(--t-sm); }
+
+/* Semaine : anneau + flamme de régularité (effets : 09). */
+.acc-stats { grid-template-columns: 1fr; }
+.acc-stats > .acc-semaine { display: flex; align-items: center; gap: var(--e-4); }
+.acc-semaine .acc-chiffre { font-size: var(--t-2xl); font-weight: 800; color: var(--c-texte); }
+.acc-sur { font-size: var(--t-xs); color: var(--c-attenue); }
+.acc-semaine-texte { display: grid; gap: var(--e-2); }
+.acc-affilee { display: inline-flex; align-items: center; gap: var(--e-1); font-size: var(--t-sm); color: var(--c-attenue); }
+.acc-affilee b { color: var(--c-texte); font-family: var(--f-titre); font-size: var(--t-lg); }

@@ -3,6 +3,7 @@
 import Dexie from 'dexie';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
+import { signeLest, uniteCharge } from '../../core/calculs';
 import type { BlocModele, Exercice, Id, Modele, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 
@@ -164,15 +165,16 @@ const kg = (v?: number) => (v == null ? '' : v.toLocaleString('fr-FR', { maximum
 export function resumeSeries(series: Serie[]): string {
   if (!series.length) return '';
   const charges = [...new Set(series.map((s) => s.chargeKg))];
-  const unite = series[0].modeCharge === 'par_main' ? ' kg/main' : series[0].modeCharge === 'lest' ? ' kg lest' : ' kg';
-  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map(kg).join('/') + unite;
+  const lest = series[0].modeCharge === 'lest';
+  const unite = ` ${uniteCharge(series[0].modeCharge)}`;
+  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
   return `${ch} · ${series.map((s) => s.reps).join('-')}`;
 }
 
 export const formatCharge = (s: Pick<Serie, 'chargeKg' | 'modeCharge'>) =>
   s.modeCharge === 'sans_charge' || s.chargeKg == null
     ? 'PdC'
-    : `${s.modeCharge === 'lest' ? '+' : ''}${kg(s.chargeKg)} kg${s.modeCharge === 'par_main' ? '/main' : ''}`;
+    : `${s.modeCharge === 'lest' ? signeLest(s.chargeKg) : ''}${kg(s.chargeKg)} kg${s.modeCharge === 'lest' ? ' de lest' : s.modeCharge === 'par_main' ? '/main' : ''}`;
 
 /** Groupes d'affichage : blocs consécutifs au même `supersetId` = un superset. */
 export function groupes(blocs: BlocModele[]): number[][] {
@@ -206,3 +208,20 @@ export const OBJECTIFS: Record<Objectif, { libelle: string; reposSec: number; pl
 export const REPOS_RAPIDES = [45, 60, 90, 120, 180, 240];
 /** Objectif le plus proche d'une durée de repos. */
 export const objectifDepuisRepos = (sec?: number): Objectif => (sec == null ? 'hypertrophie' : sec >= 180 ? 'force' : sec <= 60 ? 'endurance' : 'hypertrophie');
+
+/**
+ * Progrès d'une série de travail par rapport à la série de même rang la dernière fois (bulle « Strava »).
+ * Plus de charge (ou moins d'aide) d'abord, sinon plus de reps à charge égale. `undefined` sinon.
+ */
+export function progresVsDerniereFois(serie: Pick<Serie, 'chargeKg' | 'reps' | 'type' | 'modeCharge'>, avant: Serie[], rang: number): string | undefined {
+  if (serie.type === 'echauffement') return undefined;
+  const ref = avant[rang];
+  if (!ref) return undefined;
+  const dc = Math.round(((serie.chargeKg ?? 0) - (ref.chargeKg ?? 0)) * 100) / 100;
+  if (serie.modeCharge !== 'sans_charge' && dc > 0 && serie.reps >= Math.max(1, ref.reps - 2)) {
+    return `+${dc.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg vs la dernière fois`;
+  }
+  const dr = serie.reps - ref.reps;
+  if (dr > 0 && dc >= 0) return `+${dr} rep${dr > 1 ? 's' : ''} vs la dernière fois`;
+  return undefined;
+}
