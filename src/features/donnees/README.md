@@ -32,5 +32,8 @@ Période au choix avant l'export : 2 semaines, 30 jours, 3 mois (jours glissants
 
 Les textes commençant par `= + - @` sont préfixés d'une apostrophe (pas de formule à l'ouverture dans un tableur).
 
+## Résumé texte (pour une IA ou un coach)
+« Copier le résumé pour l'IA » (`resume.ts`, même période que le CSV) copie un texte Markdown : vue d'ensemble (séances par modèle, fréquence par semaine, séries de travail, poids de corps à la 1re et à la dernière pesée), puis par exercice le nombre de séances et de séries, la 1re et la dernière fois, l'évolution (1RM estimé, charge ou lest max tel que saisi, reps max, volume de la séance) et la meilleure séance si elle est entre les deux, puis le détail séance par séance et une question pour l'IA. Le texte est calculé à l'avance pour que la copie reste dans le geste (Safari) ; si le presse-papier est refusé, il est partagé en `.txt`.
+
 ## Rappel
 `<RappelSauvegarde />` (`rappel.tsx`) affiche une carte si des séries existent et que la dernière sauvegarde JSON date de 7 jours ou plus (ou n'existe pas). `useEtatSauvegarde()` donne l'état.

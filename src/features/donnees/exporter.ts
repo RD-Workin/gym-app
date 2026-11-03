@@ -223,6 +223,29 @@ export async function compterPeriode(periode: Periode): Promise<{ seances: numbe
   return { seances: ids.length, series };
 }
 
+/** Résumé texte de la période (voir resume.ts), calculé à l'avance pour que la copie reste dans le geste de l'utilisateur (Safari). */
+export async function construireResumePeriode(periode: Periode): Promise<string> {
+  const { construireResume } = await import('./resume');
+  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+    db.exercices.toArray(),
+    db.variantes.toArray(),
+    db.modeles.toArray(),
+    db.seances.toArray(),
+    db.series.toArray(),
+  ]);
+  return construireResume({ exercices, variantes, modeles, seances, series }, periode);
+}
+
+/** Copie le résumé ; si le presse-papier est refusé, le partage ou le télécharge en .txt. */
+export async function copierResume(texte: string): Promise<'copie' | 'partage' | 'annule'> {
+  try {
+    await navigator.clipboard.writeText(texte);
+    return 'copie';
+  } catch {
+    return (await partagerOuTelecharger(texte, `gym-resume_${horodatageFichier()}.txt`, 'text/plain')) ? 'partage' : 'annule';
+  }
+}
+
 export async function exporterCsv(periode: Periode = {}): Promise<boolean> {
   const csv = await construireCsv(periode);
   const suffixe = periode.du || periode.au ? `_${periode.du ?? 'debut'}_au_${periode.au ?? 'fin'}` : '';

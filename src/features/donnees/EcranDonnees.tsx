@@ -1,7 +1,7 @@
 // Écran Sauvegarde : export, import, rappel. Propriétaire : 06-donnees.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Bouton, Carte, Liste, ElementListe, Onglets, Puce } from '../../ui';
-import { bornesPeriode, compterPeriode, exporterCsv, exporterJson, type ChoixPeriode, type Periode } from './exporter';
+import { bornesPeriode, compterPeriode, construireResumePeriode, copierResume, exporterCsv, exporterJson, type ChoixPeriode, type Periode } from './exporter';
 import './donnees.css';
 import { lireSauvegarde, restaurer, type Apercu } from './importer';
 import { JOURS_RAPPEL, libelleDerniere, useEtatSauvegarde } from './rappel';
@@ -38,9 +38,12 @@ export function EcranDonnees() {
   const [dates, setDates] = useState<Periode>({});
   const periode = useMemo(() => bornesPeriode(choix, dates), [choix, dates]);
   const [compte, setCompte] = useState<{ seances: number; series: number } | null>(null);
+  const [resume, setResume] = useState<string | null>(null);
   useEffect(() => {
     let actif = true;
+    setResume(null);
     compterPeriode(periode).then((c) => actif && setCompte(c), () => actif && setCompte(null));
+    construireResumePeriode(periode).then((t) => actif && setResume(t), () => actif && setResume(null));
     return () => {
       actif = false;
     };
@@ -65,6 +68,15 @@ export function EcranDonnees() {
   const exportCsv = () =>
     agir(async () => {
       if (await exporterCsv(periode)) setMessage({ ton: 'progres', texte: 'Tableau CSV créé.' });
+    });
+
+  // Pas d'attente avant writeText : Safari n'autorise la copie que dans le geste.
+  const copier = () =>
+    resume != null &&
+    agir(async () => {
+      const r = await copierResume(resume);
+      if (r === 'copie') setMessage({ ton: 'progres', texte: 'Résumé copié. Colle-le dans un message à ton coach ou dans ChatGPT / Claude.' });
+      if (r === 'partage') setMessage({ ton: 'progres', texte: 'Résumé créé.' });
     });
 
   const choisirFichier = (ev: Event) => {
@@ -125,7 +137,7 @@ export function EcranDonnees() {
       <Bouton taille="geant" icone="donnees" onClick={exportJson} disabled={occupe}>
         Sauvegarder (JSON)
       </Bouton>
-      <Carte titre="Tableau pour un coach ou une IA" aside={compte && <Puce>{compte.series} séries</Puce>}>
+      <Carte titre="Pour un coach ou une IA" aside={compte && <Puce>{compte.series} séries</Puce>}>
         <div class="dn-periode">
           <Onglets label="Période exportée" options={CHOIX_PERIODE} valeur={choix} onChange={setChoix} />
           {choix === 'dates' && (
@@ -145,6 +157,9 @@ export function EcranDonnees() {
           </p>
           <Bouton variante="secondaire" taille="large" icone="tableau" onClick={exportCsv} disabled={occupe || compte?.series === 0} detail="Une ligne par série (CSV)">
             Exporter le tableau
+          </Bouton>
+          <Bouton variante="secondaire" taille="large" icone="copier" onClick={copier} disabled={occupe || resume == null || compte?.series === 0} detail="Évolution par exo et poids de corps, en texte">
+            Copier le résumé pour l’IA
           </Bouton>
         </div>
       </Carte>
