@@ -1,7 +1,17 @@
 /* Styles des composants de src/ui/. */
 
 /* ---- Coquille : zones sûres iPhone + barre d'onglets ---- */
-.ui-coquille { min-height: 100%; display: flex; flex-direction: column; }
+/* iOS (app installée, barre d'état translucide) : sur une page qui ne défile pas, le repère
+   des éléments fixes est raccourci de la hauteur de l'encoche, et la barre d'onglets remonte
+   d'autant (≈ 47 pt) par rapport aux pages longues. Toujours dépasser l'écran de cette
+   hauteur + 1 px force le même repère partout : la barre reste en bas, comme sur l'écran
+   Séance. En unités d'écran : #app n'a pas de hauteur, un pourcentage ne marcherait pas. */
+.ui-coquille {
+  min-height: calc(100vh + var(--zone-haut) + 1px);
+  min-height: calc(100lvh + var(--zone-haut) + 1px);
+  display: flex;
+  flex-direction: column;
+}
 .ui-coquille-contenu {
   flex: 1;
   padding: calc(var(--zone-haut) + var(--e-3)) var(--e-4) var(--e-5);
