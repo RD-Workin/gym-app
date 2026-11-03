@@ -29,6 +29,7 @@ export async function amorcerBibliotheque(): Promise<void> {
         groupesMusculaires: [...x.groupes],
         reglagesMachine: x.reglagesMachine,
         note: x.note,
+        ...(x.enSecondes ? { enSecondes: true } : {}),
         archive: false,
         creeLe: t,
         modifieLe: t,

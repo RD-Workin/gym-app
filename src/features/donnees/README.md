@@ -20,7 +20,8 @@ Période au choix avant l'export : 2 semaines, 30 jours, 3 mois (jours glissants
 | mode_charge | total (barre/machine), par_main (poids d'un haltère), lest (poids ajouté au corps), sans_charge |
 | poids_kg | charge saisie (vide si lest) |
 | lest_kg | lest ajouté au poids du corps (mode lest) |
-| reps | répétitions faites |
+| reps | répétitions faites (vide pour un exercice tenu en secondes) |
+| duree_s | secondes tenues, pour les exercices en secondes (gainage, dead hang…) ; vide sinon |
 | rir | répétitions en réserve (vide si non noté) |
 | poids_corps_kg | poids de corps du jour |
 | charge_effective_kg | charge réellement déplacée (par_main × 2, lest + poids de corps) |

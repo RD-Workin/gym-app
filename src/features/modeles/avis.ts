@@ -38,6 +38,8 @@ export interface AvisModele {
 export interface InfoExercice {
   nom: string;
   groupesMusculaires: string[];
+  /** Exercice tenu (gainage, dead hang…) : la cible est en secondes, pas en reps. */
+  enSecondes?: boolean;
 }
 
 export const LIBELLES_VERDICT: Record<Verdict, string> = {
@@ -251,7 +253,7 @@ export function analyserModele(nom: string, blocs: BlocModele[], exercices: Map<
   if (sansCible.length) {
     conseil(`Séries ou reps à remplir pour ${liste(sansCible.map((b) => exercices.get(b.exerciceId)?.nom ?? 'un exercice'))} (${SERIES_PAR_DEFAUT} séries comptées par défaut).`);
   }
-  const longues = blocs.filter((b) => (repsMax(b.repsCibles) ?? 0) > 30);
+  const longues = blocs.filter((b) => !exercices.get(b.exerciceId)?.enSecondes && (repsMax(b.repsCibles) ?? 0) > 30);
   if (longues.length) conseil(`Plus de 30 reps sur ${liste(longues.map((b) => exercices.get(b.exerciceId)?.nom ?? 'un exercice'))} : au-delà, la charge devient trop légère pour bien progresser en muscle et en force. Ajoute de la charge pour rester sous 20-25.`);
 
   const aConseils = remarques.some((r) => r.ton !== 'ok');

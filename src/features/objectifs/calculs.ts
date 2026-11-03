@@ -1,6 +1,7 @@
 // Objectifs par exercice : marge, rythme, projection et conseils. Fonctions pures, sans IA ni accès à la base.
 // Les valeurs sont celles de la courbe de progression (1RM estimé, charge max effective) pour rester cohérent.
 import type { Equipement, Id, MesureObjectif, Objectif, Seance, Serie } from '../../core/types';
+import { fmtDuree } from '../../core/calculs';
 import { kg, pointsExercice, type FiltreVariante, type PointSeance } from '../progression/calculs';
 
 const JOUR = 864e5;
@@ -15,8 +16,9 @@ export const NOM_MESURE: { [m in MesureObjectif]: string } = {
   un_rm: '1RM estimé',
   charge_max: 'Charge max',
   reps: 'Reps (meilleure série)',
+  duree: 'Temps tenu (meilleure série)',
 };
-export const uniteMesure = (m: MesureObjectif) => (m === 'reps' ? 'reps' : 'kg');
+export const uniteMesure = (m: MesureObjectif) => (m === 'reps' ? 'reps' : m === 'duree' ? 's' : 'kg');
 
 /** Epley, avec 1 rep = la charge elle-même (même règle que src/core/calculs.ts). */
 export const epley = (charge: number, reps: number) => (reps <= 1 ? charge : charge * (1 + reps / 30));
@@ -55,6 +57,7 @@ export function valeurPoint(p: PointSeance, o: MesureObjectif | Pick<Objectif, '
   }
   if (m === 'un_rm') return p.unRm;
   if (m === 'charge_max') return p.chargeMax;
+  if (m === 'duree') return p.dureeMax;
   return p.series.length ? Math.max(...p.series.map((s) => s.reps)) : null;
 }
 
@@ -218,13 +221,16 @@ export function conseilsObjectif(
 ): Conseil[] {
   const c: Conseil[] = [];
   const u = uniteMesure(o.mesure);
-  const charge = o.mesure !== 'reps';
+  const duree = o.mesure === 'duree';
+  const charge = o.mesure !== 'reps' && !duree;
 
   if (e.atteint) {
     const suivant =
       o.mesure === 'serie'
         ? `${repsCible(o)} × ${nb(o.cible + 2.5)} kg ou ${repsCible(o) + 1} × ${nb(o.cible)} kg`
-        : `${nb(o.mesure === 'reps' ? o.cible + 2 : arrondiA(o.cible * 1.05, 2.5))} ${u}`;
+        : duree
+          ? fmtDuree(arrondiA(o.cible * 1.2, 5))
+          : `${nb(o.mesure === 'reps' ? o.cible + 2 : arrondiA(o.cible * 1.05, 2.5))} ${u}`;
     c.push({ regle: 'atteint', texte: `Objectif atteint ! Fixe le suivant un cran plus haut, par exemple ${suivant}.` });
     return c;
   }
@@ -246,7 +252,9 @@ export function conseilsObjectif(
       regle: 'stagnation',
       texte: charge
         ? `Pas de nouveau record depuis ${e.semainesSansProgres || 'plusieurs'} semaines : fais une semaine plus légère (environ −10 % de charge, une série de moins), puis repars, ou change de plage de reps quelques semaines.`
-        : `Pas de nouveau record depuis ${e.semainesSansProgres || 'plusieurs'} semaines : ajoute une série, ou fais des négatives lentes (3–5 s) en fin de séance.`,
+        : duree
+          ? `Pas de nouveau record depuis ${e.semainesSansProgres || 'plusieurs'} semaines : ajoute une série tenue, ou passe à une version un peu plus dure moins longtemps (lest, pieds surélevés), puis reviens.`
+          : `Pas de nouveau record depuis ${e.semainesSansProgres || 'plusieurs'} semaines : ajoute une série, ou fais des négatives lentes (3–5 s) en fin de séance.`,
     });
   }
   if (e.statut === 'en_retard' && e.rythmeRequis != null) {
@@ -259,7 +267,7 @@ export function conseilsObjectif(
 
   // Plage de reps et effort des dernières séances.
   const recentes = points.slice(-3).flatMap((p) => p.series);
-  if (recentes.length) {
+  if (recentes.length && !duree) {
     const repsMoy = recentes.reduce((a, s) => a + s.reps, 0) / recentes.length;
     const avecRir = recentes.filter((s) => s.rir != null);
     const rirMoy = avecRir.length ? avecRir.reduce((a, s) => a + s.rir!, 0) / avecRir.length : null;
@@ -284,7 +292,9 @@ export function conseilsObjectif(
       regle: 'proche',
       texte: charge
         ? 'Tu es à moins de 5 % : après un bon échauffement, tente une série lourde de 1 à 3 reps en début de séance, avec un pareur si besoin.'
-        : 'Tu touches au but : tente ta série max en début de séance, bien reposé.',
+        : duree
+          ? 'Tu touches au but : tente ta tenue max en début de séance, bien reposé.'
+          : 'Tu touches au but : tente ta série max en début de séance, bien reposé.',
     });
   }
   if (c.length < max) {
@@ -292,7 +302,9 @@ export function conseilsObjectif(
       regle: 'surcharge',
       texte: charge
         ? `Surcharge progressive : quand tu fais toutes tes reps cibles avec 1 à 2 en réserve, ajoute ${saut(equipement)} à la séance suivante.`
-        : 'Ajoute une rep à une série à chaque séance ; quand tu dépasses ta cible de 2 reps partout, passe à la variante plus dure ou ajoute un lest.',
+        : duree
+          ? 'Ajoute 5 à 10 s à une série à chaque séance ; quand tu tiens facilement ta cible partout, ajoute un lest ou passe à une version plus dure.'
+          : 'Ajoute une rep à une série à chaque séance ; quand tu dépasses ta cible de 2 reps partout, passe à la variante plus dure ou ajoute un lest.',
     });
   }
   if (c.length < max && e.frequence >= 1) {
@@ -315,13 +327,13 @@ export function evaluerObjectif(o: Objectif, d: DonneesObjectif, maintenant = ne
   return { points, etat: etatObjectif(o, points, maintenant) };
 }
 
-/** Valeur affichée : même arrondi que la courbe (kg) ou entier (reps). */
-export const fmtValeur = (v: number, m: MesureObjectif) => (m === 'reps' ? String(Math.round(v)) : kg(v).replace(' kg', ''));
+/** Valeur affichée : même arrondi que la courbe (kg) ou entier (reps, secondes). */
+export const fmtValeur = (v: number, m: MesureObjectif) => (m === 'reps' || m === 'duree' ? String(Math.round(v)) : kg(v).replace(' kg', ''));
 
 /** Les deux types principaux : 1RM (1 rep au max visé) et charge d'entraînement (X kg pour Y reps). */
 export function typeObjectif(o: Pick<Objectif, 'mesure' | 'reps'>): string {
   if (o.mesure === 'serie') return repsCible(o) === 1 ? '1RM' : 'Charge d’entraînement';
-  return o.mesure === 'reps' ? 'Reps max' : NOM_MESURE[o.mesure];
+  return o.mesure === 'reps' ? 'Reps max' : o.mesure === 'duree' ? 'Temps tenu' : NOM_MESURE[o.mesure];
 }
 
 /** « 8 × 75 kg », « 1RM 100 kg », « 1RM estimé 100 kg », « 15 reps ». */
@@ -329,6 +341,7 @@ export function libelleCible(o: Pick<Objectif, 'mesure' | 'cible' | 'reps'>): st
   const f = fmtValeur(o.cible, o.mesure);
   if (o.mesure === 'serie') return repsCible(o) === 1 ? `1RM ${f} kg` : `${repsCible(o)} × ${f} kg`;
   if (o.mesure === 'reps') return `${f} reps`;
+  if (o.mesure === 'duree') return `tenir ${fmtDuree(o.cible)}`;
   return `${NOM_MESURE[o.mesure]} ${f} kg`;
 }
 

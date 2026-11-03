@@ -13,6 +13,8 @@ export interface ExerciceDepart {
   reglagesMachine?: string;
   note?: string;
   variantes?: string[];
+  /** Se mesure en secondes tenues (gainage, dead hang…) au lieu de reps. */
+  enSecondes?: boolean;
   /** Séance d'origine dans le carnet de Romain et cibles habituelles (absent = exercice ajouté par 10-coach). */
   seance?: 'Push' | 'Pull' | 'Jambes';
   series?: number;
@@ -94,6 +96,10 @@ export const BIBLIOTHEQUE: ExerciceDepart[] = [
   // Callisthénie (parc de street workout) : barre fixe, barres parallèles, barre basse, banc.
   e({ cle: 'nordic', nom: 'Nordic curl', equipement: 'poids_du_corps', modeCharge: 'sans_charge', groupes: ['ischios'], note: 'À genoux, talons calés sous une barre basse ou un banc : se laisser descendre vers l’avant le plus lentement possible, mains pour amortir.' }),
   e({ cle: 'releves-jambes', nom: 'Relevés de jambes à la barre', equipement: 'poids_du_corps', modeCharge: 'sans_charge', groupes: ['abdos'], note: 'Suspendu à la barre fixe, enrouler le bassin pour monter les genoux (puis les jambes tendues), sans balancer.', variantes: ['jambes tendues'] }),
+  // Exercices tenus, notés en secondes (2026-11-03, demande de Romain). Lest possible : gilet, disque sur le dos, ceinture.
+  e({ cle: 'gainage', nom: 'Gainage (planche)', equipement: 'poids_du_corps', modeCharge: 'lest', enSecondes: true, groupes: ['abdos', 'lombaires'], note: 'Sur les avant-bras, corps droit des épaules aux talons, fesses et ventre serrés, sans creuser le dos. Arrêter quand le bassin tombe. Plus dur : un disque sur le dos.' }),
+  e({ cle: 'gainage-lateral', nom: 'Gainage latéral', equipement: 'poids_du_corps', modeCharge: 'lest', enSecondes: true, groupes: ['abdos'], note: 'Sur un avant-bras, coude sous l’épaule, bassin haut et corps aligné. Chaque côté : note le côté le plus faible. Plus facile : genoux au sol.' }),
+  e({ cle: 'dead-hang', nom: 'Dead hang', equipement: 'poids_du_corps', modeCharge: 'lest', enSecondes: true, groupes: ['avant-bras', 'dos'], note: 'Suspendu à la barre fixe bras tendus, épaules légèrement engagées (pas collées aux oreilles). Travaille la prise et décompresse le dos. Plus dur : une main, ou un lest.' }),
   e({ cle: 'sdt-roumain', nom: 'Soulevé de terre roumain', equipement: 'barre', modeCharge: 'total', groupes: ['ischios', 'fessiers', 'lombaires'], note: 'Genoux à peine fléchis, hanches vers l’arrière, dos neutre ; descendre jusqu’à l’étirement des ischios.' }),
 ];
 

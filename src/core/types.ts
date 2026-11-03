@@ -24,6 +24,8 @@ export interface Exercice extends Horodatage {
   note?: string;
   /** Favori : en haut des listes (champ optionnel, non indexé). */
   favori?: boolean;
+  /** Se mesure en secondes tenues (gainage, dead hang…) au lieu de répétitions. Absent = en reps. Non indexé. */
+  enSecondes?: boolean;
   archive: boolean;
 }
 
@@ -81,7 +83,10 @@ export interface Serie extends Horodatage {
   supersetId?: Id;
   chargeKg?: number;
   modeCharge: ModeCharge;
+  /** Répétitions ; 0 pour une série en durée (voir `dureeSec`). */
   reps: number;
+  /** Série tenue (gainage, dead hang…) : durée en secondes. Présent = série en durée, `reps` vaut alors 0. */
+  dureeSec?: number;
   rir?: number;
   type: TypeSerie;
   reglagesMachine?: string;
@@ -90,8 +95,8 @@ export interface Serie extends Horodatage {
 }
 
 /** Mesure suivie par un objectif : mêmes valeurs que la courbe de progression (charge effective). */
-/** serie = « N reps à X kg » (charge telle que notée). */
-export type MesureObjectif = 'serie' | 'un_rm' | 'charge_max' | 'reps';
+/** serie = « N reps à X kg » (charge telle que notée) ; duree = secondes tenues (meilleure série). */
+export type MesureObjectif = 'serie' | 'un_rm' | 'charge_max' | 'reps' | 'duree';
 
 /** Objectif fixé sur un exercice (v3), ex. 1RM estimé 100 kg au développé couché. */
 export interface Objectif extends Horodatage {
@@ -100,7 +105,7 @@ export interface Objectif extends Horodatage {
   /** Variante suivie ; absent = la version standard (ou toutes si l'exercice n'a que des variantes). */
   varianteId?: Id;
   mesure: MesureObjectif;
-  /** kg pour serie, un_rm et charge_max ; répétitions pour reps. */
+  /** kg pour serie, un_rm et charge_max ; répétitions pour reps ; secondes pour duree. */
   cible: number;
   /** Nombre de reps visé à la charge `cible` (mesure serie uniquement). */
   reps?: number;

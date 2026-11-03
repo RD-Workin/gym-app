@@ -1,9 +1,10 @@
 // Calculs de progression : fonctions pures, sans accès à la base. Propriétaire : 05-progression.
 // Charge effective et 1RM : règles partagées de src/core/calculs.ts (01).
-import { chargeEffective, signeLest, unRmEstime } from '../../core/calculs';
+import { chargeEffective, enDuree, fmtDuree, signeLest, unRmEstime } from '../../core/calculs';
 import type { Exercice, Id, Seance, Serie } from '../../core/types';
 
-export type Mesure = 'un_rm' | 'charge_max' | 'volume';
+/** `duree` : exercices tenus en secondes (gainage, dead hang…). */
+export type Mesure = 'un_rm' | 'charge_max' | 'volume' | 'duree';
 
 /** Filtre de variante : `undefined` = toutes, `null` = sans variante, sinon l'id. */
 export type FiltreVariante = Id | null | undefined;
@@ -14,6 +15,8 @@ export interface PointSeance {
   unRm: number | null;
   chargeMax: number | null;
   volume: number;
+  /** Plus longue série tenue (secondes), pour les exercices en durée. */
+  dureeMax: number | null;
   /** Poids corporel inconnu pour une série lestée ou au poids du corps : valeurs sous-estimées. */
   poidsInconnu: boolean;
   /** Poids corporel retenu pour la séance (celui de la séance, sinon le dernier connu). */
@@ -64,7 +67,13 @@ export function pointsExercice(
     let unRm: number | null = null;
     let chargeMax: number | null = null;
     let vol = 0;
+    let dureeMax: number | null = null;
     for (const s of l) {
+      // Série tenue : seule la durée compte (pas de 1RM, de charge max ni de volume).
+      if (enDuree(s)) {
+        if (dureeMax == null || s.dureeSec! > dureeMax) dureeMax = s.dureeSec!;
+        continue;
+      }
       const c = chargeEffective(s, p);
       const r = unRmEstime(s, p);
       if (c != null && (chargeMax == null || c > chargeMax)) chargeMax = c;
@@ -77,7 +86,9 @@ export function pointsExercice(
       unRm,
       chargeMax,
       volume: vol,
-      poidsInconnu: p == null && l.some(dependDuPoids),
+      dureeMax,
+      // Série tenue : la durée ne dépend pas du poids du corps.
+      poidsInconnu: p == null && l.some((s) => dependDuPoids(s) && !enDuree(s)),
       poidsKg: p,
       series: l,
     });
@@ -86,7 +97,7 @@ export function pointsExercice(
 }
 
 export function valeurMesure(p: PointSeance, m: Mesure): number | null {
-  return m === 'un_rm' ? p.unRm : m === 'charge_max' ? p.chargeMax : p.volume || null;
+  return m === 'un_rm' ? p.unRm : m === 'charge_max' ? p.chargeMax : m === 'duree' ? p.dureeMax : p.volume || null;
 }
 
 /** Écart entre la dernière valeur et la première valeur des `jours` derniers jours. `null` si moins de 2 points. */
@@ -102,14 +113,15 @@ export function tendance(points: PointSeance[], m: Mesure, jours = 84, maintenan
 
 // ---------------------------------------------------------------- Records
 
-export type TypeRecord = 'un_rm' | 'charge_max' | 'reps_a_charge' | 'volume_seance';
+export type TypeRecord = 'un_rm' | 'charge_max' | 'reps_a_charge' | 'volume_seance' | 'duree_max' | 'duree_a_charge';
 
 export interface RecordPerso {
   type: TypeRecord;
   exerciceId: Id;
   varianteId?: Id;
+  /** kg, reps, ou secondes pour `duree_max` et `duree_a_charge`. */
   valeur: number;
-  /** Pour `reps_a_charge` : la charge effective (kg). */
+  /** Pour `reps_a_charge` : la charge effective (kg). Pour `duree_a_charge` : la charge notée (lest seul). */
   chargeKg?: number;
   serieId?: Id;
   seanceId: Id;
@@ -128,9 +140,12 @@ interface Meilleurs {
   repsACharge: Map<number, RecordPerso>;
   volumeSeance?: RecordPerso;
   volumeEnCours: Map<Id, number>;
+  /** Séries tenues : plus longue durée, et plus longue durée par charge notée (clé arrondie à 0,5 kg). */
+  dureeMax?: RecordPerso;
+  dureeACharge: Map<number, RecordPerso>;
 }
 
-const nouveauxMeilleurs = (): Meilleurs => ({ repsACharge: new Map(), volumeEnCours: new Map() });
+const nouveauxMeilleurs = (): Meilleurs => ({ repsACharge: new Map(), volumeEnCours: new Map(), dureeACharge: new Map() });
 
 /**
  * Applique une série à l'état et renvoie les records battus. Rien n'est renvoyé pour la toute première
@@ -138,9 +153,26 @@ const nouveauxMeilleurs = (): Meilleurs => ({ repsACharge: new Map(), volumeEnCo
  */
 function appliquer(m: Meilleurs, s: Serie, poids: number | undefined, date: string): RecordPerso[] {
   if (!estDeTravail(s)) return [];
-  const premiere = m.chargeMax == null && m.unRm == null && m.volumeEnCours.size === 0;
+  const premiere = m.chargeMax == null && m.unRm == null && m.volumeEnCours.size === 0 && m.dureeMax == null;
   const battus: RecordPerso[] = [];
   const base = { exerciceId: s.exerciceId, varianteId: s.varianteId, serieId: s.id, seanceId: s.seanceId, date, lestKg: s.modeCharge === 'lest' ? s.chargeKg : undefined };
+  if (enDuree(s)) {
+    const d = s.dureeSec!;
+    if (d <= 0) return [];
+    if (!m.dureeMax || d > m.dureeMax.valeur) {
+      m.dureeMax = { ...base, type: 'duree_max', valeur: d };
+      battus.push(m.dureeMax);
+    }
+    // Plus longue tenue à une charge donnée (ex. dead hang à +10 kg) : seulement si cette charge était déjà connue.
+    const cle = s.modeCharge === 'sans_charge' ? 0 : arrondi(s.chargeKg ?? 0, 0.5);
+    const avant = m.dureeACharge.get(cle);
+    if (!avant || d > avant.valeur) {
+      const rec: RecordPerso = { ...base, type: 'duree_a_charge', valeur: d, chargeKg: cle };
+      m.dureeACharge.set(cle, rec);
+      if (avant && !battus.length) battus.push(rec);
+    }
+    return premiere ? [] : battus;
+  }
   const c = chargeEffective(s, poids);
   const r = unRmEstime(s, poids);
   const eps = 1e-9;
@@ -180,7 +212,7 @@ function trierSeries(series: Serie[]) {
 
 export interface BilanRecords {
   /** Records actuels, par clé `exerciceId|varianteId`. */
-  actuels: Map<string, { unRm?: RecordPerso; chargeMax?: RecordPerso; volumeSeance?: RecordPerso; repsACharge: RecordPerso[] }>;
+  actuels: Map<string, { unRm?: RecordPerso; chargeMax?: RecordPerso; volumeSeance?: RecordPerso; repsACharge: RecordPerso[]; dureeMax?: RecordPerso; dureeACharge: RecordPerso[] }>;
   /** Chaque record battu, dans l'ordre chronologique (première série de chaque exercice exclue). */
   evenements: RecordPerso[];
 }
@@ -197,7 +229,14 @@ export function bilanRecords(series: Serie[], poids: Map<Id, number | undefined>
   }
   const actuels: BilanRecords['actuels'] = new Map();
   for (const [cle, m] of etats) {
-    actuels.set(cle, { unRm: m.unRm, chargeMax: m.chargeMax, volumeSeance: m.volumeSeance, repsACharge: [...m.repsACharge.values()].sort((a, b) => b.chargeKg! - a.chargeKg!) });
+    actuels.set(cle, {
+      unRm: m.unRm,
+      chargeMax: m.chargeMax,
+      volumeSeance: m.volumeSeance,
+      repsACharge: [...m.repsACharge.values()].sort((a, b) => b.chargeKg! - a.chargeKg!),
+      dureeMax: m.dureeMax,
+      dureeACharge: [...m.dureeACharge.values()].sort((a, b) => b.chargeKg! - a.chargeKg!),
+    });
   }
   return { actuels, evenements };
 }
@@ -235,14 +274,24 @@ export function libelleRecord(r: RecordPerso, nomExercice: string): string {
       return `${nomExercice} · ${r.valeur} reps à ${r.lestKg != null ? `${signeLest(r.lestKg)}${kg(r.lestKg)} de lest` : kg(r.chargeKg!)}`;
     case 'volume_seance':
       return `${nomExercice} · volume ${nombre(r.valeur)} kg`;
+    case 'duree_max':
+      return `${nomExercice} · tenu ${fmtDuree(r.valeur)}${r.lestKg ? ` avec ${signeLest(r.lestKg)}${kg(r.lestKg)} de lest` : ''}`;
+    case 'duree_a_charge':
+      return `${nomExercice} · ${fmtDuree(r.valeur)} ${libelleChargeDuree(r)}`;
   }
 }
+
+/** « à +10 kg de lest », « au poids du corps », « à 20 kg ». */
+export const libelleChargeDuree = (r: Pick<RecordPerso, 'chargeKg' | 'lestKg'>) =>
+  r.lestKg != null ? (r.lestKg === 0 ? 'sans lest' : `à ${signeLest(r.lestKg)}${kg(r.lestKg)} de lest`) : r.chargeKg ? `à ${kg(r.chargeKg)}` : 'au poids du corps';
 
 export const NOM_TYPE_RECORD: { [t in TypeRecord]: string } = {
   un_rm: '1RM estimé',
   charge_max: 'Charge max',
   reps_a_charge: 'Reps à une charge',
   volume_seance: 'Volume de séance',
+  duree_max: 'Temps tenu max',
+  duree_a_charge: 'Temps tenu à une charge',
 };
 
 // ---------------------------------------------------------------- Vue globale
@@ -346,14 +395,19 @@ export function progresParSeance(series: Serie[], seances: Map<Id, Pick<Seance, 
     return p;
   };
   // Meilleure valeur de chaque exercice dans chaque séance.
-  const parCle = new Map<string, Map<Id, { un: number | null; charge: number | null; reps: number }>>();
+  const parCle = new Map<string, Map<Id, { un: number | null; charge: number | null; reps: number; duree: number }>>();
   for (const s of series) {
     if (!estDeTravail(s)) continue;
     const cle = cleVariante(s);
     let m = parCle.get(cle);
     if (!m) parCle.set(cle, (m = new Map()));
     const p = poids.get(s.seanceId);
-    const v = m.get(s.seanceId) ?? { un: null, charge: null, reps: 0 };
+    const v = m.get(s.seanceId) ?? { un: null, charge: null, reps: 0, duree: 0 };
+    if (enDuree(s)) {
+      v.duree = Math.max(v.duree, s.dureeSec!);
+      m.set(s.seanceId, v);
+      continue;
+    }
     const r = unRmEstime(s, p);
     const c = chargeEffective(s, p);
     if (r != null && (v.un == null || r > v.un)) v.un = r;
@@ -369,8 +423,9 @@ export function progresParSeance(series: Serie[], seances: Map<Id, Pick<Seance, 
       if (i === 0) continue;
       const a = m.get(ordre[i - 1])!;
       const b = m.get(ordre[i])!;
-      // Même mesure des deux côtés : 1RM, sinon charge, sinon reps.
-      const [va, vb] = a.un != null && b.un != null ? [a.un, b.un] : a.charge != null && b.charge != null ? [a.charge, b.charge] : [a.reps, b.reps];
+      // Même mesure des deux côtés : 1RM, sinon charge, sinon durée tenue, sinon reps.
+      const [va, vb] =
+        a.un != null && b.un != null ? [a.un, b.un] : a.charge != null && b.charge != null ? [a.charge, b.charge] : a.duree && b.duree ? [a.duree, b.duree] : [a.reps, b.reps];
       const p = de(ordre[i]);
       p.compares++;
       if (vb > va * 1.005) p.enHausse++;

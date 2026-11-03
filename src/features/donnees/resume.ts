@@ -40,7 +40,9 @@ function serieCourte(s: Serie): string {
   if (s.type === 'echec') extras.push('échec');
   if (s.type === 'degressive') extras.push('dégressive');
   if (s.rir != null) extras.push(`RIR ${s.rir}`);
-  return `${s.type === 'echauffement' ? 'échauff. ' : ''}${charge}×${s.reps}${extras.length ? ` (${extras.join(', ')})` : ''}`;
+  // Série tenue : « 45 s », « +10 45 s » (lest).
+  const coeur = s.dureeSec != null ? `${charge === 'PDC' ? '' : `${charge} `}${s.dureeSec} s` : `${charge}×${s.reps}`;
+  return `${s.type === 'echauffement' ? 'échauff. ' : ''}${coeur}${extras.length ? ` (${extras.join(', ')})` : ''}`;
 }
 
 interface Passage {
@@ -56,13 +58,19 @@ function indicateurs(p: Passage) {
   let charge = 0;
   let vol = 0;
   let reps = 0;
+  let duree = 0;
   for (const s of travail) {
+    if (s.dureeSec != null) {
+      duree = Math.max(duree, s.dureeSec);
+      charge = Math.max(charge, s.chargeKg ?? 0);
+      continue;
+    }
     rm = Math.max(rm, unRmEstime(s, pc) ?? 0);
     charge = Math.max(charge, s.chargeKg ?? 0); // telle que saisie : par haltère, lest seul…
     vol += volume(s, pc);
     reps = Math.max(reps, s.reps);
   }
-  return { rm, charge, vol, reps, nbSeries: travail.length };
+  return { rm, charge, vol, reps, duree, nbSeries: travail.length };
 }
 
 function precisionCharge(e: Exercice | undefined): string {
@@ -134,7 +142,7 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     L.push('- Poids de corps : non renseigné');
   }
   L.push('');
-  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. « 45 s » = série tenue 45 secondes (gainage, dead hang…). RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
   L.push('');
 
   // --- Objectifs (état à aujourd'hui, sur tout l'historique : référentiel pour le coach / l'IA)
@@ -204,7 +212,8 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     if (ia.rm && ib.rm) evol.push(`1RM estimé ${ecart(ia.rm, ib.rm, 'kg')}`);
     const libCharge = e?.modeCharge === 'lest' ? 'lest max' : e?.modeCharge === 'par_main' ? 'charge max par haltère' : 'charge max';
     if (ia.charge && ib.charge) evol.push(`${libCharge} ${ecart(ia.charge, ib.charge, 'kg')}`);
-    evol.push(`reps max ${ia.reps} → ${ib.reps}`);
+    if (ia.duree || ib.duree) evol.push(`temps tenu max ${ia.duree} → ${ib.duree} s`);
+    else evol.push(`reps max ${ia.reps} → ${ib.reps}`);
     if (ia.vol && ib.vol) evol.push(`volume de la séance ${ecart(ia.vol, ib.vol, 'kg', 0)}`);
     L.push(`- Évolution : ${evol.join(' ; ')}`);
     const meilleur = ps.reduce((m, p) => (indicateurs(p).rm > indicateurs(m).rm ? p : m), a);

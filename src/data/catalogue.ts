@@ -63,4 +63,6 @@ export const VISUELS_DEPART: Record<string, string> = {
   'Fentes bulgares': 'Split_Squat_with_Dumbbells',
   'Leg curl': 'Lying_Leg_Curls',
   'Hack squat': 'Hack_Squat',
+  'Gainage (planche)': 'Plank',
+  'Gainage latéral': 'Side_Bridge',
 };

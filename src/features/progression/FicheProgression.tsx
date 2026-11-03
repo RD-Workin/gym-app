@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useCompteur } from '../../anim';
 import { Aide, Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
-import { signeLest } from '../../core/calculs';
+import { fmtDuree, signeLest } from '../../core/calculs';
 import type { Id } from '../../core/types';
-import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
+import { bilanRecords, kg, libelleChargeDuree, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { useRequete } from '../../core/requetes';
@@ -18,8 +18,8 @@ const MESURES: { valeur: Mesure; libelle: string }[] = [
   { valeur: 'charge_max', libelle: 'Charge max' },
   { valeur: 'volume', libelle: 'Volume' },
 ];
-const TITRE_MESURE: { [m in Mesure]: string } = { un_rm: '1RM estimé', charge_max: 'Charge max', volume: 'Volume de séance' };
-const fmt = (m: Mesure) => (m === 'volume' ? (v: number) => `${nombre(v)}` : kg);
+const TITRE_MESURE: { [m in Mesure]: string } = { un_rm: '1RM estimé', charge_max: 'Charge max', volume: 'Volume de séance', duree: 'Meilleure tenue' };
+const fmt = (m: Mesure) => (m === 'volume' ? (v: number) => `${nombre(v)}` : m === 'duree' ? fmtDuree : kg);
 const dateLongue = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 
 export function FicheProgression({ exerciceId, donnees }: { exerciceId: Id; donnees?: DonneesProgression }) {
@@ -30,8 +30,11 @@ export function FicheProgression({ exerciceId, donnees }: { exerciceId: Id; donn
 }
 
 function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
-  const [mesure, setMesure] = useState<Mesure>('un_rm');
+  const [choixMesure, setMesure] = useState<Mesure>('un_rm');
   const seriesEx = useMemo(() => d.series.filter((s) => s.exerciceId === exerciceId), [d, exerciceId]);
+  // Exercice tenu (gainage, dead hang…) : une seule mesure, la plus longue tenue de chaque séance.
+  const tenu = !!d.exercices.get(exerciceId)?.enSecondes || (seriesEx.length > 0 && seriesEx.every((s) => s.dureeSec != null));
+  const mesure: Mesure = tenu ? 'duree' : choixMesure;
 
   // Variantes présentes dans l'historique : on ne mélange jamais deux variantes sur une courbe.
   const options = useMemo(() => {
@@ -48,7 +51,9 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const points = useMemo(() => pointsExercice(seriesEx, d.seancesParId, d.poids, exerciceId, filtre), [seriesEx, d, exerciceId, filtre]);
   const bilan = useMemo(() => bilanRecords(seriesEx, d.poids), [seriesEx, d]);
   const recs = bilan.actuels.get(`${exerciceId}|${varianteCle}`);
-  const seancesRecord = new Set(bilan.evenements.filter((e) => (e.varianteId ?? '') === varianteCle && (e.type === 'un_rm' || e.type === 'charge_max')).map((e) => e.seanceId));
+  const seancesRecord = new Set(
+    bilan.evenements.filter((e) => (e.varianteId ?? '') === varianteCle && (e.type === 'un_rm' || e.type === 'charge_max' || e.type === 'duree_max')).map((e) => e.seanceId),
+  );
 
   const pc = points
     .map((p) => ({ date: p.date, valeur: valeurMesure(p, mesure) ?? NaN, record: seancesRecord.has(p.seanceId), incertain: p.poidsInconnu }))
@@ -62,7 +67,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const cibles = (objectifs ?? []).flatMap((o) =>
     o.mesure === mesure ? [o.cible] : mesure === 'un_rm' && o.mesure === 'serie' && totale ? [epley(o.cible, repsCible(o))] : [],
   );
-  const affiche = useCompteur(dernier?.valeur ?? 0, 700, mesure === 'volume' ? 0 : 1);
+  const affiche = useCompteur(dernier?.valeur ?? 0, 700, mesure === 'volume' || mesure === 'duree' ? 0 : 1);
 
   if (seriesEx.filter((s) => s.type !== 'echauffement').length === 0) {
     return <Carte titre="Progression"><p class="ui-attenue">Aucune série enregistrée pour cet exercice.</p></Carte>;
@@ -83,22 +88,22 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
         <div class="ui-ligne-entre">
           <div>
             <span class="ui-surtitre">
-              {TITRE_MESURE[mesure]} <Aide mot={mesure === 'un_rm' ? 'unRm' : mesure === 'volume' ? 'volume' : 'chargeMax'} />
+              {TITRE_MESURE[mesure]} <Aide mot={mesure === 'un_rm' ? 'unRm' : mesure === 'volume' ? 'volume' : mesure === 'duree' ? 'enSecondes' : 'chargeMax'} />
             </span>
             <div class="prog-grand">
-              <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(affiche) : kg(affiche).replace(' kg', '')) : '–'}</span>
-              <span class="ui-attenue">kg</span>
+              <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(affiche) : mesure === 'duree' ? Math.round(affiche) : kg(affiche).replace(' kg', '')) : '–'}</span>
+              <span class="ui-attenue">{mesure === 'duree' ? 's' : 'kg'}</span>
             </div>
           </div>
           {t && t.delta !== 0 && (
             <Puce ton={t.delta > 0 ? 'progres' : 'alerte'}>
               {t.delta > 0 ? '▲ +' : '▼ '}
-              {mesure === 'volume' ? nombre(t.delta) + ' kg' : kg(t.delta)} en {t.semaines} sem.
+              {mesure === 'volume' ? nombre(t.delta) + ' kg' : mesure === 'duree' ? fmtDuree(Math.abs(t.delta)) : kg(t.delta)} en {t.semaines} sem.
             </Puce>
           )}
           {t && t.delta === 0 && <Puce ton="alerte">stagne</Puce>}
         </div>
-        <Onglets label="Mesure affichée" options={MESURES} valeur={mesure} onChange={setMesure} />
+        {!tenu && <Onglets label="Mesure affichée" options={MESURES} valeur={mesure} onChange={setMesure} />}
         <Courbe points={pc} format={f} label={`Évolution : ${TITRE_MESURE[mesure]}`} cibles={cibles} />
         {mesure === 'un_rm' && <p class="prog-note ui-attenue">Formule d'Epley, séries de 12 reps au plus.</p>}
       </Carte>
@@ -109,8 +114,19 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
           <Liste label="Records de l'exercice">
             {recs.unRm && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.un_rm} detail={dateLongue(recs.unRm.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
             {recs.chargeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.charge_max} detail={dateLongue(recs.chargeMax.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
+            {recs.dureeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.duree_max} detail={dateLongue(recs.dureeMax.date)} fin={<span class="ui-chiffre prog-val">{fmtDuree(recs.dureeMax.valeur)}</span>} />}
             {recs.volumeSeance && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.volume_seance} detail={dateLongue(recs.volumeSeance.date)} fin={<span class="ui-chiffre prog-val">{nombre(recs.volumeSeance.valeur)} kg</span>} />}
           </Liste>
+          {recs.dureeACharge.length > 1 && (
+            <details class="prog-details">
+              <summary>Meilleures tenues par charge</summary>
+              <Liste>
+                {recs.dureeACharge.slice(0, 12).map((r) => (
+                  <ElementListe key={r.chargeKg} titre={<span class="ui-chiffre">{libelleChargeDuree(r)}</span>} detail={dateLongue(r.date)} fin={<span class="ui-chiffre prog-val">{fmtDuree(r.valeur)}</span>} />
+                ))}
+              </Liste>
+            </details>
+          )}
           {recs.repsACharge.length > 0 && (
             <details class="prog-details">
               <summary>Meilleures séries par charge</summary>
@@ -137,9 +153,17 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
               key={p.seanceId}
               href={`#/seance/${p.seanceId}`}
               surligne={seancesRecord.has(p.seanceId)}
-              titre={<span class="ui-chiffre">{p.series[0]?.modeCharge === 'sans_charge' ? 'PDC' : charge} · {p.series.map((x) => x.reps).join('-')}</span>}
+              titre={
+                <span class="ui-chiffre">
+                  {tenu
+                    ? `${p.series[0]?.modeCharge === 'sans_charge' || charges.every((c) => !c) ? '' : `${charge} · `}${p.series.map((x) => x.dureeSec ?? 0).join('-')} s`
+                    : `${p.series[0]?.modeCharge === 'sans_charge' ? 'PDC' : charge} · ${p.series.map((x) => x.reps).join('-')}`}
+                </span>
+              }
               detail={`${dateLongue(p.date)}${temp != null ? ` · ${Math.round(temp)} °C` : ''}`}
-              fin={seancesRecord.has(p.seanceId) ? <Puce ton="record">★ record</Puce> : p.unRm ? <span class="ui-attenue">1RM {Math.round(p.unRm)}</span> : undefined}
+              fin={
+                seancesRecord.has(p.seanceId) ? <Puce ton="record">★ record</Puce> : p.unRm ? <span class="ui-attenue">1RM {Math.round(p.unRm)}</span> : p.dureeMax ? <span class="ui-attenue">max {fmtDuree(p.dureeMax)}</span> : undefined
+              }
             />
           );
         })}

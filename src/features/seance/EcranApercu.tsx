@@ -11,7 +11,7 @@ import type { BlocModele, Exercice, Serie } from '../../core/types';
 import { idCatalogue, liensCatalogue } from '../exercices/exercices';
 import { Vignette } from '../exercices/Vignette';
 import { dureeEstimeeSec, dureeTexteMin, SERIES_PAR_DEFAUT } from '../modeles/avis';
-import { demarrerSeance, derniereFois, dureeTexte, groupes, resumeSeries } from './logique';
+import { cibleSansUnite, demarrerSeance, derniereFois, dureeTexte, groupes, resumeSeries, uniteCible } from './logique';
 import './seance.css';
 
 async function charger(id: string) {
@@ -131,7 +131,7 @@ export function EcranApercu({ id }: { id: string }) {
 
 function LigneExo({ n, bloc, exercice, avant, catalogueId }: { n: number; bloc: BlocModele; exercice?: Exercice; avant?: Serie[]; catalogueId?: string }) {
   const series = bloc.seriesCibles ?? SERIES_PAR_DEFAUT;
-  const cible = `${series} série${series > 1 ? 's' : ''}${bloc.repsCibles ? ` de ${bloc.repsCibles} reps` : ''}`;
+  const cible = `${series} série${series > 1 ? 's' : ''}${bloc.repsCibles ? ` de ${cibleSansUnite(bloc.repsCibles)} ${uniteCible(exercice?.enSecondes)}` : ''}`;
   return (
     <a class="ap-exo anim-appui" href={lien(`/exercices/${bloc.exerciceId}`)}>
       <span class="ap-num">{n}</span>

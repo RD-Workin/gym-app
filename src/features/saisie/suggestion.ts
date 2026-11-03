@@ -48,23 +48,26 @@ export function maxProjete(points: PointSeance[], maintenant = new Date()): numb
 export interface LignePrerempli {
   reps: number;
   chargeKg?: number;
+  dureeSec?: number;
 }
 
-/** Dernière séance de l'exercice → les mêmes séries, chacune avec ses reps et sa charge. */
-export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg'>[] | undefined): LignePrerempli[] | null {
+/** Dernière séance de l'exercice → les mêmes séries, chacune avec ses reps (ou secondes) et sa charge. */
+export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg' | 'dureeSec'>[] | undefined): LignePrerempli[] | null {
   if (!derniere?.length) return null;
-  return derniere.map((s) => ({ reps: s.reps, chargeKg: s.chargeKg }));
+  return derniere.map((s) => ({ reps: s.reps, chargeKg: s.chargeKg, ...(s.dureeSec != null ? { dureeSec: s.dureeSec } : {}) }));
 }
 
-/** « 28 kg · 10-8 / 26 kg · 9 » : charges groupées dans l'ordre, reps de chaque série. */
+/** « 28 kg · 10-8 / 26 kg · 9 » : charges groupées dans l'ordre, reps de chaque série (« 45-40 s » pour des séries tenues). */
 export function resumeLignes(l: LignePrerempli[], unite = 'kg'): string {
   const parts: { c?: number; reps: number[] }[] = [];
   for (const x of l) {
+    const v = x.dureeSec ?? x.reps;
     const d = parts[parts.length - 1];
-    if (d && d.c === x.chargeKg) d.reps.push(x.reps);
-    else parts.push({ c: x.chargeKg, reps: [x.reps] });
+    if (d && d.c === x.chargeKg) d.reps.push(v);
+    else parts.push({ c: x.chargeKg, reps: [v] });
   }
-  return parts.map((p) => `${p.c == null ? '' : `${unite.includes('lest') ? signeLest(p.c) : ''}${fmt(p.c)} ${unite} · `}${p.reps.join('-')}`).join(' / ');
+  const s = l.some((x) => x.dureeSec != null) ? ' s' : '';
+  return parts.map((p) => `${p.c == null ? '' : `${unite.includes('lest') ? signeLest(p.c) : ''}${fmt(p.c)} ${unite} · `}${p.reps.join('-')}${s}`).join(' / ');
 }
 
 export interface Suggestion {

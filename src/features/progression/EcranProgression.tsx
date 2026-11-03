@@ -3,6 +3,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { useCompteur } from '../../anim';
 import { Carte, ElementListe, Icone, Liste, Medaille, Onglets, Puce } from '../../ui';
 import { db } from '../../core/db';
+import { fmtDuree } from '../../core/calculs';
 import { useRequete } from '../../core/requetes';
 import type { Id } from '../../core/types';
 import {
@@ -94,8 +95,10 @@ function VueExercices({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) =
       <ObjectifsEnCours d={d} ouvrir={ouvrir} />
       <Liste label="Exercices pratiqués">
       {lignes.map((l) => {
-        const v = l.der.unRm ?? l.der.chargeMax;
-        const av = l.avant ? (l.der.unRm != null ? l.avant.unRm : l.avant.chargeMax) : null;
+        // Exercice tenu (gainage, dead hang…) : la plus longue tenue, en secondes.
+        const tenu = l.der.unRm == null && l.der.chargeMax == null && l.der.dureeMax != null;
+        const v = tenu ? l.der.dureeMax : (l.der.unRm ?? l.der.chargeMax);
+        const av = l.avant ? (tenu ? l.avant.dureeMax : l.der.unRm != null ? l.avant.unRm : l.avant.chargeMax) : null;
         const delta = v != null && av != null ? v - av : 0;
         return (
           <ElementListe
@@ -105,8 +108,8 @@ function VueExercices({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) =
             detail={`${l.nb} séance${l.nb > 1 ? 's' : ''} · ${dateCourte(l.der.date)}`}
             fin={
               <>
-                {v != null && <span class="ui-chiffre prog-val">{kg(v)}</span>}
-                {Math.abs(delta) >= 0.5 && <Puce ton={delta > 0 ? 'progres' : 'alerte'}>{delta > 0 ? '▲' : '▼'}</Puce>}
+                {v != null && <span class="ui-chiffre prog-val">{tenu ? fmtDuree(v) : kg(v)}</span>}
+                {Math.abs(delta) >= (tenu ? 1 : 0.5) && <Puce ton={delta > 0 ? 'progres' : 'alerte'}>{delta > 0 ? '▲' : '▼'}</Puce>}
                 <span class="ui-element-chevron prog-chevron"><Icone nom="chevron" /></span>
               </>
             }
@@ -165,7 +168,7 @@ function VueRecords({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => 
   const groupes = [...new Set([...d.exercices.values()].flatMap((e) => e.groupesMusculaires))].sort();
   const liste: { r: RecordPerso; nom: string }[] = [];
   for (const [, a] of actuels) {
-    const r = a.unRm ?? a.chargeMax;
+    const r = a.unRm ?? a.chargeMax ?? a.dureeMax;
     if (!r) continue;
     const ex = d.exercices.get(r.exerciceId);
     if (groupe !== 'tous' && !ex?.groupesMusculaires.includes(groupe)) continue;
@@ -205,7 +208,7 @@ function VueRecords({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => 
             debut={<span class="anim-zoom prog-medaille"><Medaille /></span>}
             titre={nom}
             detail={`${NOM_TYPE_RECORD[r.type]} · ${dateCourte(r.date)}`}
-            fin={<span class="ui-chiffre prog-val">{kg(r.valeur)}</span>}
+            fin={<span class="ui-chiffre prog-val">{r.type === 'duree_max' ? fmtDuree(r.valeur) : kg(r.valeur)}</span>}
           />
         ))}
       </Liste>

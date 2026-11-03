@@ -2,7 +2,7 @@
 // Stats et suggestions : 05-progression (suggestion.ts).
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Aide, Bouton, Carte, IndicationLest, Puce, Stepper, ToastRecord } from '../../ui';
-import { LEST_MAX_KG, LEST_MIN_KG, signeLest, uniteCharge } from '../../core/calculs';
+import { fmtDuree, LEST_MAX_KG, LEST_MIN_KG, signeLest, uniteCharge } from '../../core/calculs';
 import { eclatSur } from '../../anim';
 import { lien } from '../../core/router';
 import { useRequete } from '../../core/requetes';
@@ -24,6 +24,8 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const avantVariante = avant?.filter((s) => (s.varianteId ?? '') === varianteId);
 
   const modeCharge = exercice.modeCharge;
+  // Exercice tenu (gainage, dead hang…) : chaque série se note en secondes.
+  const tenu = !!exercice.enSecondes;
   const pas = pasCharge(exercice);
   const poidsActuel = useMemo(() => [...d.seances].sort((a, b) => b.debut.localeCompare(a.debut)).find((s) => s.contexte?.poidsCorporelKg != null)?.contexte.poidsCorporelKg, [d]);
 
@@ -64,7 +66,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     setSel(Math.max(0, i - 1));
   };
 
-  const suggestion = suggererCharge({
+  const suggestion = tenu ? null : suggererCharge({
     points,
     reps: ligne.reps,
     mode: modeCharge,
@@ -80,13 +82,15 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     const cle = `${exercice.id}|${varianteId}`;
     if (avant === undefined || initialise === cle) return;
     const p = depuisDerniereFois(avantVariante);
-    if (p) setLignes(p.map((l) => ({ reps: l.reps, chargeKg: l.chargeKg ?? 0 })));
+    if (tenu) setLignes(p ? p.map((l) => ({ reps: 0, dureeSec: l.dureeSec ?? 30, chargeKg: l.chargeKg ?? 0 })) : [0, 1, 2].map(() => ({ reps: 0, dureeSec: 30, chargeKg: 0 })));
+    else if (p) setLignes(p.map((l) => ({ reps: l.dureeSec != null ? 10 : l.reps, chargeKg: l.chargeKg ?? 0 })));
     else setLignes([0, 1, 2].map(() => ({ reps: 10, chargeKg: suggestion?.chargeKg ?? 0 })));
     setSel(0);
     setInitialise(cle);
   }, [avant, exercice.id, varianteId, suggestion?.chargeKg]);
 
   const ref = unRmRecent(points);
+  const meilleureTenue = tenu ? points.reduce<number | null>((m, p) => (p.dureeMax != null && (m == null || p.dureeMax > m) ? p.dureeMax : m), null) : null;
   const projete = maxProjete(points);
   const sansCharge = modeCharge === 'sans_charge';
   const lest = modeCharge === 'lest';
@@ -98,9 +102,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     const bouton = e.currentTarget as Element;
     setOccupe(true);
     try {
-      const r = await enregistrerSetRapide({ exerciceId: exercice.id, varianteId: varianteId || undefined, series: lignes, modeCharge });
+      const r = await enregistrerSetRapide({ exerciceId: exercice.id, varianteId: varianteId || undefined, series: lignes, modeCharge, enSecondes: tenu });
       eclatSur(bouton);
-      const texte = sansCharge ? lignes.map((l) => l.reps).join('-') + ' reps' : resumeLignes(lignes, unite);
+      const texte = tenu && sansCharge ? lignes.map((l) => l.dureeSec ?? 0).join('-') + ' s' : sansCharge ? lignes.map((l) => l.reps).join('-') + ' reps' : resumeLignes(lignes, unite);
       setDernier({ ...r, texte });
       let texteToast: string | undefined;
       for (const s of r.series) {
@@ -127,15 +131,30 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   return (
     <Carte titre="Noter une perf" ton="mise-en-avant" aside={<Aide mot="noterExercice" />}>
       <div class="ui-pile">
-        <p class="ui-attenue sr-intro">Fait sans lancer de séance ? Touche une série (S1, S2…), règle ses reps et {lest ? 'son lest' : 'sa charge'}, puis enregistre.</p>
-        {(ref != null || !!avantVariante?.length) && (
+        <p class="ui-attenue sr-intro">
+          Fait sans lancer de séance ? Touche une série (S1, S2…), règle {tenu ? 'combien de secondes tu as tenu' : 'ses reps'}
+          {sansCharge ? '' : ` et ${lest ? 'son lest' : 'sa charge'}`}, puis enregistre.
+        </p>
+        {(ref != null || meilleureTenue != null || !!avantVariante?.length) && (
           <div class="sr-stats">
             {avantVariante && avantVariante.length > 0 && (
               <div>
                 <span class="ui-surtitre">La dernière fois</span>
                 <span class="ui-chiffre">
-                  {sansCharge ? `${avantVariante.map((s) => s.reps).join('-')} reps` : resumeLignes(avantVariante, unite)}
+                  {sansCharge
+                    ? avantVariante.some((s) => s.dureeSec != null)
+                      ? `${avantVariante.map((s) => s.dureeSec ?? 0).join('-')} s`
+                      : `${avantVariante.map((s) => s.reps).join('-')} reps`
+                    : resumeLignes(avantVariante, unite)}
                 </span>
+              </div>
+            )}
+            {meilleureTenue != null && (
+              <div>
+                <span class="ui-surtitre">
+                  Meilleure tenue <Aide mot="enSecondes" />
+                </span>
+                <span class="ui-chiffre">{fmtDuree(meilleureTenue)}</span>
               </div>
             )}
             {ref != null && (
@@ -172,7 +191,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             <button key={j} type="button" class="sr-ligne" aria-pressed={j === i} onClick={() => setSel(j)}>
               <span class="sr-num">S{j + 1}</span>
               <span class="ui-chiffre">
-                {l.reps} reps
+                {tenu ? `${l.dureeSec ?? 0} s` : `${l.reps} reps`}
                 {sansCharge ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
               </span>
             </button>
@@ -192,7 +211,11 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             )}
           </div>
           {/* key par série : le champ repart de la valeur de la série touchée, sans délai de synchro. */}
-          <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
+          {tenu ? (
+            <Stepper key={`duree-${i}`} id="sr-duree" valeur={ligne.dureeSec ?? 0} onChange={(v) => majLigne({ dureeSec: v })} unite="secondes" pas={5} min={1} max={3600} decimales={0} />
+          ) : (
+            <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
+          )}
           {!sansCharge && (
             <Stepper
               key={`charge-${i}`}

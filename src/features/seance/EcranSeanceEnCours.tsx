@@ -17,6 +17,7 @@ import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
 import { origineDe } from '../modeles/modeles';
 import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
+import { Chrono } from './Chrono';
 import { marquerBilan } from './bilan';
 import { ChoixRepos } from './ChoixRepos';
 import { useEcranAllume } from './ecranAllume';
@@ -33,13 +34,16 @@ import {
   dureeTexte,
   ecrirePlan,
   enregistrerSerie,
+  cibleSansUnite,
   formatCharge,
+  formatSerie,
   groupes,
   lirePlan,
   preremplir,
   progresVsDerniereFois,
   resumeSeries,
   terminerSeance,
+  uniteCible,
   type PlanSeance,
   type Saisie,
 } from './logique';
@@ -222,7 +226,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
   useEffect(() => {
     if (!bloc || !exercices || !avant) return;
     if (edition) {
-      setSaisie({ chargeKg: edition.chargeKg, reps: edition.reps, rir: edition.rir, type: edition.type, modeCharge: edition.modeCharge, reglagesMachine: edition.reglagesMachine });
+      setSaisie({ chargeKg: edition.chargeKg, reps: edition.reps, dureeSec: edition.dureeSec, rir: edition.rir, type: edition.type, modeCharge: edition.modeCharge, reglagesMachine: edition.reglagesMachine });
       setRirVisible(edition.rir != null);
     } else {
       setSaisie(preremplir(exercice, bloc, faites, avant, etapesEchauf));
@@ -392,10 +396,12 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const titre = modele?.nom ?? 'Séance libre';
   const reglageAffiche = saisie?.reglagesMachine ?? exercice?.reglagesMachine;
   const cible = bloc && (bloc.seriesCibles || bloc.repsCibles) ? `${bloc.seriesCibles ?? '?'} × ${bloc.repsCibles ?? '?'}` : undefined;
-  const cibleTexte = bloc?.seriesCibles && bloc.repsCibles ? `${bloc.seriesCibles} séries de ${bloc.repsCibles} reps` : cible;
+  const cibleTexte = bloc?.seriesCibles && bloc.repsCibles ? `${bloc.seriesCibles} séries de ${cibleSansUnite(bloc.repsCibles)} ${uniteCible(exercice?.enSecondes)}` : cible;
   const notes = [exercice?.note, bloc?.note].filter(Boolean);
   const sansCharge = saisie?.modeCharge === 'sans_charge';
   const lest = saisie?.modeCharge === 'lest';
+  // Exercice tenu (gainage, dead hang…) : on note des secondes au lieu de reps.
+  const tenu = saisie?.dureeSec != null;
 
   return (
     <section class="sc sc-active">
@@ -497,7 +503,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
                 <button type="button" class={`sc-serie fait${edition?.id === s.id ? ' cur' : ''}`} onClick={() => setEdition(edition?.id === s.id ? undefined : s)}>
                   <span class="sc-n">{s.type === 'echauffement' ? 'É' : travailFaites.indexOf(s) + 1}</span>
                   <span class="sc-num">
-                    {formatCharge(s)} × {s.reps}
+                    {formatSerie(s)}
                     {s.rir != null ? ` · RIR ${s.rir}` : ''}
                   </span>
                   <span class={s.type === 'echauffement' ? 'sc-ok sc-echauf-fait' : 'sc-ok'}>
@@ -559,8 +565,13 @@ function SeanceActive({ seance }: { seance: Seance }) {
                     decimales={2}
                   />
                 )}
-                <Stepper id="sc-reps" valeur={saisie.reps} onChange={(v) => setSaisie({ ...saisie, reps: v })} unite="reps" min={0} max={200} decimales={0} />
+                {tenu ? (
+                  <Stepper id="sc-duree" valeur={saisie.dureeSec ?? 0} onChange={(v) => setSaisie({ ...saisie, dureeSec: v })} unite="secondes" pas={5} min={0} max={3600} decimales={0} />
+                ) : (
+                  <Stepper id="sc-reps" valeur={saisie.reps} onChange={(v) => setSaisie({ ...saisie, reps: v })} unite="reps" min={0} max={200} decimales={0} />
+                )}
               </div>
+              {tenu && !edition && <Chrono key={travailFaites.length} onFin={(sec) => setSaisie({ ...saisie, dureeSec: sec })} />}
               {lest && <IndicationLest lestKg={saisie.chargeKg ?? 0} poidsCorporelKg={seance.contexte?.poidsCorporelKg} />}
               {rirVisible && (
                 <Stepper id="sc-rir" valeur={saisie.rir ?? 2} onChange={(v) => setSaisie({ ...saisie, rir: v })} unite="reps en réserve" min={0} max={10} decimales={0} />
@@ -569,18 +580,22 @@ function SeanceActive({ seance }: { seance: Seance }) {
                 <button type="button" class="sc-option" aria-pressed={saisie.type === 'echauffement'} onClick={() => setSaisie({ ...saisie, type: saisie.type === 'echauffement' ? 'travail' : 'echauffement' })}>
                   Série d'échauffement
                 </button>
-                <button
-                  type="button"
-                  class="sc-option"
-                  aria-pressed={rirVisible}
-                  onClick={() => {
-                    setRirVisible(!rirVisible);
-                    setSaisie({ ...saisie, rir: rirVisible ? undefined : (saisie.rir ?? 2) });
-                  }}
-                >
-                  Noter le RIR
-                </button>
-                <Aide mot="rir" />
+                {!tenu && (
+                  <>
+                    <button
+                      type="button"
+                      class="sc-option"
+                      aria-pressed={rirVisible}
+                      onClick={() => {
+                        setRirVisible(!rirVisible);
+                        setSaisie({ ...saisie, rir: rirVisible ? undefined : (saisie.rir ?? 2) });
+                      }}
+                    >
+                      Noter le RIR
+                    </button>
+                    <Aide mot="rir" />
+                  </>
+                )}
               </div>
             </>
           )}

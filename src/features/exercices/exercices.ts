@@ -3,8 +3,9 @@ import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import type { Exercice, ModeCharge, Variante } from '../../core/types';
 import { VISUELS_DEPART, type EntreeCatalogue } from '../../data/catalogue';
+import { basculerEnSecondes, semblerTenu } from '../../core/duree';
 
-export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharge' | 'groupesMusculaires' | 'reglagesMachine' | 'note'>;
+export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharge' | 'groupesMusculaires' | 'reglagesMachine' | 'note' | 'enSecondes'>;
 
 /** Minuscules sans accents, pour la recherche. */
 export const normaliser = (s: string) =>
@@ -33,6 +34,7 @@ const nettoyer = (b: BrouillonExercice): BrouillonExercice => ({
   nom: b.nom.trim(),
   reglagesMachine: b.reglagesMachine?.trim() || undefined,
   note: b.note?.trim() || undefined,
+  enSecondes: b.enSecondes || undefined,
 });
 
 export async function creerExercice(b: BrouillonExercice): Promise<string> {
@@ -43,14 +45,19 @@ export async function creerExercice(b: BrouillonExercice): Promise<string> {
 }
 
 export async function modifierExercice(id: string, b: BrouillonExercice) {
-  await db.transaction('rw', db.exercices, db.reglages, async () => {
+  await db.transaction('rw', db.exercices, db.series, db.reglages, async () => {
     const avant = await db.exercices.get(id);
     // Renommer un exercice de départ ne doit pas lui faire perdre son visuel.
     const depart = avant && VISUELS_DEPART[avant.nom];
     if (depart && !(await liensCatalogue())[id]) await lierAuCatalogue(id, depart);
     await db.exercices.update(id, { ...nettoyer(b), modifieLe: maintenant() });
+    // Passage reps ↔ secondes : les séries déjà notées suivent.
+    if (!!avant?.enSecondes !== !!b.enSecondes) await basculerEnSecondes(id, !!b.enSecondes);
   });
 }
+
+/** Nombre de séries déjà notées pour un exercice (avertissement avant de passer en secondes). */
+export const nbSeries = (exerciceId: string) => db.series.where('exerciceId').equals(exerciceId).count();
 
 // Lien exercice → entrée du catalogue (visuel, explications), stocké dans `reglages`.
 const CLE_LIENS = 'liensCatalogue';
@@ -74,7 +81,8 @@ const modeDe = (eq: Exercice['equipement']): ModeCharge => (eq === 'halteres' ? 
 
 export async function ajouterDepuisCatalogue(c: EntreeCatalogue): Promise<string> {
   return db.transaction('rw', db.exercices, db.reglages, async () => {
-    const id = await creerExercice({ nom: c.nom, equipement: c.eq, modeCharge: modeDe(c.eq), groupesMusculaires: [...c.p, ...c.s] });
+    // Plank, Side Bridge… : en secondes d'emblée.
+    const id = await creerExercice({ nom: c.nom, equipement: c.eq, modeCharge: modeDe(c.eq), groupesMusculaires: [...c.p, ...c.s], enSecondes: semblerTenu(c.nom) || undefined });
     await lierAuCatalogue(id, c.id);
     return id;
   });

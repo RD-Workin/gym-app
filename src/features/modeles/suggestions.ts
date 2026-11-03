@@ -118,10 +118,13 @@ const libelle = (g: string) => libelleGroupe(g).toLowerCase();
 export const BUT_OBJECTIF: Record<Objectif, string> = { force: 'Soulever plus lourd', hypertrophie: 'Prendre du muscle', endurance: 'Tenir plus longtemps' };
 export const NOMS_OBJECTIF: Record<Objectif, string> = { force: 'Force', hypertrophie: 'Masse', endurance: 'Endurance' };
 
-/** Cibles proposées pour un exercice ajouté depuis les propositions. */
-export function blocPropose(exerciceId: Id, gros: boolean, objectif: Objectif, id: Id): BlocModele {
+/** Cible par défaut d'un exercice tenu (gainage, dead hang…), en secondes. */
+export const CIBLE_SECONDES = '30-45';
+
+/** Cibles proposées pour un exercice ajouté depuis les propositions (`enSecondes` : cible en secondes tenues). */
+export function blocPropose(exerciceId: Id, gros: boolean, objectif: Objectif, id: Id, enSecondes?: boolean): BlocModele {
   const o = OBJECTIFS[objectif];
   const reposSec = objectif === 'force' ? o.reposSec : objectif === 'endurance' ? o.reposSec : gros ? 150 : 90;
-  const reps = objectif === 'hypertrophie' ? (gros ? '6-10' : '10-12') : o.reps;
+  const reps = enSecondes ? CIBLE_SECONDES : objectif === 'hypertrophie' ? (gros ? '6-10' : '10-12') : o.reps;
   return { id, exerciceId, seriesCibles: gros ? 4 : 3, repsCibles: reps, reposSec };
 }

@@ -55,6 +55,10 @@ export const LEXIQUE = {
     terme: 'Bibliothèque et catalogue',
     definition: 'Ma bibliothèque = tes exercices, ceux que tu notes. Le catalogue = plus de 600 exercices illustrés à ajouter à ta bibliothèque.',
   },
+  enSecondes: {
+    terme: 'En secondes',
+    definition: 'Pour les exercices qu’on tient sans bouger (gainage, dead hang, chaise contre un mur) : tu notes combien de secondes tu as tenu, au lieu de répétitions. Un lest reste possible.',
+  },
   chargeMax: { terme: 'Charge max', definition: 'Le poids le plus lourd soulevé ce jour-là, quel que soit le nombre de répétitions.' },
   volume: { terme: 'Volume', definition: 'Poids × répétitions, additionnés sur toutes les séries de la séance. Il monte quand tu en fais plus.' },
   record: { terme: 'Record', definition: 'Ta meilleure perf sur un exercice (charge, répétitions ou 1RM estimé). Une célébration s’affiche quand tu en bats un.' },

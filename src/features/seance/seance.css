@@ -142,3 +142,8 @@
 .sc-echauf-actions { display: flex; gap: var(--e-2); }
 .sc-echauf-oui { border-color: var(--c-action); color: var(--c-action); font-weight: 600; }
 .sc-serie.fait .sc-ok.sc-echauf-fait { color: var(--c-attenue); } /* vert = progrès seulement (11) */
+
+/* Chrono d'une série tenue (gainage, dead hang…). */
+.sc-chrono-tenue { display: flex; align-items: center; gap: var(--e-2); padding: 10px 12px; border-radius: 14px; background: var(--c-surface-2); }
+.sc-chrono-valeur { font-size: var(--t-xl); font-weight: 700; color: var(--c-texte); min-width: 3.2em; }
+.sc-chrono-tenue .sc-attenue { flex: 1; }

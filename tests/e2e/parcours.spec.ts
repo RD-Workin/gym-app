@@ -163,3 +163,28 @@ test('tractions : lest négatif accepté et expliqué', async ({ page }) => {
   await page.getByRole('button', { name: /^Enregistrer \d+ séries?/ }).click();
   await expect(page.locator('.sr-confirmation')).toContainText('-15 kg de lest');
 });
+
+// Exercices tenus (gainage, dead hang) : notés en secondes, avec un chrono en séance.
+test('exercice en secondes : saisie rapide et séance avec chrono', async ({ page }) => {
+  page.on('dialog', (d) => d.accept());
+  await page.goto('./#/exercices');
+  await page.getByRole('searchbox', { name: 'Rechercher un exercice' }).or(page.getByLabel('Rechercher un exercice')).fill('dead hang');
+  await page.locator('.ui-liste a').filter({ hasText: 'Dead hang' }).first().click();
+  await expect(page.locator('#sr-duree')).toBeVisible();
+  await expect(page.locator('#sr-reps')).toHaveCount(0);
+  await page.locator('#sr-duree').fill('40');
+  await page.locator('#sr-duree').blur();
+  await page.getByRole('button', { name: /^Enregistrer \d+ séries?/ }).click();
+  await expect(page.locator('.sr-confirmation')).toContainText('40-30-30 s');
+
+  await page.goto('./#/seance');
+  await page.getByRole('button', { name: /Séance libre/ }).click();
+  await page.getByRole('button', { name: 'Ajouter un exercice' }).first().click();
+  await page.getByLabel('Chercher un exercice').fill('gainage (planche)');
+  await page.getByRole('dialog').getByRole('button', { name: /Gainage \(planche\)/ }).first().click();
+  await expect(page.locator('#sc-duree')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Lancer le chrono/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Noter le RIR' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Valider la série' }).click();
+  await expect(page.locator('.sc-serie.fait')).toContainText('30 s');
+});
