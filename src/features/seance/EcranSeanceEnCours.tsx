@@ -103,14 +103,14 @@ function Demarrage() {
               taille={premiere ? 'large' : 'geant'}
               variante={premiere ? 'secondaire' : 'primaire'}
               href={lien(`/seance/apercu/${modeles[0].id}`)}
-              detail={`${modeles[0].blocs.length} exercices · voir avant de démarrer`}
+              detail={`${quoi(modeles[0])}${modeles[0].blocs.length} exercices`}
             >
               {modeles[0].nom}
             </Bouton>
           </Carte>
           {modeles.length > 1 && <span class="ui-surtitre">Autres séances types</span>}
           {modeles.slice(1).map((m) => (
-            <Bouton key={m.id} variante="secondaire" taille="large" detail={`${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} href={lien(`/seance/apercu/${m.id}`)}>
+            <Bouton key={m.id} variante="secondaire" taille="large" detail={`${quoi(m)}${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} href={lien(`/seance/apercu/${m.id}`)}>
               {m.nom}
             </Bouton>
           ))}
@@ -155,6 +155,20 @@ function Demarrage() {
     </section>
   );
 }
+
+/** Ce que travaille chaque séance fournie, en quelques mots (libellés : 11). Une séance renommée garde sa description d'origine. */
+const QUOI: Record<string, string> = {
+  Push: 'pectoraux, épaules, triceps',
+  Pull: 'dos, biceps',
+  'Full body': 'tout le corps',
+  'Full Upper': 'tout le haut du corps',
+  'Home Gym': 'à la maison, sans matériel',
+  Callisthénie: 'au parc : barre fixe, barres parallèles',
+};
+const quoi = (m: Modele) => {
+  const q = QUOI[origineDe(m) ?? ''];
+  return q ? `${q} · ` : '';
+};
 
 /* ---------------- Séance active ---------------- */
 

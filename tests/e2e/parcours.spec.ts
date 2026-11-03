@@ -6,7 +6,7 @@ test('séance → série → export CSV', async ({ page }) => {
   page.on('dialog', (d) => d.accept());
 
   await page.goto('./#/seance');
-  await page.getByRole('link', { name: /voir avant de démarrer/ }).click();
+  await page.locator('a[href*="/seance/apercu/"]').first().click();
   await page.getByRole('button', { name: /^Démarrer / }).click();
 
   const valider = page.getByRole('button', { name: 'Valider la série' });
@@ -91,7 +91,7 @@ test('premier lancement : bienvenue, puis accueil sans « Quoi de neuf »', asyn
 
 test('aide « ? » : explique un terme au toucher', async ({ page }) => {
   await page.goto('./#/seance');
-  await page.getByRole('link', { name: /voir avant de démarrer/ }).click();
+  await page.locator('a[href*="/seance/apercu/"]').first().click();
   await page.getByRole('button', { name: /^Démarrer / }).click();
   await page.getByRole('button', { name: 'Explication : RIR' }).click();
   await expect(page.getByRole('note')).toContainText('Reps en réserve');
