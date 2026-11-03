@@ -61,8 +61,8 @@ export function EcranSeance({ id }: { id: string }) {
   const copier = async () => {
     if (!resume) return;
     const r = await copierResume(resume);
-    if (r === 'copie') setCopie('Analyse copiée. Colle-la dans un message à ton coach ou dans ChatGPT / Claude.');
-    if (r === 'partage') setCopie('Résumé de la séance créé.');
+    if (r === 'copie') setCopie('Séance copiée en texte. Colle-la dans un message à ton coach, ou dans ChatGPT ou Claude : il te répondra avec une analyse.');
+    if (r === 'partage') setCopie('Fichier texte de la séance créé : envoie-le à ton coach ou à une IA.');
   };
   const supprimer = async () => {
     if (!confirm('Supprimer cette séance et toutes ses séries ?')) return;
