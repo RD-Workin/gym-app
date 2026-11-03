@@ -254,6 +254,8 @@ export const ECHAUFFEMENT: { pourcentage: number; reps: number }[] = [
 ];
 /** Repos court entre deux séries d'échauffement. */
 export const REPOS_ECHAUFFEMENT_SEC = 60;
+/** Après la dernière étape d'échauffement : au moins 2 min, ou le repos du bloc s'il est plus long. */
+export const REPOS_APRES_ECHAUFFEMENT_SEC = 120;
 /** Charge de travail sous laquelle on ne propose rien (une série légère suffit, l'utilisateur la fait de lui-même). */
 const CHARGE_MIN_ECHAUFFEMENT = 20;
 const BARRE_VIDE_KG = 20;

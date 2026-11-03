@@ -23,6 +23,7 @@ import { useEcranAllume } from './ecranAllume';
 import {
   REPOS_DEFAUT_SEC,
   REPOS_ECHAUFFEMENT_SEC,
+  REPOS_APRES_ECHAUFFEMENT_SEC,
   demarrerSeance,
   echauffementActif,
   echauffementAProposer,
@@ -275,10 +276,14 @@ function SeanceActive({ seance }: { seance: Seance }) {
       eclatSur(bouton, { nombre: 30, onde: true });
       const rang = travailFaites.length;
       const serie = await enregistrerSerie(seance.id, bloc, saisie);
-      // Échauffement : on reste sur l'exercice, avec un repos court.
+      // Échauffement : on reste sur l'exercice. Repos court entre les étapes ; après la dernière étape
+      // proposée, repos normal du bloc (au moins 2 min) avant la 1re série de travail (avis 10-coach).
       if (serie?.type === 'echauffement') {
         setNouvelle(serie.id);
-        setPlan({ ...plan, reposFin: Date.now() + REPOS_ECHAUFFEMENT_SEC * 1000, reposDuree: REPOS_ECHAUFFEMENT_SEC });
+        const nbFaits = faites.filter((s) => s.type === 'echauffement').length + 1;
+        const derniere = !!etapesEchauf && nbFaits >= etapesEchauf.length;
+        const duree = derniere ? Math.max(REPOS_APRES_ECHAUFFEMENT_SEC, plan.blocs[grp[0]]?.reposSec ?? 0) : REPOS_ECHAUFFEMENT_SEC;
+        setPlan({ ...plan, reposFin: Date.now() + duree * 1000, reposDuree: duree });
         return;
       }
       if (serie) {
