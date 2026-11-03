@@ -13,6 +13,8 @@ import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
+import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
+import { origineDe } from '../modeles/modeles';
 import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
 import { marquerBilan } from './bilan';
@@ -50,8 +52,16 @@ function Demarrage() {
     const seances = await db.seances.orderBy('debut').reverse().toArray();
     const derniere = new Map<string, string>();
     for (const s of seances) if (s.modeleId && !derniere.has(s.modeleId)) derniere.set(s.modeleId, s.debut);
-    // Rotation : le modèle le moins récemment fait d'abord (jamais fait = en premier).
-    modeles.sort((a, b) => (derniere.get(a.id) ?? '').localeCompare(derniere.get(b.id) ?? ''));
+    // Rotation : le modèle le moins récemment fait d'abord (jamais fait = en premier, dans l'ordre Push, Pull, Jambes…).
+    // Les séances bonus (Home Gym, Callisthénie) passent après : on les choisit soi-même.
+    const bonus = (m: Modele) => (SEANCES_BONUS.has(origineDe(m) ?? '') ? 1 : 0);
+    modeles.sort(
+      (a, b) =>
+        bonus(a) - bonus(b) ||
+        (derniere.get(a.id) ?? '').localeCompare(derniere.get(b.id) ?? '') ||
+        rangDepart(origineDe(a)) - rangDepart(origineDe(b)) ||
+        a.nom.localeCompare(b.nom),
+    );
     return { modeles, derniere, recentes: seances.filter((s) => s.fin).slice(0, 5), premiere: seances.length === 0 };
   });
   const [occupe, setOccupe] = useState(false);

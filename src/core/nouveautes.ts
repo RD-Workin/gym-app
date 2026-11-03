@@ -9,6 +9,14 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 8,
+    date: '2026-11-03',
+    points: [
+      'Séances types refaites d’après les études récentes : Push, Pull et Jambes durent environ 1 h et travaillent tous les muscles (élévations latérales, extension triceps au-dessus de la tête, soulevé de terre roumain…). Si tu as déjà modifié une séance, elle reste comme tu l’as faite.',
+      'Deux séances bonus : « Home Gym », sans matériel, avec une chaise, une table, une serviette et un sac à dos ; « Callisthénie », au parc avec barre fixe et barres parallèles. Les conseils de chaque exercice disent comment faire.',
+    ],
+  },
+  {
     numero: 9,
     date: '2026-11-03',
     points: ['Toucher une séance ne la lance plus tout de suite : tu vois d’abord ses exercices, les séries prévues, la durée et ce que tu as fait la dernière fois. De là, « Démarrer » ou « Modifier la séance ».'],

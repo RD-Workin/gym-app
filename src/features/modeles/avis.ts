@@ -101,7 +101,7 @@ export function typeSeance(nom: string, parMuscle: Record<string, number>, chois
   if (choisi) return choisi;
   const n = nom.toLowerCase();
   if (/upper|haut du corps/.test(n)) return 'upper';
-  if (/full|tout le corps|corps entier/.test(n)) return 'full';
+  if (/full|tout le corps|corps entier|home|maison|callisth|street/.test(n)) return 'full';
   if (/push|pouss/.test(n)) return 'push';
   if (/pull|tirag|tirer/.test(n)) return 'pull';
   if (/jambe|leg|cuisse|bas du corps/.test(n)) return 'jambes';

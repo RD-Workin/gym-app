@@ -58,10 +58,18 @@ describe('avis sur une séance type', () => {
     expect(dureeEstimeeSec([a, b])).toBe(2 * 60 + 3 * 40 + 3 * (40 + 90));
   });
 
-  it.each(MODELES_DEPART.map((m) => [m.nom, m]))('modèle de départ %s : un avis sans plantage', (_, m) => {
+  it.each(MODELES_DEPART.map((m) => [m.nom, m]))('séance type %s : adaptée, tous les muscles clés, 1 h 20 au plus (10-coach)', (_, m) => {
     const blocs = blocsDepart(m).map((b) => bloc(b.cle, b.series, b.reps));
     const a = analyserModele(m.nom, blocs, parId);
-    expect(a.remarques.length).toBeGreaterThan(0);
+    expect(a.remarques.filter((r) => r.ton !== 'ok').map((r) => r.texte)).toEqual([]);
+    expect(a.verdict).toBe('adaptee');
+    expect(a.dureeMin).toBeLessThanOrEqual(80);
+    expect(Math.max(...Object.values(a.parMuscle))).toBeLessThanOrEqual(11);
+  });
+
+  it('Home Gym et Callisthénie : analysées comme des séances tout le corps', () => {
+    expect(typeSeance('Home Gym', {})).toBe('full');
+    expect(typeSeance('Callisthénie', {})).toBe('full');
   });
 });
 
