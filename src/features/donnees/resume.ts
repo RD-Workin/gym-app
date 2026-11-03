@@ -81,7 +81,7 @@ function precisionCharge(e: Exercice | undefined): string {
 /**
  * Texte prêt à coller : contexte de la période, poids de corps début → fin, puis pour chaque exercice
  * le nombre de séances, la 1re et la dernière fois, et l'évolution (1RM estimé, charge max, reps, volume).
- * Le détail séance par séance suit, puis une question pour l'IA.
+ * Le détail séance par séance suit. Données seulement : la question, c'est l'utilisateur qui la pose.
  */
 export function construireResume(d: DonneesResume, periode: Periode = {}, aujourdhui = new Date()): string {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
@@ -243,12 +243,6 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
       );
     }
   }
-  L.push('');
-  L.push(
-    objectifs.length
-      ? 'Peux-tu analyser ma progression sur cette période au regard de mes objectifs ci-dessus, me dire s’ils sont réalistes, repérer les exercices qui stagnent ou régressent, et me proposer des charges, des reps et une fréquence pour mes prochaines séances afin de les atteindre ?'
-      : 'Peux-tu analyser ma progression sur cette période, repérer les exercices qui stagnent ou régressent, et me proposer des charges et des reps pour mes prochaines séances ?',
-  );
   return L.join('\n') + '\n';
 }
 
@@ -340,7 +334,5 @@ export function construireResumeSeance(d: DonneesResume, seanceId: string): stri
     }
     L.push(`- Déjà fait ${precedentes.length} fois avant cette séance`);
   }
-  L.push('');
-  L.push('Peux-tu analyser cette séance : choix et ordre des exercices, charges, reps et récupération, points forts et points à corriger, et me dire quoi viser la prochaine fois pour chaque exercice ?');
   return L.join('\n') + '\n';
 }

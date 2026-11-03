@@ -82,6 +82,10 @@ describe('résumé d’une seule séance (06)', () => {
     expect(t).toMatch(/### Leg press\n- Séries : 120×8\n- La fois d’avant \(15\/10, il y a 18 jours\) : 113×9/);
     expect(t).toContain('- Nouveau record de 1RM estimé (ancien : 146,9 kg)');
   });
+  it('données seulement, sans question préremplie', () => {
+    expect(t).not.toContain('Peux-tu');
+    expect(construireResume(d, {})).not.toContain('Peux-tu');
+  });
   it('séance inconnue', () => {
     expect(construireResumeSeance(d, 'zzz')).toBe('Séance introuvable.');
   });

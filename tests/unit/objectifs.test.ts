@@ -144,12 +144,12 @@ describe('objectifs dans les exports', () => {
     objectifs: [obj({ echeance: '2027-03-01' })],
   } as never;
 
-  it('résumé IA : section « Mes objectifs » et question qui y renvoie', () => {
+  it('résumé IA : section « Mes objectifs », sans question préremplie', () => {
     const t = construireResume(d, {}, AUJ);
     expect(t).toContain('## Mes objectifs');
     expect(t).toContain('Développé couché : objectif Charge max 100 kg d’ici le 01/03/2027 ; actuel 85 kg, reste 15 kg (85 % de la cible)');
     expect(t).toContain('date estimée à ce rythme : 16/02/2027');
-    expect(t).toContain('au regard de mes objectifs');
+    expect(t).not.toContain('Peux-tu');
   });
 
   it('CSV : colonnes objectif sur les lignes de l’exercice', () => {
