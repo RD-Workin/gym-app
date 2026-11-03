@@ -119,7 +119,7 @@ export function EtapesDemarrage() {
   return (
     <ol class="acc-etapes">
       <li>
-        <b>Démarre une séance.</b> Quatre séances types sont prêtes (Push, Pull, Jambes, Full body) : l'app te guide exercice par exercice.
+        <b>Prépare ta séance.</b> Compose-la avec l'aide de l'app (elle te propose les exercices un par un), ou prends une des quatre séances types prêtes (Push, Pull, Jambes, Full body) et modifie-la à ton goût.
       </li>
       <li>
         <b>Note chaque série.</b> Règle le poids et les répétitions avec + et −, puis « Valider la série ». Le minuteur de repos démarre tout seul.

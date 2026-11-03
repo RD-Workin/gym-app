@@ -10,6 +10,7 @@ const EcranExercice = paresseux(() => import('../features/exercices/EcranExercic
 const EcranSeanceEnCours = paresseux(() => import('../features/seance/EcranSeanceEnCours').then((m) => m.EcranSeanceEnCours));
 const EcranSeance = paresseux(() => import('../features/seance/EcranSeance').then((m) => m.EcranSeance));
 const EcranModeles = paresseux(() => import('../features/modeles/EcranModeles').then((m) => m.EcranModeles));
+const EcranComposer = paresseux(() => import('../features/modeles/EcranComposer').then((m) => m.EcranComposer));
 const EcranProgression = paresseux(() => import('../features/progression/EcranProgression').then((m) => m.EcranProgression));
 const EcranDonnees = paresseux(() => import('../features/donnees/EcranDonnees').then((m) => m.EcranDonnees));
 
@@ -28,6 +29,8 @@ export const routes: DefRoute[] = [
   { motif: '/seance', rendu: () => <EcranSeanceEnCours />, onglet: 'Séance', icone: 'seance' },
   { motif: '/seance/:id', rendu: (p) => <EcranSeance id={p.id} /> },
   { motif: '/modeles', rendu: () => <EcranModeles /> },
+  { motif: '/modeles/composer', rendu: () => <EcranComposer /> },
+  { motif: '/modeles/:id', rendu: (p) => <EcranModeles id={p.id} /> },
   { motif: '/exercices', rendu: () => <EcranExercices />, onglet: 'Exercices', icone: 'exercices' },
   { motif: '/exercices/:id', rendu: (p) => <EcranExercice id={p.id} /> },
   { motif: '/progression', rendu: () => <EcranProgression />, onglet: 'Progrès', icone: 'progres' },

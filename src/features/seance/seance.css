@@ -76,3 +76,4 @@
 .sc-repos-valeur { font-size: var(--t-xl); }
 .sc-options-wrap { flex-wrap: wrap; }
 .sc-intro { margin: 0; font-size: var(--t-sm); }
+.sc-modele-ligne { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--e-2); }

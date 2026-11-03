@@ -40,6 +40,7 @@ export async function amorcerBibliotheque(): Promise<void> {
     const modeles: Modele[] = MODELES_DEPART.map((m) => ({
       id: nouvelId(),
       nom: m.nom,
+      origine: m.nom,
       archive: false,
       creeLe: t,
       modifieLe: t,
