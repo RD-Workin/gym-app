@@ -5,13 +5,14 @@ import { LIBELLES_TYPE, LIBELLES_VERDICT, dureeTexteMin, type AvisModele } from 
 
 const MAX_VISIBLES = 3;
 
-export function CarteAvis({ avis }: { avis: AvisModele }) {
+/** `max` : nombre de points montrés avant « Voir tout » (1 dans l'éditeur, pour ne pas repousser la liste des exercices). */
+export function CarteAvis({ avis, max = MAX_VISIBLES }: { avis: AvisModele; max?: number }) {
   const [tout, setTout] = useState(false);
   const bon = avis.verdict === 'adaptee';
   const aRegler = avis.remarques.filter((r) => r.ton !== 'ok');
   const forts = avis.remarques.filter((r) => r.ton === 'ok');
   // Par défaut : les points à régler les plus importants, ou les points forts si tout va bien.
-  const visibles = tout ? avis.remarques : aRegler.length ? aRegler.slice(0, MAX_VISIBLES) : forts;
+  const visibles = tout ? avis.remarques : aRegler.length ? aRegler.slice(0, max) : forts.slice(0, max);
   const caches = avis.remarques.length - visibles.length;
 
   return (

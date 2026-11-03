@@ -13,7 +13,7 @@ import { blocsOrigine, enregistrerModele, memesBlocs, nouveauModele, origineDe }
 import { analyserModele, LIBELLES_VERDICT, type TypeSeance } from './avis';
 import { CarteAvis } from './CarteAvis';
 import { Propositions, useBibliotheque } from './Propositions';
-import { NOMS_OBJECTIF, blocPropose } from './suggestions';
+import { BUT_OBJECTIF, NOMS_OBJECTIF, blocPropose } from './suggestions';
 import '../seance/seance.css';
 import './modeles.css';
 
@@ -146,35 +146,12 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
       </div>
       <input class="sc-champ sc-champ-titre" placeholder="Nom (Push, Pull, Jambes…)" value={m.nom} onInput={(e) => setM({ ...m, nom: (e.target as HTMLInputElement).value })} aria-label="Nom du modèle" />
       <p class="sc-attenue sc-intro">Ajoute, retire ou déplace des exercices, et règle les séries et les reps de chacun. Rien n’est gardé avant « Enregistrer ».</p>
-      <CarteAvis avis={avis} />
+      <CarteAvis avis={avis} max={1} />
       {modifieDepuisOrigine && (
         <Bouton variante="contour" onClick={revenirOrigine} detail={`Les exercices de « ${origine} » fournis avec l’app`}>
           Revenir au modèle d’origine
         </Bouton>
       )}
-      <Carte
-        titre={
-          <>
-            Objectif <Aide mot="objectif" />
-          </>
-        }
-      >
-        <Onglets
-          label="Objectif de la séance"
-          options={(Object.keys(OBJECTIFS) as Objectif[]).map((o) => ({ valeur: o, libelle: NOMS_OBJECTIF[o] }))}
-          valeur={objectif}
-          onChange={setObjectif}
-        />
-        <p class="sc-attenue">
-          Repos conseillé : {OBJECTIFS[objectif].plage} (proposé : {dureeTexte(OBJECTIFS[objectif].reposSec)}), {OBJECTIFS[objectif].reps} reps. Utilisé pour les exercices ajoutés.
-        </p>
-        <PanneauConseils key={objectif} fiche={CONSEILS_OBJECTIFS[objectif]} titre={`Conseils · ${NOMS_OBJECTIF[objectif]}`} />
-        {m.blocs.length > 0 && (
-          <Bouton variante="contour" onClick={() => setM({ ...m, blocs: m.blocs.map((b) => ({ ...b, reposSec: OBJECTIFS[objectif].reposSec })) })}>
-            Repos {dureeTexte(OBJECTIFS[objectif].reposSec)} pour tous les exercices
-          </Bouton>
-        )}
-      </Carte>
       {m.blocs.map((b, i) => {
         const enSuperset = !!b.supersetId && (m.blocs[i - 1]?.supersetId === b.supersetId || m.blocs[i + 1]?.supersetId === b.supersetId);
         return (
@@ -235,6 +212,29 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
           </Bouton>
         </>
       )}
+      <details class="mo-details">
+        <summary>
+          <span>
+            Objectif : {NOMS_OBJECTIF[objectif]} <Aide mot="objectif" />
+          </span>
+          <span class="sc-attenue">Repos et reps proposés pour les exercices ajoutés</span>
+        </summary>
+        <Onglets
+          label="Objectif de la séance"
+          options={(Object.keys(OBJECTIFS) as Objectif[]).map((o) => ({ valeur: o, libelle: NOMS_OBJECTIF[o] }))}
+          valeur={objectif}
+          onChange={setObjectif}
+        />
+        <p class="sc-attenue">
+          {BUT_OBJECTIF[objectif]}. Repos conseillé : {OBJECTIFS[objectif].plage} (proposé : {dureeTexte(OBJECTIFS[objectif].reposSec)}), {OBJECTIFS[objectif].reps} reps. Utilisé pour les exercices ajoutés.
+        </p>
+        <PanneauConseils key={objectif} fiche={CONSEILS_OBJECTIFS[objectif]} titre={`Conseils · ${NOMS_OBJECTIF[objectif]}`} />
+        {m.blocs.length > 0 && (
+          <Bouton variante="contour" onClick={() => setM({ ...m, blocs: m.blocs.map((b) => ({ ...b, reposSec: OBJECTIFS[objectif].reposSec })) })}>
+            Repos {dureeTexte(OBJECTIFS[objectif].reposSec)} pour tous les exercices
+          </Bouton>
+        )}
+      </details>
       {valide && (
         <Bouton variante="secondaire" onClick={lancer}>
           Enregistrer et démarrer

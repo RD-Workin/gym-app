@@ -14,3 +14,12 @@
 .mo-remarque.ok > span:first-child { color: var(--c-progres); }
 .mo-remarque.conseil > span:first-child { color: var(--c-alerte); }
 .mo-remarque.probleme > span:first-child { color: var(--c-danger); }
+/* Réglages secondaires repliés (objectif) : l'éditeur montre d'abord les exercices. Relu par 11. */
+.mo-details { border: 1px solid var(--c-trait); border-radius: 16px; background: var(--c-surface); padding: 0 var(--e-4, 16px); }
+.mo-details > summary { display: grid; gap: 2px; min-height: 48px; padding: var(--e-3, 12px) 28px var(--e-3, 12px) 0; cursor: pointer; list-style: none; position: relative; font-weight: 600; }
+.mo-details > summary::-webkit-details-marker { display: none; }
+.mo-details > summary::after { content: '›'; position: absolute; right: 0; top: 50%; margin-top: -14px; font-size: 24px; line-height: 28px; color: var(--c-attenue); }
+.mo-details[open] > summary::after { transform: rotate(90deg); }
+.mo-details > summary .sc-attenue { font-weight: 400; font-size: var(--t-sm); }
+.mo-details[open] { padding-bottom: var(--e-4, 16px); }
+.mo-details[open] > :not(summary) + * { margin-top: var(--e-3, 12px); }

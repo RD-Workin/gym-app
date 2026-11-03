@@ -71,7 +71,7 @@ export function Propositions({ type, blocs, bibliotheque, frequence, onChoix, on
         </p>
       )}
       <Bouton variante="contour" icone="plus" onClick={onAutre}>
-        Autre exercice (chercher)
+        Chercher un autre exercice
       </Bouton>
     </Carte>
   );

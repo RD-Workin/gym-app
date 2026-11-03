@@ -10,7 +10,7 @@ import { analyserModele, poly, type TypeSeance } from './avis';
 import { CarteAvis } from './CarteAvis';
 import { enregistrerModele, nouveauModele } from './modeles';
 import { Propositions, useBibliotheque } from './Propositions';
-import { NOMS_OBJECTIF, blocPropose } from './suggestions';
+import { BUT_OBJECTIF, NOMS_OBJECTIF, blocPropose } from './suggestions';
 import '../seance/seance.css';
 import './modeles.css';
 
@@ -58,7 +58,7 @@ export function EcranComposer() {
             onChange={setObjectif}
           />
           <p class="sc-attenue sc-intro">
-            {OBJECTIFS[objectif].reps} reps par série, {OBJECTIFS[objectif].plage} de repos.
+            {BUT_OBJECTIF[objectif]} : {OBJECTIFS[objectif].reps} reps par série, {OBJECTIFS[objectif].plage} de repos.
           </p>
         </Carte>
         <span class="ui-surtitre">Type de séance</span>
@@ -165,7 +165,7 @@ export function EcranComposer() {
             })}
           </ol>
         )}
-        {blocs.length > 0 && <p class="sc-attenue sc-intro">Séries, reps et repos se règlent ensuite dans « Modifier », depuis l’écran Séance.</p>}
+        {blocs.length > 0 && <p class="sc-attenue sc-intro">Séries, reps et repos sont réglés selon ton objectif. Tu pourras les changer après l’enregistrement.</p>}
       </Carte>
       {blocs.length > 0 && <CarteAvis avis={avis} />}
       {valide && (

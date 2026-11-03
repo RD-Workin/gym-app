@@ -113,7 +113,9 @@ function raison(e: ExerciceCandidat, fait: Record<string, number>, vise: Record<
 const libelle = (g: string) => libelleGroupe(g).toLowerCase();
 
 /** Objectifs en mots simples (« Muscle » plutôt qu'« Hypertrophie »). */
-export const NOMS_OBJECTIF: Record<Objectif, string> = { force: 'Force', hypertrophie: 'Muscle', endurance: 'Endurance' };
+/** Le but de chaque objectif, en mots simples (libellés relus par 11). */
+export const BUT_OBJECTIF: Record<Objectif, string> = { force: 'Soulever plus lourd', hypertrophie: 'Prendre du muscle', endurance: 'Tenir plus longtemps' };
+export const NOMS_OBJECTIF: Record<Objectif, string> = { force: 'Force', hypertrophie: 'Masse', endurance: 'Endurance' };
 
 /** Cibles proposées pour un exercice ajouté depuis les propositions. */
 export function blocPropose(exerciceId: Id, gros: boolean, objectif: Objectif, id: Id): BlocModele {
