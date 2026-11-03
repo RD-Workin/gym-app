@@ -1,6 +1,8 @@
 // Résumé texte d'une période, à coller dans un message à un coach ou à une IA. Propriétaire : 06-donnees.
 import { unRmEstime, volume } from '../../core/calculs';
-import type { Exercice, Modele, Seance, Serie, Variante } from '../../core/types';
+import type { Exercice, Modele, Objectif, Seance, Serie, Variante } from '../../core/types';
+import { evaluerObjectif, LIBELLE_STATUT, NOM_MESURE, uniteMesure } from '../objectifs/calculs';
+import { poidsParSeance } from '../progression/calculs';
 import { dansPeriode, type Periode } from './exporter';
 
 export interface DonneesResume {
@@ -9,6 +11,7 @@ export interface DonneesResume {
   modeles: Modele[];
   seances: Seance[];
   series: Serie[];
+  objectifs?: Objectif[];
 }
 
 const nb = (v: number, dec = 1) => {
@@ -80,7 +83,7 @@ function precisionCharge(e: Exercice | undefined): string {
  * le nombre de séances, la 1re et la dernière fois, et l'évolution (1RM estimé, charge max, reps, volume).
  * Le détail séance par séance suit, puis une question pour l'IA.
  */
-export function construireResume(d: DonneesResume, periode: Periode = {}): string {
+export function construireResume(d: DonneesResume, periode: Periode = {}, aujourdhui = new Date()): string {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
   const vari = new Map(d.variantes.map((v) => [v.id, v.nom]));
   const mod = new Map(d.modeles.map((m) => [m.id, m.nom]));
@@ -133,6 +136,30 @@ export function construireResume(d: DonneesResume, periode: Periode = {}): strin
   L.push('');
   L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
   L.push('');
+
+  // --- Objectifs (état à aujourd'hui, sur tout l'historique : référentiel pour le coach / l'IA)
+  const objectifs = d.objectifs ?? [];
+  if (objectifs.length) {
+    const seancesParId = new Map(d.seances.map((s) => [s.id, s]));
+    const poids = poidsParSeance(d.seances);
+    L.push('## Mes objectifs');
+    L.push('Valeurs comparables aux cibles : 1RM estimé et charge max en charge effective (les 2 haltères additionnées, poids du corps inclus pour les exercices lestés) ; reps = meilleure série de travail. « Actuel » = meilleure valeur des 8 dernières semaines.');
+    for (const o of [...objectifs].sort((a, b) => (exo.get(a.exerciceId)?.nom ?? '').localeCompare(exo.get(b.exerciceId)?.nom ?? '', 'fr'))) {
+      const { etat: e } = evaluerObjectif(o, { series: d.series, seancesParId, poids }, aujourdhui);
+      const u = uniteMesure(o.mesure);
+      const nom = exo.get(o.exerciceId)?.nom ?? '(exercice supprimé)';
+      const variante = o.varianteId ? ` (${vari.get(o.varianteId) ?? 'variante'})` : '';
+      const morceaux = [`objectif ${nb(o.cible)} ${u}${o.echeance ? ` d’ici le ${jour(o.echeance)}` : ''}`];
+      morceaux.push(e.actuel == null ? 'pas encore de mesure' : e.atteint ? `actuel ${nb(e.actuel)} ${u}, atteint` : `actuel ${nb(e.actuel)} ${u}, reste ${nb(e.reste)} ${u} (${Math.round(e.pourcentage)} % de la cible)`);
+      if (e.rythme != null) morceaux.push(`rythme ${e.rythme >= 0 ? '+' : ''}${nb(e.rythme)} ${u}/semaine sur 12 semaines`);
+      if (!e.atteint && e.projection) morceaux.push(`date estimée à ce rythme : ${jour(e.projection)}`);
+      if (e.rythmeRequis != null) morceaux.push(`rythme nécessaire pour la date visée : +${nb(e.rythmeRequis)} ${u}/semaine`);
+      morceaux.push(`${nb(e.frequence)} séance(s)/semaine sur cet exercice ce dernier mois`);
+      morceaux.push(`statut : ${LIBELLE_STATUT[e.statut].toLowerCase()}`);
+      L.push(`- ${nom}${variante} — ${NOM_MESURE[o.mesure]} : ${morceaux.join(' ; ')}`);
+    }
+    L.push('');
+  }
 
   // --- Évolution par exercice
   const passages = new Map<string, Passage[]>();
@@ -207,6 +234,10 @@ export function construireResume(d: DonneesResume, periode: Periode = {}): strin
     }
   }
   L.push('');
-  L.push('Peux-tu analyser ma progression sur cette période, repérer les exercices qui stagnent ou régressent, et me proposer des charges et des reps pour mes prochaines séances ?');
+  L.push(
+    objectifs.length
+      ? 'Peux-tu analyser ma progression sur cette période au regard de mes objectifs ci-dessus, me dire s’ils sont réalistes, repérer les exercices qui stagnent ou régressent, et me proposer des charges, des reps et une fréquence pour mes prochaines séances afin de les atteindre ?'
+      : 'Peux-tu analyser ma progression sur cette période, repérer les exercices qui stagnent ou régressent, et me proposer des charges et des reps pour mes prochaines séances ?',
+  );
   return L.join('\n') + '\n';
 }

@@ -11,7 +11,8 @@ export interface ExportJson {
 }
 
 const etapes: Record<number, (d: ExportJson['donnees']) => ExportJson['donnees']> = {
-  // 2: (d) => ({ ...d, ... }),
+  // v3 : table objectifs, absente des sauvegardes plus anciennes.
+  3: (d) => ({ ...d, objectifs: d.objectifs ?? [] }),
 };
 
 export function migrerExport(exp: ExportJson): ExportJson {

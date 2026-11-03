@@ -29,6 +29,8 @@ Période au choix avant l'export : 2 semaines, 30 jours, 3 mois (jours glissants
 | reglage_machine | réglage noté (siège, poulie…) |
 | superset | même code = séries enchaînées |
 | note_serie, note_seance | notes libres (la note de séance est sur la 1re ligne de la séance) |
+| objectif, objectif_cible, objectif_actuel, objectif_reste | objectif fixé sur l'exercice (mesure, cible, meilleure valeur des 8 dernières semaines, marge), répété sur chaque ligne de l'exercice ; vides sans objectif |
+| objectif_date_visee, objectif_date_estimee | date visée (si fixée) et date estimée au rythme des 12 dernières semaines (`atteint` si c'est fait) |
 
 Les textes commençant par `= + - @` sont préfixés d'une apostrophe (pas de formule à l'ouverture dans un tableur).
 

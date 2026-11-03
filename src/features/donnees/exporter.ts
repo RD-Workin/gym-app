@@ -3,22 +3,25 @@ import { db, SCHEMA_VERSION } from '../../core/db';
 import { chargeEffective, unRmEstime } from '../../core/calculs';
 import { maintenant } from '../../core/ids';
 import type { ExportJson } from '../../core/migrations';
-import type { Exercice, Seance, Serie, Variante, Modele } from '../../core/types';
+import type { Exercice, Objectif, Seance, Serie, Variante, Modele } from '../../core/types';
+import { poidsParSeance } from '../progression/calculs';
+import { evaluerObjectif, NOM_MESURE } from '../objectifs/calculs';
 
 /** Réglages propres à l'appareil : ni exportés ni restaurés. */
 export const REGLAGES_LOCAUX = new Set(['stockagePersistant', 'derniereSauvegarde', 'schemaVersion']);
 
-export const TABLES = ['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages'] as const;
+export const TABLES = ['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages', 'objectifs'] as const;
 export type NomTable = (typeof TABLES)[number];
 
 export async function construireExportJson(): Promise<ExportJson> {
-  const [exercices, variantes, modeles, seances, series, reglages] = await Promise.all([
+  const [exercices, variantes, modeles, seances, series, reglages, objectifs] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
     db.modeles.toArray(),
     db.seances.toArray(),
     db.series.toArray(),
     db.reglages.toArray(),
+    db.objectifs.toArray(),
   ]);
   const exercicesJson = await Promise.all(
     exercices.map(async (e) => (e.photo ? { ...e, photo: await blobVersDataUrl(e.photo) } : e)),
@@ -33,6 +36,7 @@ export async function construireExportJson(): Promise<ExportJson> {
       seances,
       series,
       reglages: reglages.filter((r) => !REGLAGES_LOCAUX.has(r.cle)),
+      objectifs,
     },
   };
 }
@@ -69,6 +73,12 @@ export const COLONNES_CSV = [
   'superset',
   'note_serie',
   'note_seance',
+  'objectif',
+  'objectif_cible',
+  'objectif_actuel',
+  'objectif_reste',
+  'objectif_date_visee',
+  'objectif_date_estimee',
 ] as const;
 
 function champCsv(v: string | number | undefined | null): string {
@@ -116,7 +126,8 @@ export function lignesCsv(d: {
   modeles: Modele[];
   seances: Seance[];
   series: Serie[];
-}, periode: Periode = {}): string[][] {
+  objectifs?: Objectif[];
+}, periode: Periode = {}, aujourdhui = new Date()): string[][] {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
   const vari = new Map(d.variantes.map((v) => [v.id, v.nom]));
   const mod = new Map(d.modeles.map((m) => [m.id, m.nom]));
@@ -126,6 +137,20 @@ export function lignesCsv(d: {
   for (const s of d.series) {
     if (!seanceParId.has(s.seanceId)) continue;
     (seriesParSeance.get(s.seanceId) ?? seriesParSeance.set(s.seanceId, []).get(s.seanceId)!).push(s);
+  }
+  // Objectif de chaque exercice, état à la date de l'export (mêmes valeurs sur toutes ses lignes).
+  const poids = poidsParSeance(d.seances);
+  const colonnesObjectif = new Map<string, (string | number | undefined | null)[]>();
+  for (const o of d.objectifs ?? []) {
+    const { etat } = evaluerObjectif(o, { series: d.series, seancesParId: seanceParId, poids }, aujourdhui);
+    colonnesObjectif.set(o.exerciceId, [
+      NOM_MESURE[o.mesure],
+      o.cible,
+      etat.actuel,
+      etat.actuel == null ? null : etat.reste,
+      o.echeance,
+      etat.atteint ? 'atteint' : etat.projection,
+    ]);
   }
   const lignes: string[][] = [];
   for (const seance of seancesTriees) {
@@ -157,6 +182,7 @@ export function lignesCsv(d: {
         s.supersetId ? s.supersetId.slice(0, 8) : '',
         s.note,
         s === liste[0] ? seance.note : '', // note de séance sur sa 1re ligne
+        ...(colonnesObjectif.get(s.exerciceId) ?? ['', '', '', '', '', '']),
       ];
       lignes.push(valeurs.map(champCsv));
     }
@@ -165,14 +191,15 @@ export function lignesCsv(d: {
 }
 
 export async function construireCsv(periode: Periode = {}): Promise<string> {
-  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+  const [exercices, variantes, modeles, seances, series, objectifs] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
     db.modeles.toArray(),
     db.seances.toArray(),
     db.series.toArray(),
+    db.objectifs.toArray(),
   ]);
-  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series }, periode).map((l) => l.join(','))];
+  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series, objectifs }, periode).map((l) => l.join(','))];
   // BOM UTF-8 : accents corrects dans Excel / Numbers.
   return '﻿' + lignes.join('\r\n') + '\r\n';
 }
@@ -226,14 +253,15 @@ export async function compterPeriode(periode: Periode): Promise<{ seances: numbe
 /** Résumé texte de la période (voir resume.ts), calculé à l'avance pour que la copie reste dans le geste de l'utilisateur (Safari). */
 export async function construireResumePeriode(periode: Periode): Promise<string> {
   const { construireResume } = await import('./resume');
-  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+  const [exercices, variantes, modeles, seances, series, objectifs] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
     db.modeles.toArray(),
     db.seances.toArray(),
     db.series.toArray(),
+    db.objectifs.toArray(),
   ]);
-  return construireResume({ exercices, variantes, modeles, seances, series }, periode);
+  return construireResume({ exercices, variantes, modeles, seances, series, objectifs }, periode);
 }
 
 /** Copie le résumé ; si le presse-papier est refusé, le partage ou le télécharge en .txt. */

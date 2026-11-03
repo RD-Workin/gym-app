@@ -85,6 +85,24 @@ export interface Serie extends Horodatage {
   faiteLe: IsoDate;
 }
 
+/** Mesure suivie par un objectif : mêmes valeurs que la courbe de progression (charge effective). */
+export type MesureObjectif = 'un_rm' | 'charge_max' | 'reps';
+
+/** Objectif fixé sur un exercice (v3), ex. 1RM estimé 100 kg au développé couché. */
+export interface Objectif extends Horodatage {
+  id: Id;
+  exerciceId: Id;
+  /** Variante suivie ; absent = la version standard (ou toutes si l'exercice n'a que des variantes). */
+  varianteId?: Id;
+  mesure: MesureObjectif;
+  /** kg pour un_rm et charge_max, répétitions pour reps. */
+  cible: number;
+  /** Date visée, jour AAAA-MM-JJ (facultatif). */
+  echeance?: string;
+  /** Première fois que la cible a été atteinte (toast déjà montré). */
+  atteintLe?: IsoDate;
+}
+
 export interface Reglage {
   cle: string;
   valeur: unknown;

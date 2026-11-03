@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Exercice, Modele, Reglage, Seance, Serie, Variante } from './types';
+import type { Exercice, Modele, Objectif, Reglage, Seance, Serie, Variante } from './types';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class GymDb extends Dexie {
   exercices!: EntityTable<Exercice, 'id'>;
@@ -10,6 +10,7 @@ export class GymDb extends Dexie {
   seances!: EntityTable<Seance, 'id'>;
   series!: EntityTable<Serie, 'id'>;
   reglages!: EntityTable<Reglage, 'cle'>;
+  objectifs!: EntityTable<Objectif, 'id'>;
 
   constructor() {
     super('gym-app');
@@ -25,6 +26,8 @@ export class GymDb extends Dexie {
     });
     // v2 : champ optionnel exercices.photo (Blob, non indexé). Aucune donnée à transformer.
     this.version(2).stores({});
+    // v3 : table objectifs (un objectif chiffré par exercice). Nouvelle table vide, rien à transformer.
+    this.version(3).stores({ objectifs: 'id, exerciceId' });
   }
 }
 
