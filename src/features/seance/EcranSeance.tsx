@@ -9,12 +9,23 @@ import { lien, naviguer } from '../../core/router';
 import { useRequete } from '../../core/requetes';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { creerModeleDepuisSeance } from '../modeles/modeles';
+import { construireResumeUneSeance, copierResume } from '../donnees/exporter';
 import { dureeTexte, groupes, resumeSeries, supprimerSeance } from './logique';
 import './seance.css';
 
 export function EcranSeance({ id }: { id: string }) {
   // Juste après « Terminer » : bilan animé (une seule fois).
   const [bilan] = useState(() => bilanAJouer(id));
+  const [copie, setCopie] = useState<string | null>(null);
+  // Calculé à l'avance : Safari n'autorise la copie que dans le geste.
+  const [resume, setResume] = useState<string | null>(null);
+  useEffect(() => {
+    let actif = true;
+    construireResumeUneSeance(id).then((t) => actif && setResume(t), () => actif && setResume(null));
+    return () => {
+      actif = false;
+    };
+  }, [id]);
   const d = useRequete(async () => {
     const seance = await db.seances.get(id);
     if (!seance) return null;
@@ -46,6 +57,12 @@ export function EcranSeance({ id }: { id: string }) {
     if (!nom?.trim()) return;
     await creerModeleDepuisSeance(id, nom.trim());
     naviguer('/modeles');
+  };
+  const copier = async () => {
+    if (!resume) return;
+    const r = await copierResume(resume);
+    if (r === 'copie') setCopie('Analyse copiée. Colle-la dans un message à ton coach ou dans ChatGPT / Claude.');
+    if (r === 'partage') setCopie('Résumé de la séance créé.');
   };
   const supprimer = async () => {
     if (!confirm('Supprimer cette séance et toutes ses séries ?')) return;
@@ -84,6 +101,16 @@ export function EcranSeance({ id }: { id: string }) {
           </Liste>
         </Carte>
       ))}
+      {series.length > 0 && (
+        <Bouton variante="secondaire" icone="copier" onClick={copier} disabled={!resume} detail="Séries et comparaison avec la fois d’avant, en texte">
+          Copier pour l’IA ou un coach
+        </Bouton>
+      )}
+      {copie && (
+        <Carte ton="progres">
+          <p role="status">{copie}</p>
+        </Carte>
+      )}
       {series.length > 0 && (
         <Bouton variante="secondaire" onClick={modeleDepuis}>
           Créer un modèle depuis cette séance

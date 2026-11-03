@@ -268,6 +268,19 @@ export async function construireResumePeriode(periode: Periode): Promise<string>
   return construireResume({ exercices, variantes, modeles, seances, series, objectifs }, periode);
 }
 
+/** Résumé d'une seule séance, comparée à la fois d'avant pour chaque exercice (voir resume.ts). */
+export async function construireResumeUneSeance(seanceId: string): Promise<string> {
+  const { construireResumeSeance } = await import('./resume');
+  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+    db.exercices.toArray(),
+    db.variantes.toArray(),
+    db.modeles.toArray(),
+    db.seances.toArray(),
+    db.series.toArray(),
+  ]);
+  return construireResumeSeance({ exercices, variantes, modeles, seances, series }, seanceId);
+}
+
 /** Copie le résumé ; si le presse-papier est refusé, le partage ou le télécharge en .txt. */
 export async function copierResume(texte: string): Promise<'copie' | 'partage' | 'annule'> {
   try {

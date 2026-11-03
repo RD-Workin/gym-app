@@ -16,6 +16,8 @@ test('séance → série → export CSV', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Terminer' }).click();
   await expect(page).toHaveURL(/#\/seance\/.+/);
+  await expect(page.getByRole('button', { name: /Copier pour l’IA ou un coach/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /Copier pour l’IA ou un coach/ })).toBeEnabled();
 
   await page.goto('./#/donnees');
   const telechargement = page.waitForEvent('download');
