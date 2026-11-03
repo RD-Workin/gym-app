@@ -4,7 +4,7 @@
 import type { BlocModele, Id } from '../../core/types';
 import { libelleGroupe } from '../../data/groupes';
 
-export type TypeSeance = 'push' | 'pull' | 'jambes' | 'full' | 'autre';
+export type TypeSeance = 'push' | 'pull' | 'jambes' | 'upper' | 'full' | 'autre';
 export type Verdict = 'vide' | 'adaptee' | 'a-ajuster' | 'incomplete' | 'trop-chargee';
 
 export interface Remarque {
@@ -51,6 +51,7 @@ export const LIBELLES_TYPE: Record<TypeSeance, string> = {
   push: 'Push (pousser : pecs, épaules, triceps)',
   pull: 'Pull (tirer : dos, biceps)',
   jambes: 'Jambes',
+  upper: 'Full Upper (tout le haut du corps)',
   full: 'Full body (tout le corps)',
   autre: 'Séance libre',
 };
@@ -64,6 +65,7 @@ export const ATTENDUS: Record<TypeSeance, string[]> = {
   push: ['pectoraux', 'epaules', 'triceps'],
   pull: ['dos', 'biceps'],
   jambes: ['quadriceps', 'ischios', 'fessiers'],
+  upper: ['pectoraux', 'dos', 'epaules', 'biceps', 'triceps'],
   full: ['pectoraux', 'dos', 'quadriceps', 'ischios', 'epaules'],
   autre: [],
 };
@@ -97,6 +99,7 @@ export const poly = (e?: InfoExercice) => {
 export function typeSeance(nom: string, parMuscle: Record<string, number>, choisi?: TypeSeance): TypeSeance {
   if (choisi) return choisi;
   const n = nom.toLowerCase();
+  if (/upper|haut du corps/.test(n)) return 'upper';
   if (/full|tout le corps|corps entier/.test(n)) return 'full';
   if (/push|pouss/.test(n)) return 'push';
   if (/pull|tirag|tirer/.test(n)) return 'pull';
@@ -111,6 +114,7 @@ export function typeSeance(nom: string, parMuscle: Record<string, number>, chois
   if (t / total >= 0.7) return 'pull';
   if (b / total >= 0.7) return 'jambes';
   if (p / total >= 0.15 && t / total >= 0.15 && b / total >= 0.15) return 'full';
+  if (p / total >= 0.25 && t / total >= 0.25 && b / total < 0.1) return 'upper';
   return 'autre';
 }
 
@@ -199,7 +203,7 @@ export function analyserModele(nom: string, blocs: BlocModele[], exercices: Map<
 
   // Équilibre
   const somme = (gs: string[]) => gs.reduce((s, g) => s + (parMuscle[g] ?? 0), 0);
-  if (type === 'full') {
+  if (type === 'full' || type === 'upper') {
     const p = somme(POUSSER);
     const t = somme(TIRER);
     if (p && t && p > 2 * t) conseil('Plus de « pousser » que de « tirer » : ajoute un tirage ou un rowing pour équilibrer (dos et épaules).');

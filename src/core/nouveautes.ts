@@ -9,6 +9,11 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 6,
+    date: '2026-11-03',
+    points: ['Nouvelle séance type « Full Upper » : tout le haut du corps (pecs, dos, épaules, bras) sans les jambes, environ 1 h. Aussi proposée dans « Composer ma séance ».'],
+  },
+  {
     numero: 5,
     date: '2026-11-03',
     points: [

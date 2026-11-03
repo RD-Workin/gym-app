@@ -99,3 +99,32 @@ describe('propositions d’exercices', () => {
     expect(proposerExercices('push', blocs, biblio)).toEqual([]);
   });
 });
+
+describe('Full Upper', () => {
+  it('type reconnu au nom, avant « full »', () => {
+    expect(typeSeance('Full Upper', {})).toBe('upper');
+    expect(typeSeance('Haut du corps', {})).toBe('upper');
+    expect(typeSeance('Séance B', { pectoraux: 6, dos: 6, biceps: 2, triceps: 2 })).toBe('upper');
+  });
+
+  it('modèle de départ : adapté', () => {
+    const m = MODELES_DEPART.find((x) => x.nom === 'Full Upper')!;
+    const blocs = blocsDepart(m).map((b) => bloc(b.cle, b.series, b.reps));
+    const a = analyserModele(m.nom, blocs, parId);
+    expect(a.remarques.filter((r) => r.ton !== 'ok')).toEqual([]);
+    expect(a.verdict).toBe('adaptee');
+  });
+
+  it('propositions : haut du corps seulement, un muscle par proposition', () => {
+    const p = proposerExercices('upper', [], biblio);
+    expect(p.length).toBeGreaterThanOrEqual(3);
+    const muscles = p.map((x) => x.exercice.groupesMusculaires[0]);
+    expect(new Set(muscles).size).toBe(muscles.length);
+    expect(muscles.some((g) => ['quadriceps', 'ischios', 'fessiers', 'mollets'].includes(g))).toBe(false);
+  });
+
+  it('sans les jambes : pas de remarque sur les jambes', () => {
+    const a = analyserModele('Full Upper', [bloc('dc'), bloc('lat-pulldown')], parId);
+    expect(a.remarques.some((r) => /quadriceps|ischios/.test(r.texte))).toBe(false);
+  });
+});

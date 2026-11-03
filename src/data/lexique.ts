@@ -14,7 +14,7 @@ export const LEXIQUE = {
   },
   modele: {
     terme: 'Modèle',
-    definition: 'Une séance type déjà préparée (liste d’exercices, séries, repos). Push, Pull, Jambes et Full body sont fournis ; tu peux les modifier ou en créer.',
+    definition: 'Une séance type déjà préparée (liste d’exercices, séries, repos). Push, Pull, Jambes, Full Upper et Full body sont fournis ; tu peux les modifier ou en créer.',
   },
   composer: {
     terme: 'Composer ma séance',
