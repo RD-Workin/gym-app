@@ -2,7 +2,7 @@
 // Toucher une séance sur l'écran Séance ouvre cet aperçu : exercices, séries, dernière fois,
 // avec « Démarrer » et « Modifier la séance » (éditeur de modèle).
 import { useState } from 'preact/hooks';
-import { Bouton, Icone } from '../../ui';
+import { Bouton } from '../../ui';
 import { useCompteur, vibrer } from '../../anim';
 import { db } from '../../core/db';
 import { lien, naviguer } from '../../core/router';
@@ -91,7 +91,7 @@ export function EcranApercu({ id }: { id: string }) {
         </div>
         <div>
           <span class="bil-chiffre">≈ {minutes >= 60 ? dureeTexteMin(minutes) : nbMin}</span>
-          <span class="bil-lib">{minutes >= 60 ? 'durée' : 'minutes'}</span>
+          <span class="bil-lib">{minutes >= 60 ? 'durée estimée' : 'min estimées'}</span>
         </div>
       </div>
       <Bouton variante="contour" href={lien(`/modeles/${modele.id}`)} detail="Ajouter, retirer ou déplacer des exercices, changer séries et reps">
@@ -144,7 +144,7 @@ function LigneExo({ n, bloc, exercice, avant, catalogueId }: { n: number; bloc: 
         </span>
         {avant?.length ? (
           <span class="ap-avant">
-            <Icone nom="progres" /> Dernière fois : {resumeSeries(avant)}
+            Dernière fois : <b>{resumeSeries(avant)}</b>
           </span>
         ) : null}
         {bloc.note && <span class="ap-note">{bloc.note}</span>}

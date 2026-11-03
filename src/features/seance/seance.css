@@ -125,7 +125,9 @@
 .ap-texte { display: grid; gap: 2px; min-width: 0; }
 .ap-nom { font-weight: 700; }
 .ap-cible { font-size: var(--t-sm); color: var(--c-attenue); }
-.ap-avant { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--c-progres); }
+/* Neutre : le vert est réservé au progrès (« dernière fois » n'en est pas un). */
+.ap-avant { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--c-attenue); }
+.ap-avant b { color: var(--c-texte); font-weight: 600; }
 .ap-avant svg { width: 14px; height: 14px; flex: none; }
 .ap-note { font-size: var(--t-xs); color: var(--c-attenue); font-style: italic; }
 /* « Démarrer » reste visible en bas pendant qu'on parcourt la liste. */
