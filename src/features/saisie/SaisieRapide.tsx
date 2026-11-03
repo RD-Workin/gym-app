@@ -8,6 +8,7 @@ import { useRequete } from '../../core/requetes';
 import type { Exercice, Id, Variante } from '../../core/types';
 import { libelleGroupe } from '../../data/groupes';
 import { kg, pointsExercice } from '../progression/calculs';
+import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie, type DonneesProgression } from '../progression/donnees';
 import { derniereFois } from '../seance/logique';
 import { annulerSetRapide, enregistrerSetRapide, type LigneSet, type ResultatRapide } from './saisieRapide';
@@ -99,13 +100,23 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
       eclatSur(bouton);
       const texte = sansCharge ? lignes.map((l) => l.reps).join('-') + ' reps' : resumeLignes(lignes, unite);
       setDernier({ ...r, texte });
+      let texteToast: string | undefined;
       for (const s of r.series) {
         const recs = await recordsDeLaSerie(s);
         if (recs[0]) {
-          setToast(recs[0].texte);
+          texteToast = recs[0].texte;
           break;
         }
       }
+      // Objectif atteint : prioritaire sur le record (il le contient souvent).
+      for (const s of r.series) {
+        const obj = await objectifAtteintPar(s);
+        if (obj) {
+          texteToast = obj;
+          break;
+        }
+      }
+      if (texteToast) setToast(texteToast);
     } finally {
       setOccupe(false);
     }

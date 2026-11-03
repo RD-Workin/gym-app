@@ -7,6 +7,8 @@ import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
+import { useRequete } from '../../core/requetes';
+import { objectifDe } from '../objectifs/objectifs';
 import './progression.css';
 
 const MESURES: { valeur: Mesure; libelle: string }[] = [
@@ -52,6 +54,8 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const dernier = pc[pc.length - 1];
   const t = tendance(points, mesure);
   const f = fmt(mesure);
+  const objectif = useRequete(() => objectifDe(exerciceId), [exerciceId]);
+  const cible = objectif && objectif.mesure === mesure ? objectif.cible : undefined;
   const affiche = useCompteur(dernier?.valeur ?? 0, 700, mesure === 'volume' ? 0 : 1);
 
   if (seriesEx.filter((s) => s.type !== 'echauffement').length === 0) {
@@ -87,7 +91,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
           {t && t.delta === 0 && <Puce ton="alerte">stagne</Puce>}
         </div>
         <Onglets label="Mesure affichée" options={MESURES} valeur={mesure} onChange={setMesure} />
-        <Courbe points={pc} format={f} label={`Évolution : ${TITRE_MESURE[mesure]}`} />
+        <Courbe points={pc} format={f} label={`Évolution : ${TITRE_MESURE[mesure]}`} cible={cible} />
         {mesure === 'un_rm' && <p class="prog-note ui-attenue">Formule d'Epley, séries de 12 reps au plus.</p>}
       </Carte>
 

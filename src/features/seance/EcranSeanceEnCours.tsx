@@ -8,6 +8,7 @@ import { maintenant, nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
 import { seanceEnCours, useRequete } from '../../core/requetes';
 import { eclatSur } from '../../anim';
+import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
@@ -206,7 +207,9 @@ function SeanceActive({ seance }: { seance: Seance }) {
       eclatSur(bouton);
       if (serie) {
         const recs = await recordsDeLaSerie(serie);
-        if (recs.length) setToast(recs[0].texte);
+        const obj = await objectifAtteintPar(serie);
+        if (obj) setToast(obj);
+        else if (recs.length) setToast(recs[0].texte);
       }
       if (exercice && saisie.reglagesMachine && saisie.reglagesMachine !== exercice.reglagesMachine) {
         await db.exercices.update(exercice.id, { reglagesMachine: saisie.reglagesMachine, modifieLe: maintenant() });

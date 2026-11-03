@@ -21,6 +21,8 @@ import {
 import { Barres } from './Courbe';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { FicheProgression } from './FicheProgression';
+import { evaluerObjectif, LIBELLE_STATUT, NOM_MESURE, phraseMarge } from '../objectifs/calculs';
+import { CarteObjectif } from '../objectifs/CarteObjectif';
 import './progression.css';
 
 type Vue = 'exercices' | 'records' | 'global' | 'historique';
@@ -46,6 +48,7 @@ export function EcranProgression() {
           <Icone nom="retour" /> Progrès
         </button>
         <h1 class="prog-titre">{ex?.nom ?? 'Exercice'}</h1>
+        {ex && <CarteObjectif exercice={ex} d={d} />}
         <FicheProgression exerciceId={exercice} donnees={d} />
       </section>
     );
@@ -88,7 +91,9 @@ function VueExercices({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) =
   }, [d]);
 
   return (
-    <Liste label="Exercices pratiqués">
+    <>
+      <ObjectifsEnCours d={d} ouvrir={ouvrir} />
+      <Liste label="Exercices pratiqués">
       {lignes.map((l) => {
         const v = l.der.unRm ?? l.der.chargeMax;
         const av = l.avant ? (l.der.unRm != null ? l.avant.unRm : l.avant.chargeMax) : null;
@@ -109,7 +114,42 @@ function VueExercices({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) =
           />
         );
       })}
-    </Liste>
+      </Liste>
+    </>
+  );
+}
+
+/** Objectifs fixés depuis les fiches exercice : marge et statut, touche = fiche de progression. */
+function ObjectifsEnCours({ d, ouvrir }: { d: DonneesProgression; ouvrir: (id: Id) => void }) {
+  const objectifs = useRequete(() => db.objectifs.toArray(), []);
+  const lignes = useMemo(
+    () => (objectifs ?? []).map((o) => ({ o, e: evaluerObjectif(o, d).etat, nom: d.exercices.get(o.exerciceId)?.nom ?? 'Exercice' })).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')),
+    [objectifs, d],
+  );
+  if (!lignes.length) return null;
+  return (
+    <>
+      <span class="ui-surtitre">Mes objectifs</span>
+      <Liste label="Objectifs">
+        {lignes.map(({ o, e, nom }) => (
+          <ElementListe
+            key={o.id}
+            onClick={() => ouvrir(o.exerciceId)}
+            titre={nom}
+            detail={
+              <>
+                {NOM_MESURE[o.mesure]} · {phraseMarge(o, e)}
+                <span class="obj-mini" aria-hidden="true" style={{ display: 'block' }}>
+                  <span style={{ width: `${e.pourcentage}%` }} />
+                </span>
+              </>
+            }
+            fin={<Puce ton={e.atteint ? 'record' : e.statut === 'en_retard' || e.statut === 'stagne' ? 'alerte' : e.statut === 'pas_assez' ? undefined : 'progres'}>{LIBELLE_STATUT[e.statut]}</Puce>}
+          />
+        ))}
+      </Liste>
+      <span class="ui-surtitre">Exercices</span>
+    </>
   );
 }
 

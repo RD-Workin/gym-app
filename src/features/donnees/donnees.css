@@ -1,0 +1,5 @@
+.dn-periode { display: flex; flex-direction: column; gap: var(--e-3); }
+.dn-dates { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-3); }
+.dn-dates label { display: flex; flex-direction: column; gap: var(--e-1); font-size: var(--t-sm); color: var(--c-attenue); }
+.dn-champ { width: 100%; box-sizing: border-box; min-height: 44px; padding: 0 var(--e-3); border-radius: var(--r-sm); border: 1.5px solid var(--c-trait); background: var(--c-surface); color: var(--c-texte); }
+.dn-champ:focus { outline: none; border-color: var(--c-action); }

@@ -3,22 +3,25 @@ import { db, SCHEMA_VERSION } from '../../core/db';
 import { chargeEffective, unRmEstime } from '../../core/calculs';
 import { maintenant } from '../../core/ids';
 import type { ExportJson } from '../../core/migrations';
-import type { Exercice, Seance, Serie, Variante, Modele } from '../../core/types';
+import type { Exercice, Objectif, Seance, Serie, Variante, Modele } from '../../core/types';
+import { poidsParSeance } from '../progression/calculs';
+import { evaluerObjectif, NOM_MESURE } from '../objectifs/calculs';
 
 /** Réglages propres à l'appareil : ni exportés ni restaurés. */
 export const REGLAGES_LOCAUX = new Set(['stockagePersistant', 'derniereSauvegarde', 'schemaVersion']);
 
-export const TABLES = ['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages'] as const;
+export const TABLES = ['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages', 'objectifs'] as const;
 export type NomTable = (typeof TABLES)[number];
 
 export async function construireExportJson(): Promise<ExportJson> {
-  const [exercices, variantes, modeles, seances, series, reglages] = await Promise.all([
+  const [exercices, variantes, modeles, seances, series, reglages, objectifs] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
     db.modeles.toArray(),
     db.seances.toArray(),
     db.series.toArray(),
     db.reglages.toArray(),
+    db.objectifs.toArray(),
   ]);
   const exercicesJson = await Promise.all(
     exercices.map(async (e) => (e.photo ? { ...e, photo: await blobVersDataUrl(e.photo) } : e)),
@@ -33,6 +36,7 @@ export async function construireExportJson(): Promise<ExportJson> {
       seances,
       series,
       reglages: reglages.filter((r) => !REGLAGES_LOCAUX.has(r.cle)),
+      objectifs,
     },
   };
 }
@@ -69,6 +73,12 @@ export const COLONNES_CSV = [
   'superset',
   'note_serie',
   'note_seance',
+  'objectif',
+  'objectif_cible',
+  'objectif_actuel',
+  'objectif_reste',
+  'objectif_date_visee',
+  'objectif_date_estimee',
 ] as const;
 
 function champCsv(v: string | number | undefined | null): string {
@@ -79,22 +89,68 @@ function champCsv(v: string | number | undefined | null): string {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** Période d'export : jours AAAA-MM-JJ inclus ; une borne absente = pas de limite de ce côté. */
+export interface Periode {
+  du?: string;
+  au?: string;
+}
+export type ChoixPeriode = '2s' | '1m' | '3m' | 'tout' | 'dates';
+
+const jourLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Bornes d'un choix : 14, 30 ou 90 derniers jours (aujourd'hui inclus), tout, ou dates libres (remises dans l'ordre). */
+export function bornesPeriode(choix: ChoixPeriode, dates: Periode = {}, aujourdhui = new Date()): Periode {
+  const jours: Partial<Record<ChoixPeriode, number>> = { '2s': 14, '1m': 30, '3m': 90 };
+  const n = jours[choix];
+  if (n) {
+    const d = new Date(aujourdhui);
+    d.setDate(d.getDate() - (n - 1));
+    return { du: jourLocal(d), au: jourLocal(aujourdhui) };
+  }
+  if (choix === 'tout') return {};
+  const du = dates.du || undefined;
+  const au = dates.au || undefined;
+  return du && au && du > au ? { du: au, au: du } : { du, au };
+}
+
+/** Le jour de la séance (tel qu'enregistré, heure locale) est-il dans la période ? */
+export function dansPeriode(debut: string, p: Periode): boolean {
+  const jour = debut.slice(0, 10);
+  return (!p.du || jour >= p.du) && (!p.au || jour <= p.au);
+}
+
 export function lignesCsv(d: {
   exercices: Exercice[];
   variantes: Variante[];
   modeles: Modele[];
   seances: Seance[];
   series: Serie[];
-}): string[][] {
+  objectifs?: Objectif[];
+}, periode: Periode = {}, aujourdhui = new Date()): string[][] {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
   const vari = new Map(d.variantes.map((v) => [v.id, v.nom]));
   const mod = new Map(d.modeles.map((m) => [m.id, m.nom]));
   const seanceParId = new Map(d.seances.map((s) => [s.id, s]));
-  const seancesTriees = [...d.seances].sort((a, b) => a.debut.localeCompare(b.debut));
+  const seancesTriees = d.seances.filter((s) => dansPeriode(s.debut, periode)).sort((a, b) => a.debut.localeCompare(b.debut));
   const seriesParSeance = new Map<string, Serie[]>();
   for (const s of d.series) {
     if (!seanceParId.has(s.seanceId)) continue;
     (seriesParSeance.get(s.seanceId) ?? seriesParSeance.set(s.seanceId, []).get(s.seanceId)!).push(s);
+  }
+  // Objectif de chaque exercice, état à la date de l'export (mêmes valeurs sur toutes ses lignes).
+  const poids = poidsParSeance(d.seances);
+  const colonnesObjectif = new Map<string, (string | number | undefined | null)[]>();
+  for (const o of d.objectifs ?? []) {
+    const { etat } = evaluerObjectif(o, { series: d.series, seancesParId: seanceParId, poids }, aujourdhui);
+    colonnesObjectif.set(o.exerciceId, [
+      NOM_MESURE[o.mesure],
+      o.cible,
+      etat.actuel,
+      etat.actuel == null ? null : etat.reste,
+      o.echeance,
+      etat.atteint ? 'atteint' : etat.projection,
+    ]);
   }
   const lignes: string[][] = [];
   for (const seance of seancesTriees) {
@@ -126,6 +182,7 @@ export function lignesCsv(d: {
         s.supersetId ? s.supersetId.slice(0, 8) : '',
         s.note,
         s === liste[0] ? seance.note : '', // note de séance sur sa 1re ligne
+        ...(colonnesObjectif.get(s.exerciceId) ?? ['', '', '', '', '', '']),
       ];
       lignes.push(valeurs.map(champCsv));
     }
@@ -133,15 +190,16 @@ export function lignesCsv(d: {
   return lignes;
 }
 
-export async function construireCsv(): Promise<string> {
-  const [exercices, variantes, modeles, seances, series] = await Promise.all([
+export async function construireCsv(periode: Periode = {}): Promise<string> {
+  const [exercices, variantes, modeles, seances, series, objectifs] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
     db.modeles.toArray(),
     db.seances.toArray(),
     db.series.toArray(),
+    db.objectifs.toArray(),
   ]);
-  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series }).map((l) => l.join(','))];
+  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series, objectifs }, periode).map((l) => l.join(','))];
   // BOM UTF-8 : accents corrects dans Excel / Numbers.
   return '﻿' + lignes.join('\r\n') + '\r\n';
 }
@@ -185,7 +243,39 @@ export async function exporterJson(): Promise<boolean> {
   return ok;
 }
 
-export async function exporterCsv(): Promise<boolean> {
-  const csv = await construireCsv();
-  return partagerOuTelecharger(csv, `gym-series_${horodatageFichier()}.csv`, 'text/csv');
+/** Nombre de séances et de séries dans la période (aperçu avant export). */
+export async function compterPeriode(periode: Periode): Promise<{ seances: number; series: number }> {
+  const ids = (await db.seances.toArray()).filter((s) => dansPeriode(s.debut, periode)).map((s) => s.id);
+  const series = ids.length ? await db.series.where('seanceId').anyOf(ids).count() : 0;
+  return { seances: ids.length, series };
+}
+
+/** Résumé texte de la période (voir resume.ts), calculé à l'avance pour que la copie reste dans le geste de l'utilisateur (Safari). */
+export async function construireResumePeriode(periode: Periode): Promise<string> {
+  const { construireResume } = await import('./resume');
+  const [exercices, variantes, modeles, seances, series, objectifs] = await Promise.all([
+    db.exercices.toArray(),
+    db.variantes.toArray(),
+    db.modeles.toArray(),
+    db.seances.toArray(),
+    db.series.toArray(),
+    db.objectifs.toArray(),
+  ]);
+  return construireResume({ exercices, variantes, modeles, seances, series, objectifs }, periode);
+}
+
+/** Copie le résumé ; si le presse-papier est refusé, le partage ou le télécharge en .txt. */
+export async function copierResume(texte: string): Promise<'copie' | 'partage' | 'annule'> {
+  try {
+    await navigator.clipboard.writeText(texte);
+    return 'copie';
+  } catch {
+    return (await partagerOuTelecharger(texte, `gym-resume_${horodatageFichier()}.txt`, 'text/plain')) ? 'partage' : 'annule';
+  }
+}
+
+export async function exporterCsv(periode: Periode = {}): Promise<boolean> {
+  const csv = await construireCsv(periode);
+  const suffixe = periode.du || periode.au ? `_${periode.du ?? 'debut'}_au_${periode.au ?? 'fin'}` : '';
+  return partagerOuTelecharger(csv, `gym-series${suffixe}_${horodatageFichier()}.csv`, 'text/csv');
 }

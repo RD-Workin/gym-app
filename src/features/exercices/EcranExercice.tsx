@@ -28,6 +28,7 @@ import { urlImage } from '../../data/catalogue';
 import { FicheProgression } from '../progression/FicheProgression';
 import { useDonneesProgression } from '../progression/donnees';
 import { SaisieRapide } from '../saisie/SaisieRapide';
+import { CarteObjectif } from '../objectifs/CarteObjectif';
 import '../progression/progression.css';
 import './exercices.css';
 
@@ -107,6 +108,7 @@ function FicheExercice({ id }: { id: string }) {
       )}
 
       {!nouveau && prog && <SaisieRapide exercice={ex!} variantes={donnees!.variantes} d={prog} />}
+      {!nouveau && prog && <CarteObjectif exercice={ex!} d={prog} />}
       {!nouveau && prog && <FicheProgression exerciceId={id} donnees={prog} />}
 
       {catId && (

@@ -87,6 +87,20 @@ Index : `id, seanceId, exerciceId, [exerciceId+faiteLe]`
 ### `reglages` (clé-valeur, une seule ligne par clé)
 `{ cle: string, valeur: unknown }` — ex. `unite: 'kg'`, `formule1RM: 'epley'`, `derniereSauvegarde: ISO`, `stockagePersistant: boolean`, `schemaVersion: number`.
 
+### `objectifs` (v3) — index `id, exerciceId`
+| Champ | Type | Note |
+|---|---|---|
+| id | string | |
+| exerciceId | string | |
+| varianteId | string? | absent = version standard |
+| mesure | `un_rm` \| `charge_max` \| `reps` | mêmes valeurs que la courbe de progression |
+| cible | number | kg (1RM estimé, charge max effective) ou reps (meilleure série) |
+| echeance | string? | date visée AAAA-MM-JJ |
+| atteintLe | ISO? | première fois que la cible est atteinte |
+| creeLe, modifieLe | ISO | |
+
+Calculs (marge, rythme, projection, conseils à base de règles) : `src/features/objectifs/calculs.ts`, sans IA.
+
 ## Règles de calcul (partagées, dans `src/core/calculs.ts`)
 - **Charge effective** d'une série :
   - `total` → `chargeKg`
@@ -108,3 +122,4 @@ Index : `id, seanceId, exerciceId, [exerciceId+faiteLe]`
 |---|---|---|
 | 1 | 2026-10-31 | Schéma initial |
 | 2 | 2026-10-31 | `exercices.photo?: Blob` (non indexé, pas de migration de données) |
+| 3 | 2026-11-03 | Table `objectifs` (nouvelle, vide ; un import v1/v2 reçoit `objectifs: []`) |

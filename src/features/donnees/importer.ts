@@ -1,7 +1,7 @@
 // Import JSON (restauration) avec validation stricte. Propriétaire : 06-donnees. Relu par 07.
 import { db, SCHEMA_VERSION } from '../../core/db';
 import { migrerExport, type ExportJson } from '../../core/migrations';
-import type { BlocModele, Contexte, Exercice, Modele, Reglage, Seance, Serie, Variante } from '../../core/types';
+import type { BlocModele, Contexte, Exercice, Modele, Objectif, Reglage, Seance, Serie, Variante } from '../../core/types';
 import { REGLAGES_LOCAUX, noterSauvegarde } from './exporter';
 
 export const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
@@ -19,6 +19,7 @@ export interface Apercu {
     seances: Seance[];
     series: Serie[];
     reglages: Reglage[];
+    objectifs: Objectif[];
   };
   premiereSeance?: string;
   derniereSeance?: string;
@@ -226,6 +227,24 @@ function reglage(o: Obj, ou: string): Reglage {
   return { cle, valeur: v };
 }
 
+const MESURES_OBJECTIF = ['un_rm', 'charge_max', 'reps'] as const;
+const RE_JOUR = /^\d{4}-\d{2}-\d{2}$/;
+
+function objectif(o: Obj, ou: string): Objectif {
+  const echeance = texte(o, 'echeance', ou);
+  if (echeance != null && (!RE_JOUR.test(echeance) || Number.isNaN(Date.parse(echeance)))) echec(ou, '« echeance » doit être une date AAAA-MM-JJ');
+  return propre({
+    id: id(o, 'id', ou, true),
+    exerciceId: id(o, 'exerciceId', ou, true),
+    varianteId: id(o, 'varianteId', ou),
+    mesure: choix(o, 'mesure', ou, MESURES_OBJECTIF),
+    cible: nombre(o, 'cible', ou, 0.1, 2000, true)!,
+    echeance,
+    atteintLe: date(o, 'atteintLe', ou),
+    ...horodatage(o, ou),
+  });
+}
+
 function table<T>(d: Obj, nom: string, libelle: string, f: (o: Obj, ou: string) => T): T[] {
   const v = d[nom] ?? [];
   if (!Array.isArray(v)) echec(nom, 'doit être une liste');
@@ -260,7 +279,7 @@ export async function lireSauvegarde(fichier: File): Promise<Apercu> {
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 1) throw new ErreurImport('Version de sauvegarde inconnue.');
   const ex = date(brut, 'exporteLe', 'Sauvegarde', true);
   const donneesBrutes = brut.donnees;
-  for (const k of Object.keys(donneesBrutes)) if (!['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages'].includes(k)) throw new ErreurImport(`Table inconnue : ${k}`);
+  for (const k of Object.keys(donneesBrutes)) if (!['exercices', 'variantes', 'modeles', 'seances', 'series', 'reglages', 'objectifs'].includes(k)) throw new ErreurImport(`Table inconnue : ${k}`);
 
   const exp = migrerExport({ schemaVersion: v, exporteLe: ex, donnees: donneesBrutes as ExportJson['donnees'] });
   const d = exp.donnees as unknown as Obj;
@@ -272,6 +291,7 @@ export async function lireSauvegarde(fichier: File): Promise<Apercu> {
     seances: table(d, 'seances', 'Séance', seance),
     series: table(d, 'series', 'Série', serie),
     reglages: table(d, 'reglages', 'Réglage', reglage).filter((r) => !REGLAGES_LOCAUX.has(r.cle)),
+    objectifs: table(d, 'objectifs', 'Objectif', objectif),
   };
 
   // Cohérence des liens (une sauvegarde abîmée ne doit pas casser l'app).
@@ -287,6 +307,9 @@ export async function lireSauvegarde(fichier: File): Promise<Apercu> {
       if (b.varianteId && !idsVar.has(b.varianteId)) echec(`Modèle « ${m.nom} »`, 'variante introuvable');
     }
   for (const s of donnees.seances) if (s.modeleId && !idsMod.has(s.modeleId)) delete s.modeleId; // modèle effacé : séance libre
+  unique(donnees.objectifs, 'Objectifs');
+  // Objectif d'un exercice ou d'une variante absents : ignoré (rien ne casse).
+  donnees.objectifs = donnees.objectifs.filter((o) => idsExo.has(o.exerciceId) && (!o.varianteId || idsVar.has(o.varianteId)));
   for (const s of donnees.series) {
     if (!idsSea.has(s.seanceId)) echec('Série', `séance introuvable (${s.seanceId})`);
     if (!idsExo.has(s.exerciceId)) echec('Série', `exercice introuvable (${s.exerciceId})`);
@@ -307,8 +330,8 @@ export async function lireSauvegarde(fichier: File): Promise<Apercu> {
 export async function restaurer(a: Apercu): Promise<void> {
   if (a.schemaVersion > SCHEMA_VERSION) throw new ErreurImport('Sauvegarde trop récente.');
   const d = a.donnees;
-  await db.transaction('rw', [db.exercices, db.variantes, db.modeles, db.seances, db.series, db.reglages], async () => {
-    await Promise.all([db.exercices.clear(), db.variantes.clear(), db.modeles.clear(), db.seances.clear(), db.series.clear()]);
+  await db.transaction('rw', [db.exercices, db.variantes, db.modeles, db.seances, db.series, db.reglages, db.objectifs], async () => {
+    await Promise.all([db.exercices.clear(), db.variantes.clear(), db.modeles.clear(), db.seances.clear(), db.series.clear(), db.objectifs.clear()]);
     const locaux = await db.reglages.where('cle').anyOf([...REGLAGES_LOCAUX]).toArray();
     await db.reglages.clear();
     await db.exercices.bulkAdd(d.exercices);
@@ -316,6 +339,7 @@ export async function restaurer(a: Apercu): Promise<void> {
     await db.modeles.bulkAdd(d.modeles);
     await db.seances.bulkAdd(d.seances);
     await db.series.bulkAdd(d.series);
+    await db.objectifs.bulkAdd(d.objectifs);
     await db.reglages.bulkPut([...d.reglages, ...locaux]);
   });
   // Les données restaurées existent dans un fichier : c'est une sauvegarde valable.

@@ -1,0 +1,20 @@
+/* Objectifs par exercice. Composants partagés dans src/ui. */
+.obj-fixer {
+  display: flex; align-items: center; gap: var(--e-2); width: 100%;
+  min-height: 48px; padding: var(--e-3); border-radius: 14px;
+  border: 1.5px dashed var(--c-trait); background: transparent; color: var(--c-texte);
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.obj-fixer:hover { border-color: var(--c-progres); }
+.obj-chiffres { display: flex; align-items: baseline; gap: var(--e-2); }
+.obj-actuel { font-size: 2.2rem; line-height: 1; }
+.obj-jauge { height: 10px; margin: var(--e-2) 0; border-radius: 5px; background: var(--c-surface-2); overflow: hidden; }
+.obj-jauge span { display: block; height: 100%; border-radius: 5px; background: var(--c-progres); transition: width 0.6s ease; }
+.obj-marge { margin: 0; font-weight: 600; }
+.obj-projection { margin: var(--e-1) 0 0; font-size: 0.9rem; }
+.obj-conseils { margin: var(--e-3) 0; }
+.obj-conseils ul { margin: var(--e-1) 0 0; padding-left: 1.2em; display: grid; gap: var(--e-1); }
+.obj-aide { font-size: 0.85rem; }
+.obj-mini { height: 6px; border-radius: 3px; background: var(--c-surface-2); overflow: hidden; margin-top: 4px; }
+.obj-mini span { display: block; height: 100%; background: var(--c-progres); }
+@media (prefers-reduced-motion: reduce) { .obj-jauge span { transition: none; } }

@@ -51,3 +51,4 @@
 .prog-lueur { border-radius: var(--r-md); }
 .prog-lueur > .ui-carte { height: 100%; }
 .prog-medaille { display: inline-flex; }
+.prog-cible .prog-axe { fill: var(--c-progres); font-weight: 600; }

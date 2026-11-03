@@ -16,6 +16,8 @@ interface Props {
   format: (v: number) => string;
   label: string;
   couleur?: string;
+  /** Objectif : ligne pointillée horizontale. */
+  cible?: number;
 }
 
 const L = 340;
@@ -23,16 +25,17 @@ const H = 170;
 const M = { h: 14, b: 24, g: 4, d: 44 };
 const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-export function Courbe({ points, format, label, couleur = 'var(--c-action)' }: Props) {
+export function Courbe({ points, format, label, couleur = 'var(--c-action)', cible }: Props) {
   const [choisi, setChoisi] = useState<number | null>(null);
   if (points.length === 0) return <p class="ui-attenue prog-vide">Pas encore de données.</p>;
 
   const ts = points.map((p) => new Date(p.date).getTime());
   const vs = points.map((p) => p.valeur);
+  const bornes = cible != null && cible > 0 ? [...vs, cible] : vs;
   const t0 = Math.min(...ts);
   const t1 = Math.max(...ts);
-  let v0 = Math.min(...vs);
-  let v1 = Math.max(...vs);
+  let v0 = Math.min(...bornes);
+  let v1 = Math.max(...bornes);
   const marge = (v1 - v0) * 0.15 || Math.max(1, v1 * 0.1);
   v0 = Math.max(0, v0 - marge);
   v1 += marge;
@@ -72,6 +75,12 @@ export function Courbe({ points, format, label, couleur = 'var(--c-action)' }: P
             <text x={L - M.d + 6} y={y(g) + 4} class="prog-axe">{format(g)}</text>
           </g>
         ))}
+        {cible != null && cible > 0 && (
+          <g class="prog-cible">
+            <line x1={M.g} x2={L - M.d} y1={y(cible)} y2={y(cible)} stroke="var(--c-progres)" stroke-width="1.5" stroke-dasharray="5 4" />
+            <text x={L - M.d + 6} y={y(cible) + 4} class="prog-axe" fill="var(--c-progres)">{format(cible)}</text>
+          </g>
+        )}
         {points.length > 1 && <path d={aire} fill="url(#prog-degrade)" />}
         <path d={trace} fill="none" stroke={couleur} stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
         {points.map((p, i) => (
