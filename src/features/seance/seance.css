@@ -141,3 +141,4 @@
 .sc-echauf-jamais { color: var(--c-attenue); font-weight: 400; font-size: var(--t-xs); }
 .sc-echauf-actions { display: flex; gap: var(--e-2); }
 .sc-echauf-oui { border-color: var(--c-action); color: var(--c-action); font-weight: 600; }
+.sc-serie.fait .sc-ok.sc-echauf-fait { color: var(--c-attenue); } /* vert = progrès seulement (11) */

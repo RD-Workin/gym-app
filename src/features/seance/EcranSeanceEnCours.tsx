@@ -459,7 +459,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
               <p key={n} class="sc-note">{n}</p>
             ))}
 
-            {conseilsExercice(nom(plan.actif)) && <PanneauConseils key={nom(plan.actif)} fiche={conseilsExercice(nom(plan.actif))!} titre={`Conseils · ${nom(plan.actif)}`} />}          </div>
+          </div>
 
           {etapesProposees.length > 0 && (
             <div class="sc-echauf" role="group" aria-label="Échauffement proposé">
@@ -495,7 +495,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
                     {formatCharge(s)} × {s.reps}
                     {s.rir != null ? ` · RIR ${s.rir}` : ''}
                   </span>
-                  <span class="sc-ok">
+                  <span class={s.type === 'echauffement' ? 'sc-ok sc-echauf-fait' : 'sc-ok'}>
                     {s.type === 'echauffement' ? (
                       'échauf.'
                     ) : (
@@ -620,6 +620,8 @@ function SeanceActive({ seance }: { seance: Seance }) {
             </Bouton>
           )}
         </div>
+        {/* Sous « Valider » : la saisie reste visible sans défiler (11). */}
+        {bloc && conseilsExercice(nom(plan.actif)) && <PanneauConseils key={nom(plan.actif)} fiche={conseilsExercice(nom(plan.actif))!} titre={`Conseils · ${nom(plan.actif)}`} />}
         <PanneauConseils fiche={CONSEILS_SEANCE} titre="Conseils de séance" />
       </div>
     </section>
