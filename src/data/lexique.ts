@@ -58,6 +58,10 @@ export const LEXIQUE = {
   chargeMax: { terme: 'Charge max', definition: 'Le poids le plus lourd soulevé ce jour-là, quel que soit le nombre de répétitions.' },
   volume: { terme: 'Volume', definition: 'Poids × répétitions, additionnés sur toutes les séries de la séance. Il monte quand tu en fais plus.' },
   record: { terme: 'Record', definition: 'Ta meilleure perf sur un exercice (charge, répétitions ou 1RM estimé). Une célébration s’affiche quand tu en bats un.' },
+  progres: {
+    terme: 'Séance en progrès',
+    definition: 'Au moins un exercice fait mieux que la dernière fois : 1RM estimé plus haut, sinon charge plus lourde, sinon plus de répétitions.',
+  },
 } as const;
 
 export type MotLexique = keyof typeof LEXIQUE;

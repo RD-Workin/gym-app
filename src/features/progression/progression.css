@@ -52,3 +52,26 @@
 .prog-lueur > .ui-carte { height: 100%; }
 .prog-medaille { display: inline-flex; }
 .prog-cible .prog-axe { fill: var(--c-progres); font-weight: 600; }
+
+/* Calendrier du mois */
+.cal-entete { display: flex; align-items: center; justify-content: space-between; }
+.cal-mois { font-family: var(--f-titre); font-size: var(--t-lg); font-weight: 700; text-transform: capitalize; }
+.cal-nav { min-width: var(--cible); min-height: var(--cible); border: 0; background: none; color: var(--c-action); font: inherit; font-size: var(--t-xl); cursor: pointer; }
+.cal-nav:disabled { opacity: 0.25; cursor: default; }
+.cal-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-tete { text-align: center; font-size: var(--t-xs); color: var(--c-attenue); font-weight: 600; }
+.cal-jour { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 0; padding: 0; background: none; color: var(--c-attenue); font: inherit; font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.cal-jour.futur { opacity: 0.35; }
+.cal-jour.auj { box-shadow: inset 0 0 0 1.5px var(--c-attenue); }
+.cal-jour.fait { cursor: pointer; font-weight: 700; color: var(--c-texte); background: var(--c-surface-2); }
+.cal-jour.fait.progres { background: var(--c-progres); color: var(--c-action-encre); }
+.cal-jour.fait.record { background: var(--c-record); color: var(--c-action-encre); }
+.cal-jour.choisi { outline: 2px solid var(--c-action); outline-offset: 2px; }
+.cal-legende { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1) var(--e-3); font-size: var(--t-xs); color: var(--c-attenue); }
+.cal-legende span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-pastille { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--c-surface-2); }
+.cal-pastille.progres { background: var(--c-progres); }
+.cal-pastille.record { background: var(--c-record); }
+.cal-progres { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.cal-vide { margin: 0; text-align: center; }
+.cal-tout { justify-self: start; min-height: var(--cible); border: 0; background: none; padding: 0; color: var(--c-action); font: inherit; font-weight: 600; cursor: pointer; }

@@ -12,13 +12,13 @@ import {
   NOM_TYPE_RECORD,
   nombre,
   pointsExercice,
-  resumeSeance,
   seancesParSemaine,
   semainesDAffilee,
   volumeParGroupe,
   type RecordPerso,
 } from './calculs';
 import { Barres } from './Courbe';
+import { Calendrier } from './Calendrier';
 import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { FicheProgression } from './FicheProgression';
 import { evaluerObjectif, libelleCible, LIBELLE_STATUT, phraseCourte } from '../objectifs/calculs';
@@ -30,10 +30,9 @@ const VUES: { valeur: Vue; libelle: string }[] = [
   { valeur: 'exercices', libelle: 'Exercices' },
   { valeur: 'records', libelle: 'Records' },
   { valeur: 'global', libelle: 'Global' },
-  { valeur: 'historique', libelle: 'Séances' },
+  { valeur: 'historique', libelle: 'Calendrier' },
 ];
 const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-const dateLongue = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 export function EcranProgression() {
   const d = useDonneesProgression();
@@ -69,7 +68,7 @@ export function EcranProgression() {
       ) : vue === 'global' ? (
         <VueGlobale d={d} />
       ) : (
-        <VueHistorique d={d} />
+        <Calendrier d={d} />
       )}
     </section>
   );
@@ -263,37 +262,3 @@ function VueGlobale({ d }: { d: DonneesProgression }) {
   );
 }
 
-function VueHistorique({ d }: { d: DonneesProgression }) {
-  const seances = useMemo(() => {
-    const parSeance = new Map<Id, typeof d.series>();
-    for (const s of d.series) {
-      const l = parSeance.get(s.seanceId) ?? [];
-      l.push(s);
-      parSeance.set(s.seanceId, l);
-    }
-    return [...d.seances]
-      .sort((a, b) => b.debut.localeCompare(a.debut))
-      .map((s) => ({ s, r: resumeSeance(parSeance.get(s.id) ?? [], d.poids.get(s.id)) }));
-  }, [d]);
-  const modeles = useModeles();
-
-  return (
-    <Liste label="Séances">
-      {seances.map(({ s, r }) => {
-        const duree = s.fin ? Math.round((new Date(s.fin).getTime() - new Date(s.debut).getTime()) / 6e4) : null;
-        const t = s.contexte?.temperatureC;
-        return (
-          <ElementListe
-            key={s.id}
-            href={`#/seance/${s.id}`}
-            titre={`${(s.modeleId && modeles?.get(s.modeleId)) || 'Séance libre'}${s.fin ? '' : ' · en cours'}`}
-            detail={`${dateLongue(s.debut)}${t != null ? ` · ${Math.round(t)} °C` : ''}${duree ? ` · ${duree} min` : ''}`}
-            fin={<span class="prog-hist-fin"><span class="ui-chiffre">{nombre(r.volume)} kg</span><span class="ui-attenue">{r.nbSeries} séries</span></span>}
-          />
-        );
-      })}
-    </Liste>
-  );
-}
-
-const useModeles = () => useRequete(async () => new Map((await db.modeles.toArray()).map((m) => [m.id, m.nom])));

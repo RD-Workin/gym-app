@@ -15,6 +15,10 @@ export interface PlanSeance {
   /** Fin du repos en ms (Date.now()). */
   reposFin?: number;
   reposDuree?: number;
+  /** Échauffement accepté pour un bloc : séries à faire avant les séries de travail. */
+  echauffement?: { blocId: Id; etapes: EtapeEchauffement[] };
+  /** Blocs dont l'échauffement proposé a été passé (ou fini) : on ne le repropose pas. */
+  echauffementPasse?: Id[];
 }
 
 export const CLE_PLAN = 'seance.plan';
@@ -139,8 +143,13 @@ export const repsDepuisCible = (cible?: string) => {
  * sur la série précédente, on garde la charge du jour avec les reps de la dernière fois.
  * Sans dernière fois : la série d'avant dans cette séance, sinon la cible du modèle.
  */
-export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, faites: Serie[], avant: Serie[]): Saisie {
+export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, faites: Serie[], avant: Serie[], echauffement?: EtapeEchauffement[]): Saisie {
   const modeCharge = exercice?.modeCharge ?? 'total';
+  // Échauffement accepté et pas fini : la prochaine série est l'étape suivante.
+  const etape = echauffement?.[faites.filter((s) => s.type === 'echauffement').length];
+  if (etape && !faites.some((s) => s.type !== 'echauffement')) {
+    return { chargeKg: etape.chargeKg, reps: etape.reps, type: 'echauffement', modeCharge };
+  }
   // L'échauffement ne sert pas de référence : la 1re série de travail reprend la charge de travail d'avant.
   const travail = faites.filter((s) => s.type !== 'echauffement');
   const n = travail.length;
@@ -225,3 +234,67 @@ export function progresVsDerniereFois(serie: Pick<Serie, 'chargeKg' | 'reps' | '
   if (dr > 0 && dc >= 0) return `+${dr} rep${dr > 1 ? 's' : ''} vs la dernière fois`;
   return undefined;
 }
+
+/* ---- Échauffement proposé (pourcentages à valider par 10-coach) ---- */
+export interface EtapeEchauffement {
+  chargeKg: number;
+  reps: number;
+}
+/**
+ * Montée progressive vers la charge de travail : 40 % × 8, 60 % × 5, 80 % × 3.
+ * Principe courant : quelques séries légères, reps en baisse quand la charge monte, sans fatigue avant
+ * les séries de travail. Valeurs et sources à confirmer par 10-coach.
+ */
+export const ECHAUFFEMENT: { pourcentage: number; reps: number }[] = [
+  { pourcentage: 0.4, reps: 8 },
+  { pourcentage: 0.6, reps: 5 },
+  { pourcentage: 0.8, reps: 3 },
+];
+/** Repos court entre deux séries d'échauffement. */
+export const REPOS_ECHAUFFEMENT_SEC = 60;
+/** Charge de travail sous laquelle on ne propose rien (une série légère suffit, l'utilisateur la fait de lui-même). */
+const CHARGE_MIN_ECHAUFFEMENT = 20;
+const BARRE_VIDE_KG = 20;
+
+/** Pas de charge par équipement (barre, machine, poulie : 2,5 kg ; haltères et autres : 1 kg). */
+export const pasCharge = (e?: Exercice['equipement']) => (e === 'barre' || e === 'machine' || e === 'poulie' ? 2.5 : 1);
+
+/**
+ * Séries d'échauffement pour une charge de travail : arrondies au pas de l'équipement, barre vide au minimum
+ * à la barre, sans doublon ni étape aussi lourde que le travail. Vide si la charge est trop faible.
+ */
+export function etapesEchauffement(chargeTravailKg: number | undefined, equipement?: Exercice['equipement']): EtapeEchauffement[] {
+  if (!chargeTravailKg || chargeTravailKg < CHARGE_MIN_ECHAUFFEMENT) return [];
+  const pas = pasCharge(equipement);
+  const min = equipement === 'barre' ? BARRE_VIDE_KG : pas;
+  const etapes: EtapeEchauffement[] = [];
+  for (const { pourcentage, reps } of ECHAUFFEMENT) {
+    const c = Math.max(min, Math.round((chargeTravailKg * pourcentage) / pas) * pas);
+    if (c >= chargeTravailKg) continue;
+    const prec = etapes[etapes.length - 1];
+    if (prec && c <= prec.chargeKg) continue;
+    etapes.push({ chargeKg: Math.round(c * 100) / 100, reps });
+  }
+  return etapes;
+}
+
+/**
+ * L'échauffement est proposé au premier exercice de la séance et à chaque exercice à la barre,
+ * avec une charge de travail connue (pas de lest ni de poids du corps), avant toute série notée.
+ */
+export function echauffementAProposer(
+  exercice: Exercice | undefined,
+  premierExercice: boolean,
+  faites: Serie[],
+  chargeTravailKg: number | undefined,
+): EtapeEchauffement[] {
+  if (!exercice || faites.length) return [];
+  if (exercice.modeCharge !== 'total' && exercice.modeCharge !== 'par_main') return [];
+  if (!premierExercice && exercice.equipement !== 'barre') return [];
+  return etapesEchauffement(chargeTravailKg, exercice.equipement);
+}
+
+export const CLE_ECHAUFFEMENT = 'seance.echauffement';
+/** Réglage « Proposer un échauffement » (oui par défaut). */
+export const echauffementActif = async () => (await db.reglages.get(CLE_ECHAUFFEMENT))?.valeur !== false;
+export const reglerEchauffement = (actif: boolean) => db.reglages.put({ cle: CLE_ECHAUFFEMENT, valeur: actif });

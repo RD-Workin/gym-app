@@ -4,6 +4,7 @@ import { SCHEMA_VERSION } from '../db';
 import { lien } from '../router';
 import { useRequete } from '../requetes';
 import { contexteAutoActif, reglerContexteAuto } from '../../features/contexte/contexte';
+import { echauffementActif, reglerEchauffement } from '../../features/seance/logique';
 import { LEXIQUE } from '../../data/lexique';
 import { EtapesDemarrage } from './EcranAccueil';
 import './accueil.css';
@@ -14,6 +15,7 @@ export function EcranReglages() {
     navigator.storage?.persisted?.().then(setPersistant);
   }, []);
   const meteoAuto = useRequete(contexteAutoActif);
+  const echauffement = useRequete(echauffementActif);
 
   return (
     <section class="ui-pile acc">
@@ -32,6 +34,23 @@ export function EcranReglages() {
             {meteoAuto !== false
               ? 'Température récupérée au début de chaque séance (position approximative).'
               : 'Désactivée : aucune localisation, aucun appel réseau.'}
+          </small>
+        </span>
+      </label>
+      <label style={{ display: 'flex', gap: 'var(--e-3, 12px)', alignItems: 'flex-start', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          style={{ width: '24px', height: '24px', margin: 0, flex: 'none', accentColor: 'var(--c-action)' }}
+          checked={echauffement !== false}
+          disabled={echauffement === undefined}
+          onChange={(e) => void reglerEchauffement((e.target as HTMLInputElement).checked)}
+        />
+        <span>
+          Proposer un échauffement
+          <small style={{ display: 'block', opacity: 0.7 }}>
+            {echauffement !== false
+              ? 'Au premier exercice et aux exercices à la barre : 2 ou 3 séries légères, toujours faciles à passer.'
+              : 'Désactivé : tu t’échauffes de ton côté.'}
           </small>
         </span>
       </label>
