@@ -75,7 +75,7 @@ export function EcranDonnees() {
     resume != null &&
     agir(async () => {
       const r = await copierResume(resume);
-      if (r === 'copie') setMessage({ ton: 'progres', texte: 'Résumé copié. Colle-le dans un message à ton coach ou dans ChatGPT / Claude.' });
+      if (r === 'copie') setMessage({ ton: 'progres', texte: 'Résumé copié en texte. Colle-le dans un message à ton coach ou dans une IA (ChatGPT, Claude), puis pose ta question.' });
       if (r === 'partage') setMessage({ ton: 'progres', texte: 'Résumé créé.' });
     });
 
