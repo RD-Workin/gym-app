@@ -26,7 +26,7 @@ export const LEXIQUE = {
   },
   objectif: {
     terme: 'Objectif',
-    definition: 'Force : charges lourdes, 1 à 6 reps, longs repos. Masse (hypertrophie) : 6 à 12 reps, pour prendre du muscle. Endurance : 15 à 20 reps, repos courts.',
+    definition: 'Force : charges lourdes, 1 à 6 reps, longs repos. Masse (hypertrophie) : 6 à 12 reps menées près de l’échec, pour prendre du muscle. Endurance : 15 à 20 reps, repos courts.',
   },
   avisSeance: {
     terme: 'Avis sur ta séance',

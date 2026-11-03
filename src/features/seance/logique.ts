@@ -197,7 +197,8 @@ export const dureeTexte = (sec: number) => {
 export type Objectif = 'force' | 'hypertrophie' | 'endurance';
 export const OBJECTIFS: Record<Objectif, { libelle: string; reposSec: number; plage: string; reps: string }> = {
   force: { libelle: 'Force', reposSec: 180, plage: '3 à 5 min', reps: '1-6' },
-  // 10-coach : ≥ 2 min sur les polyarticulaires, 1 min 30 sur l'isolation (Schoenfeld 2016, Singer 2024).
+  // 10-coach (revue 2026-11-03) : 6-12 en pratique, 5-30 près de l'échec marchent aussi (Schoenfeld 2021, ACSM 2026) ;
+  // ≥ 2 min sur les polyarticulaires, 1 min 30 sur l'isolation (Singer 2024).
   hypertrophie: { libelle: 'Hypertrophie', reposSec: 120, plage: '1 min 30 à 3 min', reps: '6-12' },
   endurance: { libelle: 'Endurance', reposSec: 45, plage: '30 à 60 s', reps: '15-20' },
 };

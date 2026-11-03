@@ -9,6 +9,11 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 7,
+    date: '2026-11-03',
+    points: ['Conseils du coach relus d’après les dernières études : pour la masse, 6 à 12 reps restent un bon repère (5 à 30 marchent si tu vas près de l’échec), au moins 10 séries par muscle et par semaine, et une semaine plus légère quand la fatigue s’accumule.'],
+  },
+  {
     numero: 6,
     date: '2026-11-03',
     points: ['Nouvelle séance type « Full Upper » : tout le haut du corps (pecs, dos, épaules, bras) sans les jambes, environ 1 h. Aussi proposée dans « Composer ma séance ».'],

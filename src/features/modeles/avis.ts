@@ -1,6 +1,7 @@
 // Avis sur le format d'un modèle de séance, calculé par des règles (sans IA). Propriétaire : 04-seance (seuils relus par 10-coach).
-// Repères : ~3 à 10 séries par muscle et par séance ; au-delà, chaque série en plus rapporte peu (Schoenfeld 2017, Pelland 2024).
-// Gros exercices d'abord, repos ≥ 2 min sur les polyarticulaires (Schoenfeld 2016).
+// Repères (10-coach, revue 2026-11-03) : ~3 à 11 séries par muscle et par séance ; au-delà, chaque série en plus rapporte peu
+// (Pelland 2024, Remmert 2025). ≥ 10 séries par muscle et par semaine (ACSM 2026). 5 à 30 reps fonctionnent près de l'échec
+// (Schoenfeld 2021). Gros exercices d'abord pour y garder sa force (Nunes 2021), repos ≥ 2 min sur les polyarticulaires (Singer 2024).
 import type { BlocModele, Id } from '../../core/types';
 import { libelleGroupe } from '../../data/groupes';
 
@@ -231,7 +232,7 @@ export function analyserModele(nom: string, blocs: BlocModele[], exercices: Map<
       return poly(e) && e!.groupesMusculaires.includes(g);
     });
     if (apres) {
-      conseil(`Place ${exercices.get(apres.exerciceId)!.nom} avant ${iso.nom} : les gros exercices d’abord, quand tu es frais.`);
+      conseil(`Place ${exercices.get(apres.exerciceId)!.nom} avant ${iso.nom} : les gros exercices d’abord, quand tu es frais, pour y garder ta force.`);
       break;
     }
   }
@@ -250,8 +251,8 @@ export function analyserModele(nom: string, blocs: BlocModele[], exercices: Map<
   if (sansCible.length) {
     conseil(`Séries ou reps à remplir pour ${liste(sansCible.map((b) => exercices.get(b.exerciceId)?.nom ?? 'un exercice'))} (${SERIES_PAR_DEFAUT} séries comptées par défaut).`);
   }
-  const longues = blocs.filter((b) => (repsMax(b.repsCibles) ?? 0) > 20);
-  if (longues.length) conseil(`Plus de 20 reps sur ${liste(longues.map((b) => exercices.get(b.exerciceId)?.nom ?? 'un exercice'))} : c’est surtout de l’endurance. Ajoute de la charge pour rester sous 15-20.`);
+  const longues = blocs.filter((b) => (repsMax(b.repsCibles) ?? 0) > 30);
+  if (longues.length) conseil(`Plus de 30 reps sur ${liste(longues.map((b) => exercices.get(b.exerciceId)?.nom ?? 'un exercice'))} : au-delà, la charge devient trop légère pour bien progresser en muscle et en force. Ajoute de la charge pour rester sous 20-25.`);
 
   const aConseils = remarques.some((r) => r.ton !== 'ok');
   const verdict: Verdict = incomplete ? 'incomplete' : tropChargee ? 'trop-chargee' : aConseils ? 'a-ajuster' : 'adaptee';

@@ -127,4 +127,12 @@ describe('Full Upper', () => {
     const a = analyserModele('Full Upper', [bloc('dc'), bloc('lat-pulldown')], parId);
     expect(a.remarques.some((r) => /quadriceps|ischios/.test(r.texte))).toBe(false);
   });
+
+  it('reps hautes : rien jusqu’à 30 (efficace près de l’échec), conseil au-delà', () => {
+    const base = [bloc('dc', 4, '6-10'), bloc('dev-incline-halt', 3), bloc('shoulder-press', 3), bloc('extension-poulie', 3, '10-12')];
+    const r25 = analyserModele('Push', [...base, bloc('pec-fly', 3, '20-25')], parId);
+    expect(r25.remarques.some((r) => /reps sur/.test(r.texte))).toBe(false);
+    const r40 = analyserModele('Push', [...base, bloc('pec-fly', 3, '30-40')], parId);
+    expect(r40.remarques.some((r) => /Plus de 30 reps/.test(r.texte))).toBe(true);
+  });
 });
