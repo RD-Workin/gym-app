@@ -18,7 +18,7 @@ test('séance → série → export CSV', async ({ page }) => {
 
   await page.goto('./#/donnees');
   const telechargement = page.waitForEvent('download');
-  await page.getByRole('button', { name: /Exporter le tableau \(CSV\)/ }).click();
+  await page.getByRole('button', { name: /Exporter le tableau/ }).click();
   const fichier = await telechargement;
   expect(fichier.suggestedFilename()).toMatch(/\.csv$/);
   const csv = await readFile((await fichier.path())!, 'utf8');

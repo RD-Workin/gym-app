@@ -79,18 +79,49 @@ function champCsv(v: string | number | undefined | null): string {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** Période d'export : jours AAAA-MM-JJ inclus ; une borne absente = pas de limite de ce côté. */
+export interface Periode {
+  du?: string;
+  au?: string;
+}
+export type ChoixPeriode = '2s' | '1m' | '3m' | 'tout' | 'dates';
+
+const jourLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Bornes d'un choix : 14, 30 ou 90 derniers jours (aujourd'hui inclus), tout, ou dates libres (remises dans l'ordre). */
+export function bornesPeriode(choix: ChoixPeriode, dates: Periode = {}, aujourdhui = new Date()): Periode {
+  const jours: Partial<Record<ChoixPeriode, number>> = { '2s': 14, '1m': 30, '3m': 90 };
+  const n = jours[choix];
+  if (n) {
+    const d = new Date(aujourdhui);
+    d.setDate(d.getDate() - (n - 1));
+    return { du: jourLocal(d), au: jourLocal(aujourdhui) };
+  }
+  if (choix === 'tout') return {};
+  const du = dates.du || undefined;
+  const au = dates.au || undefined;
+  return du && au && du > au ? { du: au, au: du } : { du, au };
+}
+
+/** Le jour de la séance (tel qu'enregistré, heure locale) est-il dans la période ? */
+export function dansPeriode(debut: string, p: Periode): boolean {
+  const jour = debut.slice(0, 10);
+  return (!p.du || jour >= p.du) && (!p.au || jour <= p.au);
+}
+
 export function lignesCsv(d: {
   exercices: Exercice[];
   variantes: Variante[];
   modeles: Modele[];
   seances: Seance[];
   series: Serie[];
-}): string[][] {
+}, periode: Periode = {}): string[][] {
   const exo = new Map(d.exercices.map((e) => [e.id, e]));
   const vari = new Map(d.variantes.map((v) => [v.id, v.nom]));
   const mod = new Map(d.modeles.map((m) => [m.id, m.nom]));
   const seanceParId = new Map(d.seances.map((s) => [s.id, s]));
-  const seancesTriees = [...d.seances].sort((a, b) => a.debut.localeCompare(b.debut));
+  const seancesTriees = d.seances.filter((s) => dansPeriode(s.debut, periode)).sort((a, b) => a.debut.localeCompare(b.debut));
   const seriesParSeance = new Map<string, Serie[]>();
   for (const s of d.series) {
     if (!seanceParId.has(s.seanceId)) continue;
@@ -133,7 +164,7 @@ export function lignesCsv(d: {
   return lignes;
 }
 
-export async function construireCsv(): Promise<string> {
+export async function construireCsv(periode: Periode = {}): Promise<string> {
   const [exercices, variantes, modeles, seances, series] = await Promise.all([
     db.exercices.toArray(),
     db.variantes.toArray(),
@@ -141,7 +172,7 @@ export async function construireCsv(): Promise<string> {
     db.seances.toArray(),
     db.series.toArray(),
   ]);
-  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series }).map((l) => l.join(','))];
+  const lignes = [COLONNES_CSV.join(','), ...lignesCsv({ exercices, variantes, modeles, seances, series }, periode).map((l) => l.join(','))];
   // BOM UTF-8 : accents corrects dans Excel / Numbers.
   return '﻿' + lignes.join('\r\n') + '\r\n';
 }
@@ -185,7 +216,15 @@ export async function exporterJson(): Promise<boolean> {
   return ok;
 }
 
-export async function exporterCsv(): Promise<boolean> {
-  const csv = await construireCsv();
-  return partagerOuTelecharger(csv, `gym-series_${horodatageFichier()}.csv`, 'text/csv');
+/** Nombre de séances et de séries dans la période (aperçu avant export). */
+export async function compterPeriode(periode: Periode): Promise<{ seances: number; series: number }> {
+  const ids = (await db.seances.toArray()).filter((s) => dansPeriode(s.debut, periode)).map((s) => s.id);
+  const series = ids.length ? await db.series.where('seanceId').anyOf(ids).count() : 0;
+  return { seances: ids.length, series };
+}
+
+export async function exporterCsv(periode: Periode = {}): Promise<boolean> {
+  const csv = await construireCsv(periode);
+  const suffixe = periode.du || periode.au ? `_${periode.du ?? 'debut'}_au_${periode.au ?? 'fin'}` : '';
+  return partagerOuTelecharger(csv, `gym-series${suffixe}_${horodatageFichier()}.csv`, 'text/csv');
 }

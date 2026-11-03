@@ -6,6 +6,8 @@ Photos d'exercices (schéma v2) : encodées en `data:image/jpeg;base64,…` dans
 Restauration : validation stricte (types, bornes, dates ISO, identifiants, liens entre tables, 50 Mo max), aperçu, puis remplacement complet en une transaction. Les réglages propres à l'appareil (`stockagePersistant`, `derniereSauvegarde`, `schemaVersion`) ne sont ni exportés ni écrasés.
 
 ## Tableau CSV (pour un coach ou une IA)
+Période au choix avant l'export : 2 semaines, 30 jours, 3 mois (jours glissants, aujourd'hui inclus), tout, ou dates libres (bornes incluses, jour de début de séance). Le nombre de séances et séries est affiché avant l'export ; le nom du fichier porte la période (`gym-series_2026-10-05_au_2026-11-03_….csv`).
+
 `gym-series_….csv` : UTF-8, séparateur virgule, décimales avec un point, une ligne par série, triée par date.
 
 | Colonne | Sens |

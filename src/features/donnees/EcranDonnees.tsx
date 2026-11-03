@@ -1,11 +1,29 @@
 // Écran Sauvegarde : export, import, rappel. Propriétaire : 06-donnees.
-import { useRef, useState } from 'preact/hooks';
-import { Bouton, Carte, Liste, ElementListe, Puce } from '../../ui';
-import { exporterCsv, exporterJson } from './exporter';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { Bouton, Carte, Liste, ElementListe, Onglets, Puce } from '../../ui';
+import { bornesPeriode, compterPeriode, exporterCsv, exporterJson, type ChoixPeriode, type Periode } from './exporter';
+import './donnees.css';
 import { lireSauvegarde, restaurer, type Apercu } from './importer';
 import { JOURS_RAPPEL, libelleDerniere, useEtatSauvegarde } from './rappel';
 
 const PILE = { display: 'flex', flexDirection: 'column', gap: 'var(--e-3)' } as const;
+
+const CHOIX_PERIODE: { valeur: ChoixPeriode; libelle: string }[] = [
+  { valeur: '2s', libelle: '2 sem.' },
+  { valeur: '1m', libelle: '30 j' },
+  { valeur: '3m', libelle: '3 mois' },
+  { valeur: 'tout', libelle: 'Tout' },
+  { valeur: 'dates', libelle: 'Dates' },
+];
+
+const jourCourt = (j: string) => new Date(`${j}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+function libellePeriode(p: Periode): string {
+  if (p.du && p.au) return `du ${jourCourt(p.du)} au ${jourCourt(p.au)}`;
+  if (p.du) return `depuis le ${jourCourt(p.du)}`;
+  if (p.au) return `jusqu'au ${jourCourt(p.au)}`;
+  return 'tout l’historique';
+}
 
 const dateFr = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
@@ -16,6 +34,17 @@ export function EcranDonnees() {
   const [message, setMessage] = useState<{ ton: 'progres' | 'alerte'; texte: string } | null>(null);
   const [apercu, setApercu] = useState<Apercu | null>(null);
   const champFichier = useRef<HTMLInputElement>(null);
+  const [choix, setChoix] = useState<ChoixPeriode>('1m');
+  const [dates, setDates] = useState<Periode>({});
+  const periode = useMemo(() => bornesPeriode(choix, dates), [choix, dates]);
+  const [compte, setCompte] = useState<{ seances: number; series: number } | null>(null);
+  useEffect(() => {
+    let actif = true;
+    compterPeriode(periode).then((c) => actif && setCompte(c), () => actif && setCompte(null));
+    return () => {
+      actif = false;
+    };
+  }, [periode]);
 
   async function agir(f: () => Promise<void>) {
     setOccupe(true);
@@ -35,7 +64,7 @@ export function EcranDonnees() {
     });
   const exportCsv = () =>
     agir(async () => {
-      if (await exporterCsv()) setMessage({ ton: 'progres', texte: 'Tableau CSV créé.' });
+      if (await exporterCsv(periode)) setMessage({ ton: 'progres', texte: 'Tableau CSV créé.' });
     });
 
   const choisirFichier = (ev: Event) => {
@@ -96,9 +125,29 @@ export function EcranDonnees() {
       <Bouton taille="geant" icone="donnees" onClick={exportJson} disabled={occupe}>
         Sauvegarder (JSON)
       </Bouton>
-      <Bouton variante="secondaire" taille="large" icone="tableau" onClick={exportCsv} disabled={occupe} detail="Une ligne par série, à envoyer à un coach ou une IA">
-        Exporter le tableau (CSV)
-      </Bouton>
+      <Carte titre="Tableau pour un coach ou une IA" aside={compte && <Puce>{compte.series} séries</Puce>}>
+        <div class="dn-periode">
+          <Onglets label="Période exportée" options={CHOIX_PERIODE} valeur={choix} onChange={setChoix} />
+          {choix === 'dates' && (
+            <div class="dn-dates">
+              <label>
+                Du
+                <input class="dn-champ" type="date" value={dates.du ?? ''} max={dates.au || undefined} onInput={(e) => setDates({ ...dates, du: (e.target as HTMLInputElement).value || undefined })} />
+              </label>
+              <label>
+                Au
+                <input class="dn-champ" type="date" value={dates.au ?? ''} min={dates.du || undefined} onInput={(e) => setDates({ ...dates, au: (e.target as HTMLInputElement).value || undefined })} />
+              </label>
+            </div>
+          )}
+          <p class="ui-element-detail">
+            {compte ? `${compte.seances} séance${compte.seances > 1 ? 's' : ''}, ${libellePeriode(periode)}` : libellePeriode(periode)}
+          </p>
+          <Bouton variante="secondaire" taille="large" icone="tableau" onClick={exportCsv} disabled={occupe || compte?.series === 0} detail="Une ligne par série (CSV)">
+            Exporter le tableau
+          </Bouton>
+        </div>
+      </Carte>
       <Bouton variante="contour" taille="large" icone="importer" onClick={() => champFichier.current?.click()} disabled={occupe} detail="Depuis un fichier .json de sauvegarde">
         Restaurer une sauvegarde
       </Bouton>
