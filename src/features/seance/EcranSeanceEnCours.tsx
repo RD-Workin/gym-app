@@ -8,13 +8,14 @@ import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { lien, naviguer } from '../../core/router';
 import { seanceEnCours, useRequete } from '../../core/requetes';
-import { eclatSur } from '../../anim';
+import { braisesSur, bulle, COULEURS_PROGRES, ecraser, eclatSur, feuArtifice, sauter, vibrer } from '../../anim';
 import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
+import { marquerBilan } from './bilan';
 import { ChoixRepos } from './ChoixRepos';
 import {
   REPOS_DEFAUT_SEC,
@@ -27,6 +28,7 @@ import {
   groupes,
   lirePlan,
   preremplir,
+  progresVsDerniereFois,
   resumeSeries,
   terminerSeance,
   type PlanSeance,
@@ -177,6 +179,8 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const [toast, setToast] = useState<string>();
   const [reglerRepos, setReglerRepos] = useState(false);
   const [occupe, setOccupe] = useState(false);
+  /** Dernière série validée : elle « s'imprime » dans la liste. */
+  const [nouvelle, setNouvelle] = useState<string>();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -206,7 +210,10 @@ function SeanceActive({ seance }: { seance: Seance }) {
     const msg = series.length ? 'Terminer la séance ?' : 'Aucune série notée : abandonner cette séance ?';
     if (!confirm(msg)) return;
     const r = await terminerSeance(seance.id);
-    if (r === 'terminee') naviguer(`/seance/${seance.id}`);
+    if (r === 'terminee') {
+      marquerBilan(seance.id);
+      naviguer(`/seance/${seance.id}`);
+    }
   };
 
   const ajouterExercice = (e: Exercice) => {
@@ -231,9 +238,32 @@ function SeanceActive({ seance }: { seance: Seance }) {
         setEdition(undefined);
         return;
       }
+      // Retour immédiat, avant les calculs : le geste « claque ».
+      ecraser(bouton);
+      vibrer(15);
+      eclatSur(bouton, { nombre: 30, onde: true });
+      const rang = faites.filter((x) => x.type !== 'echauffement').length;
       const serie = await enregistrerSerie(seance.id, bloc, saisie);
-      eclatSur(bouton);
       if (serie) {
+        setNouvelle(serie.id);
+        const mieux = avant ? progresVsDerniereFois(serie, avant, rang) : undefined;
+        if (mieux) bulle(bouton, mieux, 'progres');
+        // Exercice bouclé : toutes les séries cibles faites, à l'instant.
+        const cibles = bloc.seriesCibles;
+        if (cibles && serie.type !== 'echauffement' && faites.length + 1 === cibles) {
+          const point = document.querySelectorAll('.sc-points button')[gi];
+          window.setTimeout(() => {
+            sauter(point, 1.6);
+            eclatSur(point, { nombre: 26, force: 5, couleurs: COULEURS_PROGRES, onde: true });
+            braisesSur(point, 10);
+          }, 120);
+          const toutFini = grps.every((g, k) => g.every((i) => nbFaites(i) + (k === gi && i === plan.actif ? 1 : 0) >= (plan.blocs[i].seriesCibles ?? Infinity)));
+          if (toutFini) {
+            bulle(bouton, 'Séance complète !', 'record', mieux ? 650 : 0);
+            feuArtifice(3);
+            vibrer([20, 80, 20, 80, 40]);
+          } else bulle(bouton, "Exercice bouclé", "action", mieux ? 650 : 0);
+        }
         const recs = await recordsDeLaSerie(serie);
         const obj = await objectifAtteintPar(serie);
         if (obj) setToast(obj);
@@ -374,14 +404,22 @@ function SeanceActive({ seance }: { seance: Seance }) {
 
           <ol class="sc-series">
             {faites.map((s, i) => (
-              <li key={s.id}>
+              <li key={s.id} class={s.id === nouvelle ? 'anim-tampon' : undefined}>
                 <button type="button" class={`sc-serie fait${edition?.id === s.id ? ' cur' : ''}`} onClick={() => setEdition(edition?.id === s.id ? undefined : s)}>
                   <span class="sc-n">{i + 1}</span>
                   <span class="sc-num">
                     {formatCharge(s)} × {s.reps}
                     {s.rir != null ? ` · RIR ${s.rir}` : ''}
                   </span>
-                  <span class="sc-ok">{s.type === 'echauffement' ? 'échauf.' : '✓'}</span>
+                  <span class="sc-ok">
+                    {s.type === 'echauffement' ? (
+                      'échauf.'
+                    ) : (
+                      <svg class={`anim-coche${s.id === nouvelle ? ' trace' : ''}`} viewBox="0 0 24 24" aria-label="faite">
+                        <path d="M5 12.5l4.5 4.5L19 7.5" />
+                      </svg>
+                    )}
+                  </span>
                 </button>
               </li>
             ))}
@@ -468,7 +506,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
             </div>
           </>
         ) : bloc ? (
-          <Bouton taille="geant" onClick={valider} disabled={occupe || !saisie}>
+          <Bouton taille="geant" class="anim-reflet" onClick={valider} disabled={occupe || !saisie}>
             Valider la série
           </Bouton>
         ) : null}

@@ -5,10 +5,13 @@ import { lien } from '../router';
 import { seanceEnCours, useRequete } from '../requetes';
 import { RappelSauvegarde } from '../../features/donnees/rappel';
 import { useEffect } from 'preact/hooks';
+import { Anneau, Flamme, semainesDAffilee, useCompteur } from '../../anim';
 import { CarteNouveautes, marquerNouveautesVues } from './MiseAJour';
 import './accueil.css';
 
 export const CLE_BIENVENUE = 'bienvenueVue';
+/** Repère de l'anneau de la semaine (3 séances : le minimum recommandé pour progresser). */
+export const SEANCES_VISEES_SEMAINE = 3;
 
 async function etatAccueil() {
   const [enCours, nbSeries, bienvenue, seances] = await Promise.all([
@@ -29,6 +32,7 @@ async function etatAccueil() {
     nouveau: nbSeries === 0,
     bienvenueVue: bienvenue?.valeur === true,
     semaine,
+    affilee: semainesDAffilee(finies.map((s) => s.debut)),
     derniere: derniere ? { id: derniere.id, debut: derniere.debut, nom: modele?.nom ?? 'Séance libre' } : null,
   };
 }
@@ -56,7 +60,7 @@ export function EcranAccueil() {
           </Bouton>
         </Carte>
       ) : (
-        <Bouton taille="geant" icone="seance" href={lien('/seance')}>
+        <Bouton taille="geant" icone="seance" class="anim-reflet" href={lien('/seance')}>
           Démarrer une séance
         </Bouton>
       )}
@@ -67,10 +71,7 @@ export function EcranAccueil() {
       {!e.nouveau && (
         <Carte titre="Ton suivi">
           <div class="acc-stats">
-            <div>
-              <span class="ui-chiffre acc-chiffre">{e.semaine}</span>
-              <span class="ui-attenue">séance{e.semaine > 1 ? 's' : ''} cette semaine</span>
-            </div>
+            <Semaine fait={e.semaine} affilee={e.affilee} />
             {e.derniere && (
               <a href={lien(`/seance/${e.derniere.id}`)}>
                 <span class="acc-derniere">{e.derniere.nom}</span>
@@ -128,5 +129,30 @@ export function EtapesDemarrage() {
         <b>Regarde tes progrès.</b> Après ta première séance, l'onglet Progrès montre tes courbes et tes records.
       </li>
     </ol>
+  );
+}
+
+/** Anneau de la semaine qui se remplit + flamme de régularité. */
+function Semaine({ fait, affilee }: { fait: number; affilee: number }) {
+  const n = useCompteur(fait, 900);
+  const vise = SEANCES_VISEES_SEMAINE;
+  return (
+    <div class="acc-semaine">
+      <Anneau valeur={fait} max={vise} taille={84} label={`${fait} séance${fait > 1 ? 's' : ''} sur ${vise} cette semaine`}>
+        <span class="ui-chiffre acc-chiffre">{n}</span>
+        <span class="acc-sur">/ {vise}</span>
+      </Anneau>
+      <div class="acc-semaine-texte">
+        <span class="ui-attenue">séance{fait > 1 ? 's' : ''} cette semaine{fait >= vise ? ' : semaine réussie' : ''}</span>
+        {affilee > 0 && (
+          <span class="acc-affilee">
+            <Flamme />
+            <span>
+              <b>{affilee}</b> semaine{affilee > 1 ? 's' : ''} d'affilée
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

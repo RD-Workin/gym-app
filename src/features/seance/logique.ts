@@ -208,3 +208,20 @@ export const OBJECTIFS: Record<Objectif, { libelle: string; reposSec: number; pl
 export const REPOS_RAPIDES = [45, 60, 90, 120, 180, 240];
 /** Objectif le plus proche d'une durée de repos. */
 export const objectifDepuisRepos = (sec?: number): Objectif => (sec == null ? 'hypertrophie' : sec >= 180 ? 'force' : sec <= 60 ? 'endurance' : 'hypertrophie');
+
+/**
+ * Progrès d'une série de travail par rapport à la série de même rang la dernière fois (bulle « Strava »).
+ * Plus de charge (ou moins d'aide) d'abord, sinon plus de reps à charge égale. `undefined` sinon.
+ */
+export function progresVsDerniereFois(serie: Pick<Serie, 'chargeKg' | 'reps' | 'type' | 'modeCharge'>, avant: Serie[], rang: number): string | undefined {
+  if (serie.type === 'echauffement') return undefined;
+  const ref = avant[rang];
+  if (!ref) return undefined;
+  const dc = Math.round(((serie.chargeKg ?? 0) - (ref.chargeKg ?? 0)) * 100) / 100;
+  if (serie.modeCharge !== 'sans_charge' && dc > 0 && serie.reps >= Math.max(1, ref.reps - 2)) {
+    return `+${dc.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg vs la dernière fois`;
+  }
+  const dr = serie.reps - ref.reps;
+  if (dr > 0 && dc >= 0) return `+${dr} rep${dr > 1 ? 's' : ''} vs la dernière fois`;
+  return undefined;
+}

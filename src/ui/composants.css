@@ -266,9 +266,13 @@ button.ui-element:active { background: var(--c-surface-2); }
   color: var(--c-record);
 }
 .ui-toast-texte { font-size: var(--t-sm); }
+.ui-toast.objectif { border-color: rgb(61 220 151 / 0.45); background: linear-gradient(120deg, #0b3324, #0c1a14); }
+.ui-toast.objectif .ui-toast-titre { color: var(--c-progres); }
+.ui-toast.objectif .ui-medaille { background: rgb(61 220 151 / 0.2); color: var(--c-progres); }
 @keyframes ui-toast-entree {
-  from { transform: translateY(calc(-100% - 60px)); }
-  to { transform: none; }
+  0% { transform: translateY(calc(-100% - 60px)) scale(0.9); }
+  60% { transform: translateY(6px) scale(1.03); }
+  100% { transform: none; }
 }
 
 /* Apparition d'une ligne (ex. série validée). */

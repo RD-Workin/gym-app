@@ -1,27 +1,28 @@
 /* Animations (09). Uniquement transform et opacity : composées par le GPU, pas de reflow. */
 :root {
-  --anim-ecran: 260ms;
+  --anim-ecran: 340ms;
+  --anim-ecran-ressort: cubic-bezier(0.2, 1.12, 0.35, 1);
   --anim-sortie-douce: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ---- Entrée d'écran ---- */
-.anim-ecran.avant { animation: anim-glisse-droite var(--anim-ecran) var(--anim-sortie-douce); }
-.anim-ecran.arriere { animation: anim-glisse-gauche var(--anim-ecran) var(--anim-sortie-douce); }
-.anim-ecran.onglet { animation: anim-fondu-zoom var(--anim-ecran) var(--anim-sortie-douce); }
-@keyframes anim-glisse-droite { from { opacity: 0; transform: translateX(28px); } }
-@keyframes anim-glisse-gauche { from { opacity: 0; transform: translateX(-28px); } }
-@keyframes anim-fondu-zoom { from { opacity: 0; transform: scale(0.97); } }
+.anim-ecran.avant { animation: anim-glisse-droite var(--anim-ecran) var(--anim-ecran-ressort); }
+.anim-ecran.arriere { animation: anim-glisse-gauche var(--anim-ecran) var(--anim-ecran-ressort); }
+.anim-ecran.onglet { animation: anim-fondu-zoom var(--anim-ecran) var(--anim-ecran-ressort); }
+@keyframes anim-glisse-droite { from { opacity: 0; transform: translateX(48px) scale(0.985); } }
+@keyframes anim-glisse-gauche { from { opacity: 0; transform: translateX(-48px) scale(0.985); } }
+@keyframes anim-fondu-zoom { from { opacity: 0; transform: scale(0.94) translateY(10px); } }
 
 /* ---- Cascade : les enfants apparaissent l'un après l'autre (listes, cartes) ---- */
-.anim-cascade > * { animation: anim-monte 380ms var(--anim-sortie-douce) both; }
-.anim-cascade > :nth-child(2) { animation-delay: 35ms; }
-.anim-cascade > :nth-child(3) { animation-delay: 70ms; }
-.anim-cascade > :nth-child(4) { animation-delay: 105ms; }
-.anim-cascade > :nth-child(5) { animation-delay: 140ms; }
-.anim-cascade > :nth-child(6) { animation-delay: 175ms; }
-.anim-cascade > :nth-child(7) { animation-delay: 210ms; }
-.anim-cascade > :nth-child(n + 8) { animation-delay: 245ms; }
-@keyframes anim-monte { from { opacity: 0; transform: translateY(12px); } }
+.anim-cascade > * { animation: anim-monte 460ms cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+.anim-cascade > :nth-child(2) { animation-delay: 45ms; }
+.anim-cascade > :nth-child(3) { animation-delay: 90ms; }
+.anim-cascade > :nth-child(4) { animation-delay: 135ms; }
+.anim-cascade > :nth-child(5) { animation-delay: 180ms; }
+.anim-cascade > :nth-child(6) { animation-delay: 225ms; }
+.anim-cascade > :nth-child(7) { animation-delay: 270ms; }
+.anim-cascade > :nth-child(n + 8) { animation-delay: 300ms; }
+@keyframes anim-monte { from { opacity: 0; transform: translateY(18px) scale(0.97); } }
 
 /* ---- Micro-interactions ---- */
 /* Zoom d'apparition (badge, médaille, chiffre clé). */
@@ -57,3 +58,110 @@
   .anim-ecran, .anim-cascade > *, .anim-zoom, .anim-pulse, .anim-tremble, .anim-lueur-record { animation: none !important; }
   .anim-appui, .anim-appui:active { transition: none; transform: none; }
 }
+
+/* =====================  Dynamisme v2 (2026-11-03)  ===================== */
+
+/* Retour haptique iPhone : interrupteur natif hors écran (voir retours.ts). */
+.anim-haptique { position: fixed; left: -200px; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+
+/* Bulle qui s'envole d'un bouton (« +2,5 kg vs la dernière fois »). */
+.anim-bulle {
+  position: fixed; left: var(--x); top: var(--y); z-index: 41; pointer-events: none;
+  padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  font-family: var(--f-titre); font-weight: 800; font-size: var(--t-lg); letter-spacing: 0.02em; text-transform: uppercase;
+  color: #06140d; background: var(--c-progres); box-shadow: 0 6px 24px rgb(61 220 151 / 0.45);
+  transform: translate(-50%, -50%);
+  animation: anim-bulle 1500ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.anim-bulle.record { color: #1d1400; background: var(--c-record); box-shadow: 0 6px 24px rgb(255 212 94 / 0.5); }
+.anim-bulle.action { color: var(--c-action-encre); background: var(--c-action); box-shadow: 0 6px 24px rgb(255 122 61 / 0.45); }
+@keyframes anim-bulle {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+  14% { opacity: 1; transform: translate(-50%, -95%) scale(1.12); }
+  24% { transform: translate(-50%, -110%) scale(1); }
+  75% { opacity: 1; transform: translate(-50%, -190%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -240%) scale(0.92); }
+}
+
+/* Flash bref plein écran (record, objectif). */
+.anim-flash { position: fixed; inset: 0; z-index: 39; pointer-events: none; animation: anim-flash 650ms ease-out both; }
+.anim-flash.record { background: radial-gradient(circle at 50% 18%, rgb(255 212 94 / 0.45), rgb(255 212 94 / 0) 65%); }
+.anim-flash.progres { background: radial-gradient(circle at 50% 18%, rgb(61 220 151 / 0.4), rgb(61 220 151 / 0) 65%); }
+@keyframes anim-flash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+
+/* « Tampon » : une ligne qui s'imprime (série validée). */
+.anim-tampon { animation: anim-tampon 460ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes anim-tampon {
+  0% { opacity: 0; transform: scale(1.18) translateY(-6px); }
+  55% { opacity: 1; transform: scale(0.98); }
+  100% { transform: none; }
+}
+/* Coche qui se dessine. */
+.anim-coche { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; }
+.anim-coche path { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; }
+.anim-coche.trace path { animation: anim-coche 420ms 120ms ease-out both; }
+@keyframes anim-coche { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+
+/* Balayage lumineux (bouton principal en attente, carte de record). */
+:where(.anim-reflet) { position: relative; }
+.anim-reflet { overflow: hidden; isolation: isolate; }
+.anim-reflet::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%);
+  transform: translateX(-120%); animation: anim-reflet 3.2s 1s ease-in-out infinite;
+}
+@keyframes anim-reflet { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+
+/* Respiration (attire l'œil sans bouger la mise en page). */
+.anim-respire { animation: anim-respire 2.4s ease-in-out infinite; }
+@keyframes anim-respire { 50% { transform: scale(1.025); } }
+
+/* Battement (3 dernières secondes du repos). */
+.anim-bat { animation: anim-bat 1s ease-in-out infinite; }
+@keyframes anim-bat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } }
+
+/* Entrée en grand (titre de bilan). */
+.anim-entree-titre { animation: anim-entree-titre 620ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes anim-entree-titre { from { opacity: 0; transform: scale(1.6); letter-spacing: 0.2em; } }
+
+/* Médaille qui tourne sur elle-même. */
+.anim-medaille-tourne { animation: anim-medaille 900ms cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@keyframes anim-medaille {
+  0% { opacity: 0; transform: scale(0.3) rotateY(0deg); }
+  60% { opacity: 1; transform: scale(1.15) rotateY(540deg); }
+  100% { transform: scale(1) rotateY(720deg); }
+}
+
+/* Anneau qui se remplit (objectif de la semaine). */
+.anim-anneau { position: relative; flex: none; display: grid; place-items: center; }
+.anim-anneau svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.anim-anneau circle { fill: none; stroke-width: 11; }
+.anim-anneau-fond { stroke: color-mix(in srgb, var(--c-action) 16%, var(--c-surface-2)); }
+.anim-anneau-trait { stroke: var(--c-action); stroke-linecap: round; animation: anim-anneau 1100ms 150ms cubic-bezier(0.3, 0.9, 0.3, 1) both; }
+.anim-anneau.complet .anim-anneau-trait { stroke: var(--c-record); filter: drop-shadow(0 0 6px rgb(255 212 94 / 0.7)); }
+.anim-anneau.complet .anim-anneau-fond { stroke: rgb(255 212 94 / 0.18); }
+.anim-anneau-centre { position: relative; display: grid; justify-items: center; line-height: 1; text-align: center; }
+@keyframes anim-anneau { from { stroke-dashoffset: var(--plein); } }
+
+/* Flamme de régularité. */
+.anim-flamme { display: inline-flex; width: 28px; height: 28px; flex: none; }
+.anim-flamme svg { width: 100%; height: 100%; overflow: visible; }
+.anim-flamme .ext { fill: var(--c-trait); }
+.anim-flamme .int { fill: var(--c-surface-2); }
+.anim-flamme.allumee .ext { fill: var(--c-action); }
+.anim-flamme.allumee .int { fill: var(--c-record); }
+.anim-flamme.allumee svg { transform-origin: 50% 90%; animation: anim-vacille 1.6s ease-in-out infinite; filter: drop-shadow(0 0 6px rgb(255 122 61 / 0.55)); }
+@keyframes anim-vacille {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  25% { transform: scale(0.96, 1.06) rotate(-2deg); }
+  50% { transform: scale(1.03, 0.97) rotate(1deg); }
+  75% { transform: scale(0.98, 1.04) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-bulle { animation: anim-bulle-calme 1600ms ease-out both; }
+  .anim-tampon, .anim-coche.trace path, .anim-reflet::after, .anim-respire, .anim-bat, .anim-entree-titre,
+  .anim-medaille-tourne, .anim-anneau-trait, .anim-flamme.allumee svg { animation: none !important; }
+  .anim-reflet::after { display: none; }
+}
+@keyframes anim-bulle-calme { 0% { opacity: 0; } 15%, 80% { opacity: 1; } 100% { opacity: 0; } }
