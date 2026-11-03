@@ -104,17 +104,17 @@ export const MODELES_DEPART: ModeleDepart[] = [
     ],
   },
   {
-    // Tout le haut du corps, sans les jambes (~1 h, 21 séries), d'après la séance de Romain :
-    // pousser et tirer en alternance, puis bras. Avant-bras = son curl en pronation.
+    // Tout le haut du corps, sans les jambes (~1 h, 21 séries) : pousser et tirer en alternance, puis bras et arrière d'épaule.
     nom: 'Full Upper',
     blocs: [
-      { cle: 'dev-incline-halt', series: 3, reps: '7-8' },
-      { cle: 'tractions', series: 4, reps: '4-7' },
-      { cle: 'dips', series: 3, reps: '8-11' },
-      { cle: 'arm-curl', series: 3, reps: '6-10' },
-      { cle: 'shoulder-press', series: 3, reps: '7-11' },
-      { cle: 'avant-bras', series: 3, reps: '8-12' },
+      { cle: 'dc', series: 3, reps: '6-8' },
+      { cle: 'lat-pulldown', series: 3, reps: '8-10' },
+      { cle: 'dev-incline-halt', series: 3, reps: '8-10' },
+      { cle: 'seated-row', series: 3, reps: '8-12' },
+      { cle: 'shoulder-press', series: 3, reps: '8-10' },
+      { cle: 'curl-incline', series: 2, reps: '10-12' },
       { cle: 'extension-poulie', series: 2, reps: '10-12' },
+      { cle: 'rear-delt', series: 2, reps: '12-15' },
     ],
   },
 ];
