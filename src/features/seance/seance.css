@@ -111,3 +111,25 @@
 .bil-flamme { display: flex; align-items: center; gap: var(--e-2); justify-content: center; font-size: var(--t-sm); color: var(--c-attenue); animation: anim-monte 500ms 1.2s both; }
 .bil-flamme b { color: var(--c-texte); font-family: var(--f-titre); font-size: var(--t-lg); }
 @media (prefers-reduced-motion: reduce) { .bil-record, .bil-flamme { animation: none; } }
+
+/* Aperçu d'une séance type avant de la lancer (04 ; effets : classes de 09). */
+.ap { padding-bottom: var(--e-2); }
+.ap-tete { display: grid; gap: var(--e-1); }
+.ap-titre { font-family: var(--f-titre); font-weight: 800; font-size: var(--t-2xl); text-transform: uppercase; line-height: 1; color: var(--c-action); transform-origin: left center; }
+.ap-tuiles .bil-chiffre { white-space: nowrap; }
+.ap-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-2); }
+.ap-superset { display: grid; gap: var(--e-1); padding: var(--e-2); border-radius: var(--r-md); border: 1.5px dashed color-mix(in srgb, var(--c-action) 55%, transparent); }
+.ap-superset-lib { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-action); padding-left: var(--e-1); }
+.ap-exo { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-2) var(--e-3) var(--e-2) var(--e-2); border-radius: var(--r-md); background: var(--c-surface); color: var(--c-texte); text-decoration: none; }
+.ap-num { flex: none; width: 24px; text-align: center; font-family: var(--f-titre); font-weight: 800; font-size: var(--t-lg); color: var(--c-attenue); }
+.ap-texte { display: grid; gap: 2px; min-width: 0; }
+.ap-nom { font-weight: 700; }
+.ap-cible { font-size: var(--t-sm); color: var(--c-attenue); }
+/* Neutre : le vert est réservé au progrès (« dernière fois » n'en est pas un). */
+.ap-avant { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); color: var(--c-attenue); }
+.ap-avant b { color: var(--c-texte); font-weight: 600; }
+.ap-avant svg { width: 14px; height: 14px; flex: none; }
+.ap-note { font-size: var(--t-xs); color: var(--c-attenue); font-style: italic; }
+/* « Démarrer » reste visible en bas pendant qu'on parcourt la liste. */
+.ap-bas { position: sticky; bottom: var(--zone-bas); z-index: 2; padding: var(--e-4) 0 var(--e-2); background: linear-gradient(to bottom, transparent, var(--c-fond) 40%); }
+.ui-coquille.avec-barre .ap-bas { bottom: calc(var(--barre-onglets) + var(--zone-bas)); }

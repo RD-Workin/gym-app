@@ -8,6 +8,7 @@ import { paresseux } from './paresseux';
 const EcranExercices = paresseux(() => import('../features/exercices/EcranExercices').then((m) => m.EcranExercices));
 const EcranExercice = paresseux(() => import('../features/exercices/EcranExercice').then((m) => m.EcranExercice));
 const EcranSeanceEnCours = paresseux(() => import('../features/seance/EcranSeanceEnCours').then((m) => m.EcranSeanceEnCours));
+const EcranApercu = paresseux(() => import('../features/seance/EcranApercu').then((m) => m.EcranApercu));
 const EcranSeance = paresseux(() => import('../features/seance/EcranSeance').then((m) => m.EcranSeance));
 const EcranModeles = paresseux(() => import('../features/modeles/EcranModeles').then((m) => m.EcranModeles));
 const EcranComposer = paresseux(() => import('../features/modeles/EcranComposer').then((m) => m.EcranComposer));
@@ -27,6 +28,7 @@ export interface DefRoute {
 export const routes: DefRoute[] = [
   { motif: '/', rendu: () => <EcranAccueil />, onglet: 'Accueil', icone: 'accueil' },
   { motif: '/seance', rendu: () => <EcranSeanceEnCours />, onglet: 'Séance', icone: 'seance' },
+  { motif: '/seance/apercu/:id', rendu: (p) => <EcranApercu id={p.id} /> },
   { motif: '/seance/:id', rendu: (p) => <EcranSeance id={p.id} /> },
   { motif: '/modeles', rendu: () => <EcranModeles /> },
   { motif: '/modeles/composer', rendu: () => <EcranComposer /> },

@@ -13,6 +13,8 @@ import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
 import type { Equipement, Exercice, Modele, Seance, Serie } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
+import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
+import { origineDe } from '../modeles/modeles';
 import { ChoixExercice } from './ChoixExercice';
 import { Repos } from './Repos';
 import { marquerBilan } from './bilan';
@@ -50,8 +52,16 @@ function Demarrage() {
     const seances = await db.seances.orderBy('debut').reverse().toArray();
     const derniere = new Map<string, string>();
     for (const s of seances) if (s.modeleId && !derniere.has(s.modeleId)) derniere.set(s.modeleId, s.debut);
-    // Rotation : le modèle le moins récemment fait d'abord (jamais fait = en premier).
-    modeles.sort((a, b) => (derniere.get(a.id) ?? '').localeCompare(derniere.get(b.id) ?? ''));
+    // Rotation : le modèle le moins récemment fait d'abord (jamais fait = en premier, dans l'ordre Push, Pull, Jambes…).
+    // Les séances bonus (Home Gym, Callisthénie) passent après : on les choisit soi-même.
+    const bonus = (m: Modele) => (SEANCES_BONUS.has(origineDe(m) ?? '') ? 1 : 0);
+    modeles.sort(
+      (a, b) =>
+        bonus(a) - bonus(b) ||
+        (derniere.get(a.id) ?? '').localeCompare(derniere.get(b.id) ?? '') ||
+        rangDepart(origineDe(a)) - rangDepart(origineDe(b)) ||
+        a.nom.localeCompare(b.nom),
+    );
     return { modeles, derniere, recentes: seances.filter((s) => s.fin).slice(0, 5), premiere: seances.length === 0 };
   });
   const [occupe, setOccupe] = useState(false);
@@ -74,7 +84,7 @@ function Demarrage() {
     <section class="sc">
       <h1>Séance</h1>
       <p class="sc-attenue sc-intro">
-        Choisis une séance type <Aide mot="modele" /> : l'app te guide exercice par exercice, avec le minuteur de repos.
+        Choisis une séance type <Aide mot="modele" /> pour voir ses exercices, la modifier ou la démarrer. Pendant la séance, l'app te guide exercice par exercice, avec le minuteur de repos.
       </p>
       {premiere && (
         <Carte titre="Ta première séance" ton="mise-en-avant">
@@ -89,23 +99,20 @@ function Demarrage() {
       {modeles.length > 0 ? (
         <>
           <Carte titre={premiere ? 'Séances types prêtes' : 'À faire ensuite'} aside={premiere ? undefined : <Puce>{ilYa(derniere.get(modeles[0].id))}</Puce>} ton={premiere ? 'neutre' : 'mise-en-avant'}>
-            <Bouton taille={premiere ? 'large' : 'geant'} variante={premiere ? 'secondaire' : 'primaire'} onClick={() => lancer(modeles[0])} disabled={occupe} detail={premiere ? `${modeles[0].blocs.length} exercices` : undefined}>
-              Démarrer {modeles[0].nom}
+            <Bouton
+              taille={premiere ? 'large' : 'geant'}
+              variante={premiere ? 'secondaire' : 'primaire'}
+              href={lien(`/seance/apercu/${modeles[0].id}`)}
+              detail={`${quoi(modeles[0])}${modeles[0].blocs.length} exercices`}
+            >
+              {modeles[0].nom}
             </Bouton>
-            <a class="sc-lien" href={lien(`/modeles/${modeles[0].id}`)}>
-              Modifier {modeles[0].nom} (exercices, séries, reps)
-            </a>
           </Carte>
           {modeles.length > 1 && <span class="ui-surtitre">Autres séances types</span>}
           {modeles.slice(1).map((m) => (
-            <div key={m.id} class="sc-modele-ligne">
-              <Bouton variante="secondaire" taille="large" detail={`${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} onClick={() => lancer(m)}>
-                {m.nom}
-              </Bouton>
-              <a class="sc-lien" href={lien(`/modeles/${m.id}`)} aria-label={`Modifier ${m.nom}`}>
-                Modifier
-              </a>
-            </div>
+            <Bouton key={m.id} variante="secondaire" taille="large" detail={`${quoi(m)}${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} href={lien(`/seance/apercu/${m.id}`)}>
+              {m.nom}
+            </Bouton>
           ))}
           <Bouton variante="contour" taille="large" onClick={() => lancer()} detail="Sans modèle : tu ajoutes les exercices au fur et à mesure">
             Séance libre
@@ -148,6 +155,20 @@ function Demarrage() {
     </section>
   );
 }
+
+/** Ce que travaille chaque séance fournie, en quelques mots (libellés : 11). Une séance renommée garde sa description d'origine. */
+const QUOI: Record<string, string> = {
+  Push: 'pectoraux, épaules, triceps',
+  Pull: 'dos, biceps',
+  'Full body': 'tout le corps',
+  'Full Upper': 'tout le haut du corps',
+  'Home Gym': 'à la maison, sans matériel',
+  Callisthénie: 'au parc : barre fixe, barres parallèles',
+};
+const quoi = (m: Modele) => {
+  const q = QUOI[origineDe(m) ?? ''];
+  return q ? `${q} · ` : '';
+};
 
 /* ---------------- Séance active ---------------- */
 

@@ -228,7 +228,29 @@ export const CONSEILS_EQUIPEMENTS: Partial<Record<Equipement, FicheConseil>> = {
   },
   poids_du_corps: {
     resume: 'Le poids du corps compte dans la charge.',
-    sections: [{ titre: 'Astuces', points: ['Renseigner son poids dans la séance : sinon le 1RM et le volume sont sous-estimés.', 'Progresser en ajoutant un lest une fois 10 à 12 reps propres atteintes.'] }],
+    sections: [
+      { titre: 'Astuces', points: ['Renseigner son poids dans la séance : sinon le 1RM et le volume sont sous-estimés.', 'Progresser en ajoutant un lest une fois 10 à 12 reps propres atteintes.'] },
+      {
+        titre: 'À la maison',
+        points: [
+          'Lest : un sac à dos rempli de livres, de bouteilles d’eau ou d’un sac de riz. Le peser sur une balance et noter le poids en lest.',
+          'Banc : une chaise solide calée contre un mur, ou le canapé. Barre : une table solide pour les tractions australiennes.',
+          'Sol glissant (parquet, carrelage) + serviette ou chaussettes : leg curl glissé.',
+          'Rendre l’exercice plus dur sans charge : une seule jambe ou un seul bras, pieds surélevés, descente lente (3 s), pause de 1 à 2 s en bas.',
+          'Jusqu’à 25-30 reps menées près de l’échec, le muscle progresse autant qu’avec des charges lourdes. Au-delà, passer à une variante plus dure.',
+          'Vérifier la solidité de chaque appui avant de mettre tout son poids dessus.',
+        ],
+      },
+      {
+        titre: 'Au parc (street workout)',
+        points: [
+          'Barre fixe : tractions et relevés de jambes. Barres parallèles : dips. Barre basse : tractions australiennes et nordic curl. Banc : squat bulgare, pompes piquées pieds surélevés.',
+          'Moins de 5 tractions : élastique accroché à la barre, ou négatives (sauter en haut, descendre en 3 à 5 s).',
+          'Plus de 12 à 15 reps propres : passer à une variante plus dure ou ajouter un sac à dos.',
+          'Mains sèches ou magnésie ; vérifier la barre (humide, rouillée) avant de s’y suspendre.',
+        ],
+      },
+    ],
   },
   kettlebell: {
     resume: 'Centre de gravité décalé : très bon pour les mouvements balistiques.',
@@ -463,6 +485,98 @@ export const CONSEILS_EXERCICES: Record<string, FicheConseil> = {
     ['Dos et bassin plaqués, pieds largeur d’épaules.', 'Descendre profond (cuisses sous la parallèle si la mobilité le permet), pousser sans verrouiller.'],
     ['Pieds bas sur la plateforme = plus de quadriceps.', 'Descente lente, pas de rebond.'],
     ['Talons qui décollent.', 'Genoux qui rentrent.'],
+  ),
+  // Home Gym (10-coach, 2026-11-03)
+  'Squat bulgare au poids du corps': ex(
+    'Fente pied arrière surélevé, sans matériel : quadriceps, fessiers. Le meilleur exercice de jambes à la maison ou au parc.',
+    ['Pied arrière posé sur une chaise calée contre un mur, le canapé ou un banc.', 'Descendre à la verticale jusqu’à ce que le genou arrière frôle le sol, pousser par le pied avant.', 'Noter les reps d’une jambe ; faire les deux côtés.'],
+    ['Plus dur : sac à dos chargé, descente en 3 s, pause en bas.', 'Buste penché en avant = plus de fessiers.'],
+    ['Chaise qui glisse : toujours la caler contre un mur.', 'Pied avant trop proche.'],
+  ),
+  Pompes: ex(
+    'Poussée au poids du corps : pectoraux, triceps, deltoïdes antérieurs.',
+    ['Mains un peu plus larges que les épaules, corps gainé de la tête aux talons.', 'Poitrine jusqu’au sol ou presque, coudes à environ 45° du buste.'],
+    ['Trop dur : mains sur une table ou le canapé. Trop facile (plus de 20) : pieds sur une chaise, puis sac à dos chargé.', 'Mains sur deux livres épais : plus d’amplitude, pecs plus étirés.', 'Diamant (mains rapprochées) : plus de triceps.'],
+    ['Bassin qui s’affaisse.', 'Coudes à 90° du corps.', 'Demi-reps.'],
+  ),
+  'Tractions australiennes': ex(
+    'Rowing inversé : dos, biceps, arrière d’épaule. Le tirage de base à la maison.',
+    ['Allongé sous une table solide, mains au bord, corps gainé.', 'Tirer la poitrine vers le bord de la table, omoplates serrées, redescendre bras tendus.', 'Sans table : serviette coincée dans une porte fermée (côté où elle s’ouvre vers soi), pieds près de la porte, se pencher en arrière et tirer.'],
+    ['Plus dur : pieds sur une chaise, pause de 1 s en haut.', 'Plus facile : genoux pliés.'],
+    ['Table légère ou qui bascule : tester d’abord avec peu de poids.', 'Hausser les épaules.'],
+  ),
+  'Rowing sac à dos': ex(
+    'Tirage horizontal à un bras : dos, biceps. Le 2e tirage de la séance maison.',
+    ['Un genou et une main sur une chaise, dos plat.', 'Tirer le sac vers la hanche, coude près du corps, omoplate serrée en haut ; redescendre jusqu’à l’étirement.'],
+    ['Remplir le sac de livres ou de bouteilles et le peser pour noter la charge.', 'Trop léger : descente en 3 s et pause en haut.'],
+    ['Sac mal fermé ou bretelle fragile : tenir le sac par la poignée du haut.', 'Tourner le buste pour tirer.'],
+  ),
+  'Hip thrust sur canapé': ex(
+    'Poussée de hanches : fessiers, ischios.',
+    ['Haut du dos contre le canapé, pieds à plat, tibias verticaux en haut.', 'Pousser les hanches vers le plafond, serrer les fessiers 1 s, redescendre lentement.'],
+    ['Plus dur : sur une jambe, ou sac à dos posé sur les hanches.'],
+    ['Cambrer le bas du dos au lieu de monter les hanches.'],
+  ),
+  'Pompes piquées': ex(
+    'Développé vertical au poids du corps : épaules, triceps.',
+    ['Mains au sol largeur d’épaules, fesses hautes (V inversé).', 'Descendre la tête vers le sol devant les mains, coudes vers l’arrière, puis pousser.'],
+    ['Plus dur : pieds sur une chaise, plus le buste est vertical, plus c’est dur.'],
+    ['Coudes très écartés.', 'Garder le dos rond.'],
+  ),
+  'Leg curl glissé': ex(
+    'Flexion de jambes au sol : ischios.',
+    ['Sur le dos, talons sur une serviette (sol glissant) ou en chaussettes.', 'Monter le bassin, ramener les talons vers les fesses, puis les repousser lentement en gardant le bassin levé.'],
+    ['Plus dur : une jambe, ou seulement la phase de retour très lente.'],
+    ['Bassin qui retombe pendant le mouvement.'],
+  ),
+  'Dips entre deux chaises': ex(
+    'Dips à la maison : triceps, bas des pectoraux.',
+    ['Deux chaises solides calées contre un mur (ou l’angle d’un plan de travail), mains sur les assises.', 'Descendre en contrôle jusqu’à environ 90° au coude, remonter.'],
+    ['Plus facile : pieds au sol devant soi. Plus dur : jambes tendues ou sac à dos.'],
+    ['Chaises instables.', 'Descendre trop bas, épaules qui partent en avant : arrêter dès que l’épaule tire.'],
+  ),
+  'Mollets sur une marche': ex(
+    'Extension de cheville : mollets.',
+    ['Avant du pied sur une marche, une main au mur.', 'Descendre le talon sous la marche, 1 à 2 s en étirement, monter sur la pointe.'],
+    ['Plus dur : sur un pied, sac à dos.'],
+    ['Rebondir en bas.'],
+  ),
+  'Crunch au sol': ex(
+    'Enroulement du buste : abdominaux.',
+    ['Sur le dos, genoux pliés, bas du dos au sol.', 'Enrouler le haut du dos en expirant, redescendre lentement.'],
+    ['Plus dur : un livre ou une bouteille d’eau contre la poitrine.'],
+    ['Tirer sur la nuque avec les mains.'],
+  ),
+  'Nordic curl': ex(
+    'Ischios en excentrique (freinage) : très efficace pour le muscle et contre les blessures (van Dyk 2019).',
+    ['À genoux sur une surface molle, talons calés sous une barre basse, un banc ou tenus par un partenaire.', 'Corps droit des genoux à la tête, se laisser tomber vers l’avant le plus lentement possible.', 'Se rattraper avec les mains, repousser pour revenir.'],
+    ['Débuter avec 2-3 séries de 3 à 5 reps : les courbatures sont fortes au début.', 'Progresser en freinant plus longtemps, puis en remontant sans les mains.'],
+    ['Plier les hanches (fesses en arrière) pour tricher.'],
+  ),
+  'Relevés de jambes à la barre': ex(
+    'Abdos suspendu à la barre fixe, surtout le bas du ventre et les fléchisseurs de hanche.',
+    ['Suspendu bras tendus, épaules engagées.', 'Enrouler le bassin pour monter les genoux vers la poitrine, redescendre lentement.'],
+    ['Plus dur : jambes tendues, puis pieds jusqu’à la barre.'],
+    ['Balancer le corps pour prendre de l’élan.', 'Monter les jambes sans enrouler le bassin.'],
+  ),
+  // Ajouts des séances types (10-coach, 2026-11-03)
+  'Élévations latérales': ex(
+    'Deltoïde latéral : la largeur des épaules, peu travaillée par les développés.',
+    ['Debout, haltères le long du corps, coudes légèrement fléchis.', 'Monter les bras sur les côtés jusqu’à l’horizontale, redescendre lentement.'],
+    ['Charges légères, 10 à 20 reps près de l’échec.', 'À la poulie basse : tension aussi en bas du mouvement.', 'Le deltoïde latéral récupère vite : 2 séances par semaine conviennent.'],
+    ['Élan du buste.', 'Hausser les épaules (trapèzes).'],
+  ),
+  'Extension triceps au-dessus de la tête': ex(
+    'Triceps travaillé étiré, surtout le chef long.',
+    ['Dos à la poulie, corde au-dessus de la tête, coudes vers le haut et fixes.', 'Étendre les bras vers l’avant et le haut, revenir jusqu’à un bon étirement derrière la tête.'],
+    ['Fait grossir le triceps plus que le pushdown à volume égal (Maeo 2023) : le garder dans la semaine.', 'Sans poulie : un haltère tenu à deux mains.'],
+    ['Coudes qui s’écartent.', 'Cambrer le bas du dos.'],
+  ),
+  'Soulevé de terre roumain': ex(
+    'Charnière de hanche : ischios, fessiers, lombaires.',
+    ['Barre contre les cuisses, genoux légèrement fléchis et fixes.', 'Pousser les hanches vers l’arrière, barre qui glisse le long des jambes, dos neutre.', 'Descendre jusqu’à l’étirement des ischios (souvent sous les genoux), remonter en poussant les hanches vers l’avant.'],
+    ['Charges moyennes, 6 à 10 reps : la technique avant le poids.', 'Sangles si la prise lâche avant les ischios.'],
+    ['Dos qui s’arrondit.', 'Plier les genoux comme un squat.', 'Barre qui s’éloigne des jambes.'],
   ),
 };
 

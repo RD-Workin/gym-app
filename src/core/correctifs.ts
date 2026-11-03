@@ -3,7 +3,7 @@
 // Ce que Romain a modifié lui-même n'est jamais touché. Chaque correctif n'est proposé qu'une fois.
 import { db } from './db';
 import { maintenant } from './ids';
-import { BIBLIOTHEQUE, MODELES_DEPART, REPOS_POLYARTICULAIRE_SEC, blocsDepart, reposDepart } from '../data/bibliotheque';
+import { BIBLIOTHEQUE, MODELES_DEPART, MODELES_DEPART_V1, REPOS_POLYARTICULAIRE_SEC, blocsDepart, reposDepart } from '../data/bibliotheque';
 import { nouvelId } from './ids';
 
 export interface Correctif {
@@ -52,6 +52,8 @@ function correctifAjoutModele(id: string, nomModele: string, description: string
     description,
     async executer(simuler) {
       if ((await db.modeles.where('nom').equals(nomModele).count()) > 0) return 0;
+      // Simulation : ses exercices peuvent être ajoutés par un correctif précédent, pas encore appliqué.
+      if (simuler) return 1;
       const parNom = new Map((await db.exercices.toArray()).filter((x) => !x.archive).map((x) => [x.nom, x.id]));
       const blocs = blocsDepart(depart).flatMap((b) => {
         const nom = BIBLIOTHEQUE.find((x) => x.cle === b.cle)?.nom;
@@ -66,6 +68,78 @@ function correctifAjoutModele(id: string, nomModele: string, description: string
         await db.modeles.add({ id: nouvelId(), nom: nomModele, origine: nomModele, blocs, archive: false, creeLe: t, modifieLe: t });
       }
       return 1;
+    },
+  };
+}
+
+/** Ajoute les exercices de départ créés après la 1re installation (ceux sans séance du carnet), s'il n'y en a pas déjà un du même nom. */
+function correctifAjoutExercices(id: string, description: string): Correctif {
+  const nouveaux = BIBLIOTHEQUE.filter((x) => !x.seance);
+  return {
+    id,
+    description,
+    async executer(simuler) {
+      const noms = new Set((await db.exercices.toArray()).map((x) => x.nom));
+      const absents = nouveaux.filter((x) => !noms.has(x.nom));
+      if (!simuler) {
+        const t = maintenant();
+        for (const x of absents) {
+          const exerciceId = nouvelId();
+          await db.exercices.add({
+            id: exerciceId,
+            nom: x.nom,
+            equipement: x.equipement,
+            modeCharge: x.modeCharge,
+            groupesMusculaires: [...x.groupes],
+            reglagesMachine: x.reglagesMachine,
+            note: x.note,
+            archive: false,
+            creeLe: t,
+            modifieLe: t,
+          });
+          for (const nom of x.variantes ?? []) await db.variantes.add({ id: nouvelId(), exerciceId, nom, creeLe: t, modifieLe: t });
+        }
+      }
+      return absents.length;
+    },
+  };
+}
+
+/**
+ * Remplace les séances types par leur nouvelle version, seulement si elles sont encore identiques à l'ancienne
+ * (mêmes exercices dans le même ordre, mêmes séries et reps). Une séance modifiée n'est jamais touchée :
+ * « Revenir au modèle d'origine » donne la nouvelle version.
+ */
+function correctifSeancesTypes(id: string, description: string): Correctif {
+  return {
+    id,
+    description,
+    async executer(simuler) {
+      const exercices = await db.exercices.toArray();
+      const nomDe = new Map(exercices.map((x) => [x.id, x.nom]));
+      const idDe = new Map(exercices.filter((x) => !x.archive).map((x) => [x.nom, x.id]));
+      const nomCle = (cle: string) => BIBLIOTHEQUE.find((x) => x.cle === cle)?.nom;
+      let n = 0;
+      const t = maintenant();
+      for (const ancien of MODELES_DEPART_V1) {
+        const nouveau = MODELES_DEPART.find((m) => m.nom === ancien.nom);
+        if (!nouveau) continue;
+        const modeles = (await db.modeles.toArray()).filter((m) => (m.origine ?? m.nom) === ancien.nom && !m.archive);
+        for (const m of modeles) {
+          const identique =
+            m.blocs.length === ancien.blocs.length &&
+            m.blocs.every((b, i) => nomDe.get(b.exerciceId) === nomCle(ancien.blocs[i].cle) && b.seriesCibles === ancien.blocs[i].series && b.repsCibles === ancien.blocs[i].reps && !b.supersetId);
+          if (!identique) continue;
+          n++;
+          if (simuler) continue;
+          const blocs = blocsDepart(nouveau).flatMap((b) => {
+            const exerciceId = idDe.get(nomCle(b.cle) ?? '');
+            return exerciceId ? [{ id: nouvelId(), exerciceId, seriesCibles: b.series, repsCibles: b.reps, reposSec: reposDepart(b.cle) }] : [];
+          });
+          if (blocs.length) await db.modeles.update(m.id, { blocs, modifieLe: t });
+        }
+      }
+      return n;
     },
   };
 }
@@ -100,6 +174,11 @@ export const CORRECTIFS: Correctif[] = [
       return n;
     },
   },
+  // 10-coach, revue des séances types (2026-11-03). L'ordre compte : les exercices avant les séances qui les utilisent.
+  correctifAjoutExercices('2026-11-03-exercices-seances-types', 'Nouveaux exercices : élévations latérales, extension triceps au-dessus de la tête, soulevé de terre roumain, et des exercices au poids du corps (maison et parc).'),
+  correctifSeancesTypes('2026-11-03-seances-types-v2', 'Séances types refaites d’après les études récentes : Push, Pull et Jambes plus courtes et complètes (environ 1 h), Full body et Full Upper ajustés. Tes séances déjà modifiées ne changent pas.'),
+  correctifAjoutModele('2026-11-03-modele-home-gym', 'Home Gym', 'Nouvelle séance « Home Gym » : sans matériel de salle, avec ce qu’on trouve à la maison (environ 1 h).'),
+  correctifAjoutModele('2026-11-03-modele-callisthenie', 'Callisthénie', 'Nouvelle séance « Callisthénie » : street workout au parc, barre fixe et barres parallèles (environ 1 h).'),
 ];
 
 async function dejaAppliques(): Promise<string[]> {
@@ -120,7 +199,7 @@ export async function correctifsEnAttente(): Promise<{ correctif: Correctif; nom
 
 /** Applique (ou ignore si `appliquer` = false) tous les correctifs en attente, puis les marque comme traités. */
 export async function traiterCorrectifs(appliquer: boolean): Promise<number> {
-  return db.transaction('rw', db.exercices, db.modeles, db.reglages, async () => {
+  return db.transaction('rw', db.exercices, db.variantes, db.modeles, db.reglages, async () => {
     let total = 0;
     if (appliquer) for (const c of CORRECTIFS) if (!(await dejaAppliques()).includes(c.id)) total += await c.executer(false);
     await db.reglages.put({ cle: CLE_CORRECTIFS, valeur: CORRECTIFS.map((c) => c.id) });
