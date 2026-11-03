@@ -21,9 +21,9 @@ export function EcranModeles({ id }: { id?: string }) {
   const modeles = useRequete(() => db.modeles.orderBy('nom').filter((m) => !m.archive).toArray());
   const biblio = useBibliotheque();
   const [edite, setEdite] = useState<Modele>();
-  // Ouvert depuis « Modifier » sur l'écran Séance : éditeur direct, retour à la séance à la fin.
+  // Ouvert depuis « Modifier la séance » sur l'aperçu : éditeur direct, retour à l'aperçu à la fin.
   const direct = id ? modeles?.find((m) => m.id === id) : undefined;
-  if (direct && !edite) return <EditeurModele initial={direct} onFin={() => naviguer('/seance')} />;
+  if (direct && !edite) return <EditeurModele initial={direct} onFin={() => naviguer(`/seance/apercu/${direct.id}`)} onSupprime={() => naviguer('/seance')} />;
   if (edite) return <EditeurModele initial={edite} onFin={() => setEdite(undefined)} />;
   if (!modeles || !biblio) return null;
 
@@ -35,7 +35,7 @@ export function EcranModeles({ id }: { id?: string }) {
         </a>
       </div>
       <h1>Modèles de séance</h1>
-      <p class="sc-attenue sc-intro">Une séance type = une liste d'exercices avec leurs séries et leur repos. Touche-en une pour la modifier : ajouter, retirer ou déplacer des exercices, changer les séries et les reps.</p>
+      <p class="sc-attenue sc-intro">Une séance type = une liste d'exercices avec leurs séries et leur repos. Touche-en une pour voir ses exercices, puis la démarrer ou la modifier.</p>
       {modeles.length ? (
         <Liste label="Modèles">
           {modeles.map((m) => (
@@ -43,7 +43,7 @@ export function EcranModeles({ id }: { id?: string }) {
               key={m.id}
               titre={m.nom}
               detail={`${m.blocs.length} exercices · avis : ${LIBELLES_VERDICT[analyserModele(m.nom, m.blocs, biblio.parId, m.type as TypeSeance | undefined).verdict].toLowerCase()}`}
-              onClick={() => setEdite(m)}
+              href={lien(`/seance/apercu/${m.id}`)}
             />
           ))}
         </Liste>
@@ -60,7 +60,7 @@ export function EcranModeles({ id }: { id?: string }) {
   );
 }
 
-function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void }) {
+function EditeurModele({ initial, onFin, onSupprime = onFin }: { initial: Modele; onFin: () => void; onSupprime?: () => void }) {
   const [m, setM] = useState<Modele>(initial);
   const [choix, setChoix] = useState(false);
   // Objectif : propose repos et reps par défaut ; chaque exercice reste modifiable à la main.
@@ -127,7 +127,7 @@ function EditeurModele({ initial, onFin }: { initial: Modele; onFin: () => void 
   const archiver = async () => {
     if (!confirm(`Supprimer le modèle « ${m.nom} » ? Les séances faites restent.`)) return;
     if (await db.modeles.get(m.id)) await enregistrerModele({ ...m, archive: true });
-    onFin();
+    onSupprime();
   };
   const num = (v: string) => {
     const n = parseInt(v, 10);

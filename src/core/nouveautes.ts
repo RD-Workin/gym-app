@@ -9,6 +9,11 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 9,
+    date: '2026-11-03',
+    points: ['Toucher une séance ne la lance plus tout de suite : tu vois d’abord ses exercices, les séries prévues, la durée et ce que tu as fait la dernière fois. De là, « Démarrer » ou « Modifier la séance ».'],
+  },
+  {
     numero: 8,
     date: '2026-11-03',
     points: [

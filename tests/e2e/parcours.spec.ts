@@ -6,6 +6,7 @@ test('séance → série → export CSV', async ({ page }) => {
   page.on('dialog', (d) => d.accept());
 
   await page.goto('./#/seance');
+  await page.getByRole('link', { name: /voir avant de démarrer/ }).click();
   await page.getByRole('button', { name: /^Démarrer / }).click();
 
   const valider = page.getByRole('button', { name: 'Valider la série' });
@@ -90,6 +91,7 @@ test('premier lancement : bienvenue, puis accueil sans « Quoi de neuf »', asyn
 
 test('aide « ? » : explique un terme au toucher', async ({ page }) => {
   await page.goto('./#/seance');
+  await page.getByRole('link', { name: /voir avant de démarrer/ }).click();
   await page.getByRole('button', { name: /^Démarrer / }).click();
   await page.getByRole('button', { name: 'Explication : RIR' }).click();
   await expect(page.getByRole('note')).toContainText('Reps en réserve');
@@ -113,7 +115,8 @@ test('composer ma séance : propositions, avis, enregistrer et démarrer', async
 test('modifier une séance type et revenir au modèle d’origine', async ({ page }) => {
   page.on('dialog', (d) => d.accept());
   await page.goto('./#/seance');
-  await page.getByRole('link', { name: 'Modifier Pull' }).click();
+  await page.getByRole('link', { name: /^Pull/ }).click();
+  await page.getByRole('link', { name: /^Modifier la séance/ }).click();
   await expect(page.getByText('Avis sur ta séance')).toBeVisible();
   const avant = await page.locator('.sc-nom-bloc').count();
   await page.getByRole('button', { name: 'Retirer l’exercice' }).first().click();
@@ -121,6 +124,29 @@ test('modifier une séance type et revenir au modèle d’origine', async ({ pag
   await page.getByRole('button', { name: /Revenir au modèle d’origine/ }).click();
   await expect(page.locator('.sc-nom-bloc')).toHaveCount(avant);
   await expect(page.getByRole('button', { name: /Revenir au modèle d’origine/ })).toHaveCount(0);
+});
+
+// Toucher une séance type ouvre son aperçu (rien n'est lancé), avec Démarrer et Modifier.
+test('aperçu d’une séance type avant de la démarrer', async ({ page }) => {
+  page.on('dialog', (d) => d.accept());
+  await page.goto('./#/seance');
+  await page.getByRole('link', { name: /^Push/ }).click();
+  await expect(page).toHaveURL(/#\/seance\/apercu\/.+/);
+  await expect(page.getByRole('heading', { name: 'Push' })).toBeVisible();
+  const exos = page.locator('.ap-exo');
+  const n = await exos.count();
+  expect(n).toBeGreaterThan(2);
+  await expect(exos.first()).toContainText(/\d séries?/);
+  await expect(page.getByRole('button', { name: 'Valider la série' })).toHaveCount(0);
+  // Modifier : retirer un exercice, enregistrer, retour à l'aperçu à jour.
+  await page.getByRole('link', { name: /^Modifier la séance/ }).click();
+  await page.getByRole('button', { name: 'Retirer l’exercice' }).first().click();
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(page).toHaveURL(/#\/seance\/apercu\/.+/);
+  await expect(page.locator('.ap-exo')).toHaveCount(n - 1);
+  await page.screenshot({ path: 'test-results/apercu.png' });
+  await page.getByRole('button', { name: 'Démarrer Push' }).click();
+  await expect(page.getByRole('button', { name: 'Valider la série' })).toBeVisible();
 });
 
 // Exercice au poids du corps : on note le lest, négatif si on se fait aider (élastique, machine).
