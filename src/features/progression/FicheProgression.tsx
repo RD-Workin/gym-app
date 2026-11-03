@@ -2,7 +2,7 @@
 // Réutilisable par 03 dans la fiche exercice : <FicheProgression exerciceId={id} />.
 import { useMemo, useState } from 'preact/hooks';
 import { useCompteur } from '../../anim';
-import { Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
+import { Aide, Carte, ElementListe, Liste, Medaille, Onglets, Puce } from '../../ui';
 import type { Id } from '../../core/types';
 import { bilanRecords, kg, NOM_TYPE_RECORD, nombre, pointsExercice, tendance, valeurMesure, type FiltreVariante, type Mesure } from './calculs';
 import { Courbe } from './Courbe';
@@ -81,7 +81,9 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
       <Carte>
         <div class="ui-ligne-entre">
           <div>
-            <span class="ui-surtitre">{TITRE_MESURE[mesure]}</span>
+            <span class="ui-surtitre">
+              {TITRE_MESURE[mesure]} <Aide mot={mesure === 'un_rm' ? 'unRm' : mesure === 'volume' ? 'volume' : 'chargeMax'} />
+            </span>
             <div class="prog-grand">
               <span class="ui-chiffre">{dernier ? (mesure === 'volume' ? nombre(affiche) : kg(affiche).replace(' kg', '')) : '–'}</span>
               <span class="ui-attenue">kg</span>

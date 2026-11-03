@@ -34,13 +34,14 @@ export function BandeauContexte({ seance }: { seance: Seance }) {
           <span class="sc-ico">
             <Icone nom="meteo" />
           </span>
-          {c.temperatureC != null ? `${c.temperatureC} °C` : '— °C'}
+          {c.temperatureC != null ? `${c.temperatureC} °C` : 'Météo ?'}
         </Puce>
-        <Puce>{c.poidsCorporelKg != null ? `${c.poidsCorporelKg.toLocaleString('fr-FR')} kg PdC` : 'Poids du corps ?'}</Puce>
+        <Puce>{c.poidsCorporelKg != null ? `${c.poidsCorporelKg.toLocaleString('fr-FR')} kg (toi)` : 'Ton poids ?'}</Puce>
       </button>
       {ouvert && (
         <Carte titre="Contexte de la séance">
           <div class="sc-form">
+            <span class="sc-attenue">Facultatif. Utile pour comprendre une séance moins bonne (chaleur, poids qui change).</span>
             <label>
               Date et heure de début
               <input

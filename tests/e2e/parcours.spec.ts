@@ -76,3 +76,21 @@ test('favori : épinglé en haut de la bibliothèque et filtrable', async ({ pag
   await page.getByRole('button', { name: /Favoris \(1\)/ }).click();
   await expect(lignes).toHaveCount(1);
 });
+
+// Premier lancement : un nouvel utilisateur voit l'accueil de bienvenue, pas l'historique des versions.
+test('premier lancement : bienvenue, puis accueil sans « Quoi de neuf »', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByText('Bienvenue')).toBeVisible();
+  await expect(page.getByText('Quoi de neuf')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Démarrer une séance/ })).toBeVisible();
+  await page.getByRole('button', { name: "J'ai compris" }).click();
+  await expect(page.getByText('Bienvenue')).toHaveCount(0);
+  await expect(page.getByText('Quoi de neuf')).toHaveCount(0);
+});
+
+test('aide « ? » : explique un terme au toucher', async ({ page }) => {
+  await page.goto('./#/seance');
+  await page.getByRole('button', { name: /^Démarrer / }).click();
+  await page.getByRole('button', { name: 'Explication : RIR' }).click();
+  await expect(page.getByRole('note')).toContainText('Reps en réserve');
+});

@@ -46,7 +46,7 @@
 /* Saisie */
 .sc-steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sc-steppers.seul { grid-template-columns: 1fr; }
-.sc-options { display: flex; gap: var(--e-2); }
+.sc-options { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2); }
 .sc-option { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--c-trait); background: transparent; color: var(--c-attenue); font: inherit; font-size: var(--t-sm); cursor: pointer; }
 .sc-option[aria-pressed='true'] { border-color: var(--c-action); color: var(--c-action); }
 .sc-bas { display: grid; gap: var(--e-2); margin-top: var(--e-2); }
@@ -75,3 +75,4 @@
 .sc-choix-repos { display: grid; gap: var(--e-2); padding: var(--e-3); border-radius: var(--r-md); background: var(--c-surface); }
 .sc-repos-valeur { font-size: var(--t-xl); }
 .sc-options-wrap { flex-wrap: wrap; }
+.sc-intro { margin: 0; font-size: var(--t-sm); }

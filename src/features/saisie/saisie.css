@@ -12,3 +12,4 @@
 .sr-ligne[aria-pressed='true'] { border-color: var(--c-action); background: var(--c-surface-2); }
 .sr-num { font-size: var(--t-xs); color: var(--c-attenue); font-weight: 600; }
 .sr-plus { color: var(--c-action); font-weight: 600; border-style: dashed; }
+.sr-intro { margin: 0; font-size: var(--t-sm); }

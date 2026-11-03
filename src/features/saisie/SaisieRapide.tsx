@@ -1,7 +1,7 @@
 // Saisie rapide d'un set (séries × reps × kg) depuis la fiche d'un exercice. Propriétaire : 04-seance.
 // Stats et suggestions : 05-progression (suggestion.ts).
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { Bouton, Carte, Puce, Stepper, ToastRecord } from '../../ui';
+import { Aide, Bouton, Carte, Puce, Stepper, ToastRecord } from '../../ui';
 import { eclatSur } from '../../anim';
 import { lien } from '../../core/router';
 import { useRequete } from '../../core/requetes';
@@ -123,8 +123,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   };
 
   return (
-    <Carte titre="Noter une perf" ton="mise-en-avant">
+    <Carte titre="Noter une perf" ton="mise-en-avant" aside={<Aide mot="noterExercice" />}>
       <div class="ui-pile">
+        <p class="ui-attenue sr-intro">Fait sans lancer de séance ? Touche une série (S1, S2…), règle ses reps et sa charge, puis enregistre.</p>
         {(ref != null || !!avantVariante?.length) && (
           <div class="sr-stats">
             {avantVariante && avantVariante.length > 0 && (
@@ -137,13 +138,17 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             )}
             {ref != null && (
               <div>
-                <span class="ui-surtitre">1RM estimé{modeCharge === 'par_main' ? ' (2 mains)' : ''}</span>
+                <span class="ui-surtitre">
+                  1RM estimé{modeCharge === 'par_main' ? ' (2 mains)' : ''} <Aide mot="unRm" />
+                </span>
                 <span class="ui-chiffre">{kg(ref)}</span>
               </div>
             )}
             {projete != null && ref != null && projete > ref + 0.5 && (
               <div>
-                <span class="ui-surtitre">Max projeté (4 sem.)</span>
+                <span class="ui-surtitre">
+                  Max projeté (4 sem.) <Aide texte="Le 1RM que tu pourrais atteindre dans 4 semaines si tu continues au même rythme (tendance de tes 12 dernières semaines)." libelle="Max projeté" />
+                </span>
                 <span class="ui-chiffre">{kg(projete)}</span>
               </div>
             )}
@@ -165,8 +170,8 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             <button key={j} type="button" class="sr-ligne" aria-pressed={j === i} onClick={() => setSel(j)}>
               <span class="sr-num">S{j + 1}</span>
               <span class="ui-chiffre">
-                {l.reps}
-                {sansCharge ? ' reps' : ` × ${fmtKg(l.chargeKg)}`}
+                {l.reps} reps
+                {sansCharge ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
               </span>
             </button>
           ))}

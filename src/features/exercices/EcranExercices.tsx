@@ -23,7 +23,7 @@ const memo = {
   source: 'perso' as Source,
   texte: '',
   muscles: [] as string[],
-  corps: true,
+  corps: false,
   masques: false,
   favoris: false,
   equipement: '' as Equipement | '',
@@ -103,6 +103,11 @@ export function EcranExercices() {
           { valeur: 'catalogue', libelle: `Catalogue${catalogue ? ` (${catalogue.length})` : ''}` },
         ]}
       />
+      <p class="ui-attenue ex-intro">
+        {source === 'perso'
+          ? 'Tes exercices. Touches-en un pour noter une perf, voir ta progression ou son réglage machine.'
+          : 'Plus de 600 exercices illustrés. Ouvre-en un pour voir comment le faire et l’ajouter à ta bibliothèque.'}
+      </p>
       <input
         class="ex-recherche"
         type="search"
@@ -139,7 +144,7 @@ export function EcranExercices() {
       </div>
 
       <div class="ui-ligne-entre">
-        <span class="ui-surtitre">{muscles.length ? muscles.map(libelleGroupe).join(' · ') : 'Touche un muscle'}</span>
+        <span class="ui-surtitre">{muscles.length ? muscles.map(libelleGroupe).join(' · ') : 'Filtrer par muscle'}</span>
         <span class="ui-ligne" style={{ gap: 'var(--e-2)' }}>
           {muscles.length > 0 && (
             <button type="button" class="ex-filtre" onClick={() => setMuscles([])}>
@@ -147,7 +152,7 @@ export function EcranExercices() {
             </button>
           )}
           <button type="button" class="ex-filtre" aria-pressed={corps} onClick={() => setCorps(!corps)}>
-            Corps
+            {corps ? 'Masquer le schéma' : 'Schéma du corps'}
           </button>
         </span>
       </div>

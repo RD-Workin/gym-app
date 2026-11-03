@@ -9,6 +9,15 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 4,
+    date: '2026-11-03',
+    points: [
+      'App plus claire pour qui la découvre : accueil avec les 3 étapes pour démarrer, et un « ? » à côté des mots techniques (RIR, 1RM, modèle, superset…).',
+      'Réglages › Aide : le guide de démarrage et tous les mots de l’app expliqués.',
+      'Fiche exercice : la modification (nom, muscles, photo, variantes) est repliée sous « Modifier l’exercice ».',
+    ],
+  },
+  {
     numero: 3,
     date: '2026-11-02',
     points: [

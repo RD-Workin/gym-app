@@ -5,7 +5,7 @@ import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
 import type { Equipement, ModeCharge } from '../../core/types';
 import { EQUIPEMENTS, GROUPES, MODES_CHARGE } from '../../data/groupes';
-import { Bouton, Carte, ElementListe, Liste, PanneauConseils } from '../../ui';
+import { Aide, Bouton, Carte, ElementListe, Liste, PanneauConseils } from '../../ui';
 import { CONSEILS_EQUIPEMENTS, CONSEILS_GROUPES, conseilsExercice } from '../../data/conseils';
 import { libelleGroupe } from '../../data/groupes';
 import {
@@ -121,8 +121,23 @@ function FicheExercice({ id }: { id: string }) {
         <CorpsMuscles actifs={b.groupesMusculaires} onBasculer={basculerGroupe} />
       </Carte>
       {!nouveau && <Conseils nom={ex!.nom} groupes={b.groupesMusculaires} equipement={b.equipement} />}
-      {!nouveau && <h2 style={{ marginTop: 'var(--e-3)' }}>Réglages de l'exercice</h2>}
+      {nouveau ? formulaire() : (
+        <details class="ex-modifier">
+          <summary>
+            <span>Modifier l'exercice</span>
+            <span class="ui-attenue">Nom, matériel, muscles, réglage machine, photo, variantes</span>
+          </summary>
+          <div class="ui-pile">
+            {formulaire()}
+            {suite()}
+          </div>
+        </details>
+      )}
+    </section>
+  );
 
+  function formulaire() {
+    return (
       <form class="ui-pile" onSubmit={enregistrer}>
         <label class="ex-champ">
           <span class="ui-surtitre">Nom</span>
@@ -144,7 +159,9 @@ function FicheExercice({ id }: { id: string }) {
             </select>
           </label>
           <label class="ex-champ" style={{ flex: 1 }}>
-            <span class="ui-surtitre">Charge notée</span>
+            <span class="ui-surtitre">
+              Charge notée <Aide texte="Ce que tu notes comme poids. Charge totale : tout le poids soulevé. Par main : un seul haltère. Lest : le poids ajouté au poids du corps. Sans charge : seulement les reps." libelle="Charge notée" />
+            </span>
             <select value={b.modeCharge} onChange={(e) => maj({ modeCharge: e.currentTarget.value as ModeCharge })}>
               {Object.entries(MODES_CHARGE).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
@@ -163,7 +180,9 @@ function FicheExercice({ id }: { id: string }) {
           </div>
         </div>
         <label class="ex-champ">
-          <span class="ui-surtitre">Réglages machine</span>
+          <span class="ui-surtitre">
+            Réglages machine <Aide mot="reglageMachine" />
+          </span>
           <input value={b.reglagesMachine ?? ''} placeholder="ex. chaise 4" maxLength={80} onInput={(e) => maj({ reglagesMachine: e.currentTarget.value })} />
         </label>
         <label class="ex-champ">
@@ -174,8 +193,11 @@ function FicheExercice({ id }: { id: string }) {
           {nouveau ? 'Créer' : message || 'Enregistrer'}
         </Bouton>
       </form>
+    );
+  }
 
-      {!nouveau && (
+  function suite() {
+    return (
         <>
           <Carte titre="Photo de référence">
             <div class="ui-pile">
@@ -207,7 +229,7 @@ function FicheExercice({ id }: { id: string }) {
               </div>
             </div>
           </Carte>
-          <Carte titre="Variantes (suivies séparément)">
+          <Carte titre="Variantes (suivies séparément)" aside={<Aide mot="variante" />}>
             <div class="ui-pile">
               {donnees!.variantes.length > 0 && (
                 <Liste label="Variantes">
@@ -250,10 +272,10 @@ function FicheExercice({ id }: { id: string }) {
           <Bouton variante={ex!.archive ? 'contour' : 'danger'} onClick={() => masquerExercice(id, !ex!.archive)}>
             {ex!.archive ? 'Réafficher cet exercice' : 'Masquer cet exercice'}
           </Bouton>
+          {!ex!.archive && <p class="ui-attenue ex-aide-masquer">Masquer retire l'exercice des listes sans effacer son historique.</p>}
         </>
-      )}
-    </section>
-  );
+    );
+  }
 }
 
 /** Conseils du coach (contenu : 10-coach) : l'exercice, son muscle principal, son matériel. */

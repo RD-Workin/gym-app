@@ -1,6 +1,6 @@
 // Séance en cours (propriétaire : 04-seance).
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { PanneauConseils } from '../../ui';
+import { Aide, PanneauConseils } from '../../ui';
 import { CONSEILS_SEANCE, conseilsExercice } from '../../data/conseils';
 import { Bouton, Carte, ElementListe, Liste, Onglets, Puce, Stepper, ToastRecord } from '../../ui';
 import { db } from '../../core/db';
@@ -70,19 +70,23 @@ function Demarrage() {
   return (
     <section class="sc">
       <h1>Séance</h1>
+      <p class="sc-attenue sc-intro">
+        Choisis une séance type <Aide mot="modele" /> : l'app te guide exercice par exercice, avec le minuteur de repos.
+      </p>
       {modeles.length > 0 ? (
         <>
-          <Carte titre="Prochaine séance" aside={<Puce>{ilYa(derniere.get(modeles[0].id))}</Puce>} ton="mise-en-avant">
+          <Carte titre="À faire ensuite" aside={<Puce>{ilYa(derniere.get(modeles[0].id))}</Puce>} ton="mise-en-avant">
             <Bouton taille="geant" onClick={() => lancer(modeles[0])} disabled={occupe}>
               Démarrer {modeles[0].nom}
             </Bouton>
           </Carte>
+          {modeles.length > 1 && <span class="ui-surtitre">Autres séances types</span>}
           {modeles.slice(1).map((m) => (
             <Bouton key={m.id} variante="secondaire" taille="large" detail={`${m.blocs.length} exercices · ${ilYa(derniere.get(m.id))}`} onClick={() => lancer(m)}>
               {m.nom}
             </Bouton>
           ))}
-          <Bouton variante="contour" onClick={() => lancer()}>
+          <Bouton variante="contour" taille="large" onClick={() => lancer()} detail="Sans modèle : tu ajoutes les exercices au fur et à mesure">
             Séance libre
           </Bouton>
         </>
@@ -94,11 +98,11 @@ function Demarrage() {
           </Bouton>
         </Carte>
       )}
-      <Bouton variante="contour" taille="large" href={lien('/exercices')} detail="Choisis l'exercice et note tes séries, sans lancer de séance">
+      <Bouton variante="contour" taille="large" href={lien('/exercices')} detail="Une perf faite sans lancer de séance ni de chrono">
         Noter un exercice
       </Bouton>
       <Bouton variante="contour" href={lien('/modeles')}>
-        Gérer les modèles
+        Modifier ou créer des séances types
       </Bouton>
       {recentes.length > 0 && (
         <>
@@ -270,6 +274,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
   const titre = modele?.nom ?? 'Séance libre';
   const reglageAffiche = saisie?.reglagesMachine ?? exercice?.reglagesMachine;
   const cible = bloc && (bloc.seriesCibles || bloc.repsCibles) ? `${bloc.seriesCibles ?? '?'} × ${bloc.repsCibles ?? '?'}` : undefined;
+  const cibleTexte = bloc?.seriesCibles && bloc.repsCibles ? `${bloc.seriesCibles} séries de ${bloc.repsCibles} reps` : cible;
   const notes = [exercice?.note, bloc?.note].filter(Boolean);
   const sansCharge = saisie?.modeCharge === 'sans_charge';
 
@@ -295,7 +300,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
 
       {!bloc ? (
         <Carte titre="Séance libre">
-          <p class="sc-attenue">Ajoute un premier exercice.</p>
+          <p class="sc-attenue">Touche « Ajouter un exercice » en bas pour commencer.</p>
         </Carte>
       ) : (
         <>
@@ -304,9 +309,10 @@ function SeanceActive({ seance }: { seance: Seance }) {
               <span class="ui-surtitre">
                 Exercice {gi + 1} / {grps.length}
                 {grp.length > 1 ? ' · superset' : exercice ? ` · ${exercice.equipement.replace('_', ' ')}` : ''}
+                {grp.length > 1 && <Aide mot="superset" />}
               </span>
               <button type="button" class="sc-puce-btn" onClick={reglage} aria-label="Réglage machine">
-                <Puce>{reglageAffiche || 'Réglage ?'}</Puce>
+                <Puce>{reglageAffiche ? `Réglage : ${reglageAffiche}` : '+ Réglage machine'}</Puce>
               </button>
             </div>
             {grp.length > 1 && (
@@ -326,11 +332,11 @@ function SeanceActive({ seance }: { seance: Seance }) {
             </div>
             {cible && (
               <div class="sc-attenue">
-                Cible du jour : <b class="sc-num">{cible}</b>
+                Cible : <b class="sc-num">{cibleTexte}</b> <Aide mot="cible" />
               </div>
             )}
             <div class="sc-attenue">
-              Repos :{' '}
+              Repos entre les séries :{' '}
               <button type="button" class="sc-lien sc-lien-inline" onClick={() => setReglerRepos(!reglerRepos)} aria-label="Régler la durée du repos">
                 {dureeTexte(reposBloc)} ✎
               </button>
@@ -358,7 +364,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
               <li>
                 <div class="sc-serie cur">
                   <span class="sc-n">{faites.length + 1}</span>
-                  <span class="sc-attenue">en cours</span>
+                  <span class="sc-attenue">série {faites.length + 1} : règle puis valide</span>
                   <span />
                 </div>
               </li>
@@ -398,7 +404,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
               )}
               <div class="sc-options">
                 <button type="button" class="sc-option" aria-pressed={saisie.type === 'echauffement'} onClick={() => setSaisie({ ...saisie, type: saisie.type === 'echauffement' ? 'travail' : 'echauffement' })}>
-                  Échauffement
+                  Série d'échauffement
                 </button>
                 <button
                   type="button"
@@ -409,8 +415,9 @@ function SeanceActive({ seance }: { seance: Seance }) {
                     setSaisie({ ...saisie, rir: rirVisible ? undefined : (saisie.rir ?? 2) });
                   }}
                 >
-                  RIR
+                  Noter le RIR
                 </button>
+                <Aide mot="rir" />
               </div>
             </>
           )}
@@ -439,19 +446,19 @@ function SeanceActive({ seance }: { seance: Seance }) {
         ) : null}
         <div class="sc-ligne sc-nav">
           <button type="button" class="sc-lien" disabled={gi <= 0} onClick={() => allerGroupe(gi - 1)}>
-            {gi > 0 ? `‹ ${grps[gi - 1].map(nom).join(' + ')}` : ''}
+            {gi > 0 ? `‹ Précédent : ${grps[gi - 1].map(nom).join(' + ')}` : ''}
           </button>
           <button type="button" class="sc-lien" disabled={gi >= grps.length - 1} onClick={() => allerGroupe(gi + 1)}>
-            {gi < grps.length - 1 ? `${grps[gi + 1].map(nom).join(' + ')} ›` : ''}
+            {gi < grps.length - 1 ? `Suivant : ${grps[gi + 1].map(nom).join(' + ')} ›` : ''}
           </button>
         </div>
         <div class="sc-ligne">
           <Bouton variante="contour" icone="plus" onClick={() => setChoix(true)}>
-            Exercice
+            Ajouter un exercice
           </Bouton>
           {bloc && !faites.length && (
-            <Bouton variante="danger" onClick={retirerExercice}>
-              Retirer
+            <Bouton variante="contour" onClick={retirerExercice} aria-label={`Retirer ${nom(plan.actif)} de cette séance`}>
+              Passer cet exercice
             </Bouton>
           )}
         </div>

@@ -1,19 +1,132 @@
+// Accueil : dit ce que fait l'app et quoi faire maintenant. Propriétaire : 01 (contenu et clarté : 11-ergonomie).
+import { Bouton, Carte, Puce } from '../../ui';
+import { db } from '../db';
 import { lien } from '../router';
+import { seanceEnCours, useRequete } from '../requetes';
 import { RappelSauvegarde } from '../../features/donnees/rappel';
-import { CarteNouveautes } from './MiseAJour';
+import { useEffect } from 'preact/hooks';
+import { CarteNouveautes, marquerNouveautesVues } from './MiseAJour';
+import './accueil.css';
+
+export const CLE_BIENVENUE = 'bienvenueVue';
+
+async function etatAccueil() {
+  const [enCours, nbSeries, bienvenue, seances] = await Promise.all([
+    seanceEnCours(),
+    db.series.count(),
+    db.reglages.get(CLE_BIENVENUE),
+    db.seances.orderBy('debut').reverse().toArray(),
+  ]);
+  const finies = seances.filter((s) => s.fin);
+  const lundi = new Date();
+  lundi.setHours(0, 0, 0, 0);
+  lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+  const semaine = finies.filter((s) => new Date(s.debut) >= lundi).length;
+  const derniere = finies[0];
+  const modele = derniere?.modeleId ? await db.modeles.get(derniere.modeleId) : undefined;
+  return {
+    enCours: enCours ?? null,
+    nouveau: nbSeries === 0,
+    bienvenueVue: bienvenue?.valeur === true,
+    semaine,
+    derniere: derniere ? { id: derniere.id, debut: derniere.debut, nom: modele?.nom ?? 'Séance libre' } : null,
+  };
+}
+
+const ilYa = (iso: string) => {
+  const j = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  return j <= 0 ? "aujourd'hui" : j === 1 ? 'hier' : `il y a ${j} jours`;
+};
 
 export function EcranAccueil() {
+  const e = useRequete(etatAccueil);
+  if (!e) return null;
+  const montrerBienvenue = e.nouveau && !e.bienvenueVue;
+
   return (
-    <section>
+    <section class="ui-pile acc">
       <h1>Gym App</h1>
-      <CarteNouveautes />
+      {montrerBienvenue ? <Bienvenue /> : <CarteNouveautes />}
       <RappelSauvegarde />
-      <p>
-        <a href={lien('/seance')}>Commencer une séance</a>
-      </p>
-      <p>
-        <a href={lien('/exercices')}>Noter un exercice (sans séance)</a>
-      </p>
+
+      {e.enCours ? (
+        <Carte titre="Séance en cours" ton="mise-en-avant" aside={<Puce>depuis {new Date(e.enCours.debut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Puce>}>
+          <Bouton taille="geant" href={lien('/seance')}>
+            Reprendre la séance
+          </Bouton>
+        </Carte>
+      ) : (
+        <Bouton taille="geant" icone="seance" href={lien('/seance')}>
+          Démarrer une séance
+        </Bouton>
+      )}
+      <Bouton variante="secondaire" taille="large" icone="exercices" href={lien('/exercices')} detail="Une perf faite sans lancer de séance ni de chrono">
+        Noter un exercice
+      </Bouton>
+
+      {!e.nouveau && (
+        <Carte titre="Ton suivi">
+          <div class="acc-stats">
+            <div>
+              <span class="ui-chiffre acc-chiffre">{e.semaine}</span>
+              <span class="ui-attenue">séance{e.semaine > 1 ? 's' : ''} cette semaine</span>
+            </div>
+            {e.derniere && (
+              <a href={lien(`/seance/${e.derniere.id}`)}>
+                <span class="acc-derniere">{e.derniere.nom}</span>
+                <span class="ui-attenue">dernière séance, {ilYa(e.derniere.debut)}</span>
+              </a>
+            )}
+          </div>
+          <Bouton variante="contour" icone="progres" href={lien('/progression')}>
+            Voir mes progrès
+          </Bouton>
+        </Carte>
+      )}
+
+      {montrerBienvenue ? null : (
+        <p class="ui-attenue acc-aide">
+          Un mot pas clair (RIR, 1RM, modèle…) ? Touche le <span class="acc-q">?</span> à côté, ou vois <a href={lien('/reglages')}>Réglages › Aide</a>.
+        </p>
+      )}
     </section>
+  );
+}
+
+/** Premier lancement : ce que fait l'app et les 3 gestes pour commencer. */
+function Bienvenue() {
+  useEffect(() => {
+    void marquerNouveautesVues();
+  }, []);
+  return (
+    <Carte titre="Bienvenue" ton="mise-en-avant">
+      <p class="acc-intro">
+        Note tes séances de muscu en quelques secondes, et vois tes charges progresser. Tout reste sur ce téléphone, sans compte.
+      </p>
+      <EtapesDemarrage />
+      <p class="ui-attenue acc-astuce">
+        Tu vois un <span class="acc-q">?</span> à côté d'un mot : touche-le pour une explication.
+      </p>
+      <Bouton variante="secondaire" onClick={() => void db.reglages.put({ cle: CLE_BIENVENUE, valeur: true })}>
+        J'ai compris
+      </Bouton>
+    </Carte>
+  );
+}
+
+/** Les 3 gestes pour commencer (aussi dans Réglages › Aide). */
+export function EtapesDemarrage() {
+  return (
+    <ol class="acc-etapes">
+      <li>
+        <b>Démarre une séance.</b> Quatre séances types sont prêtes (Push, Pull, Jambes, Full body) : l'app te guide exercice par exercice.
+      </li>
+      <li>
+        <b>Note chaque série.</b> Règle le poids et les répétitions avec + et −, puis « Valider la série ». Le minuteur de repos démarre tout seul.
+      </li>
+      <li>
+        <b>Regarde tes progrès.</b> Après ta première séance, l'onglet Progrès montre tes courbes et tes records.
+      </li>
+    </ol>
   );
 }
