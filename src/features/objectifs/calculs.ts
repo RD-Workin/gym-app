@@ -14,7 +14,7 @@ const FENETRE_RYTHME = 84;
 export const NOM_MESURE: { [m in MesureObjectif]: string } = {
   serie: 'Série',
   un_rm: '1RM estimé',
-  charge_max: 'Charge max',
+  charge_max: 'Record perso (PR)',
   reps: 'Reps (meilleure série)',
   duree: 'Temps tenu (meilleure série)',
 };

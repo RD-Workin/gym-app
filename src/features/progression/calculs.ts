@@ -128,6 +128,9 @@ export interface RecordPerso {
   date: string;
   /** Lest seul, pour un libellé « +10 kg ». */
   lestKg?: number;
+  /** Pour `charge_max` : reps de la série et charge telle que notée (un haltère, lest seul…). */
+  reps?: number;
+  chargeNoteeKg?: number;
 }
 
 const cleVariante = (s: Pick<Serie, 'exerciceId' | 'varianteId'>) => `${s.exerciceId}|${s.varianteId ?? ''}`;
@@ -182,7 +185,7 @@ function appliquer(m: Meilleurs, s: Serie, poids: number | undefined, date: stri
     battus.push(m.unRm);
   }
   if (c != null && c > 0 && (!m.chargeMax || c > m.chargeMax.valeur + eps)) {
-    m.chargeMax = { ...base, type: 'charge_max', valeur: c };
+    m.chargeMax = { ...base, type: 'charge_max', valeur: c, reps: s.reps, chargeNoteeKg: s.chargeKg };
     battus.push(m.chargeMax);
   }
   if (c != null && c > 0 && s.reps > 0) {
@@ -269,7 +272,7 @@ export function libelleRecord(r: RecordPerso, nomExercice: string): string {
     case 'un_rm':
       return `${nomExercice} · 1RM estimé ${kg(r.valeur)}`;
     case 'charge_max':
-      return `${nomExercice} · charge max ${kg(r.valeur)}`;
+      return `${nomExercice} · record perso (PR) ${kg(r.valeur)}`;
     case 'reps_a_charge':
       return `${nomExercice} · ${r.valeur} reps à ${r.lestKg != null ? `${signeLest(r.lestKg)}${kg(r.lestKg)} de lest` : kg(r.chargeKg!)}`;
     case 'volume_seance':
@@ -287,7 +290,7 @@ export const libelleChargeDuree = (r: Pick<RecordPerso, 'chargeKg' | 'lestKg'>) 
 
 export const NOM_TYPE_RECORD: { [t in TypeRecord]: string } = {
   un_rm: '1RM estimé',
-  charge_max: 'Charge max',
+  charge_max: 'Record perso (PR)',
   reps_a_charge: 'Reps à une charge',
   volume_seance: 'Volume de séance',
   duree_max: 'Temps tenu max',

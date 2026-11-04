@@ -9,8 +9,8 @@ export const LEXIQUE = {
     definition: 'Reps en réserve : combien de répétitions tu aurais encore pu faire à la fin de la série. 0 = à fond, 2 = il en restait deux. Facultatif.',
   },
   unRm: {
-    terme: '1RM',
-    definition: 'La charge maximale que tu pourrais soulever une seule fois. L’app l’estime à partir de tes séries, sans que tu aies à la tester.',
+    terme: '1RM estimé',
+    definition: 'Ton potentiel : la charge que tu pourrais soulever une seule fois, calculée à partir de tes séries (ex. 80 kg × 5 reps ≈ 93 kg). Tu ne l’as pas forcément déjà soulevée. À ne pas confondre avec ton record perso (PR), le poids le plus lourd vraiment soulevé.',
   },
   modele: {
     terme: 'Modèle',
@@ -59,9 +59,16 @@ export const LEXIQUE = {
     terme: 'En secondes',
     definition: 'Pour les exercices qu’on tient sans bouger (gainage, dead hang, chaise contre un mur) : tu notes combien de secondes tu as tenu, au lieu de répétitions. Un lest reste possible.',
   },
-  chargeMax: { terme: 'Charge max', definition: 'Le poids le plus lourd soulevé ce jour-là, quel que soit le nombre de répétitions.' },
+  chargeMax: {
+    terme: 'Charge la plus lourde',
+    definition: 'Le poids le plus lourd vraiment soulevé à chaque séance, quel que soit le nombre de répétitions. Le point le plus haut de la courbe, c’est ton record perso (PR).',
+  },
+  pr: {
+    terme: 'Record perso (PR)',
+    definition: 'PR = Personal Record. Le poids le plus lourd que tu as vraiment soulevé sur cet exercice, même pour 1 ou 3 reps. C’est un fait, pas une estimation ; le 1RM estimé, lui, est ton potentiel.',
+  },
   volume: { terme: 'Volume', definition: 'Poids × répétitions, additionnés sur toutes les séries de la séance. Il monte quand tu en fais plus.' },
-  record: { terme: 'Record', definition: 'Ta meilleure perf sur un exercice (charge, répétitions ou 1RM estimé). Une célébration s’affiche quand tu en bats un.' },
+  record: { terme: 'Record', definition: 'Ta meilleure perf sur un exercice : record perso (PR, la charge la plus lourde vraiment soulevée), 1RM estimé, ou plus de reps à une charge. Une célébration s’affiche quand tu en bats un.' },
   progres: {
     terme: 'Séance en progrès',
     definition: 'Au moins un exercice fait mieux que la dernière fois : 1RM estimé plus haut, sinon charge plus lourde, sinon plus de répétitions.',
