@@ -92,6 +92,16 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const ref = unRmRecent(points);
   const meilleureTenue = tenu ? points.reduce<number | null>((m, p) => (p.dureeMax != null && (m == null || p.dureeMax > m) ? p.dureeMax : m), null) : null;
   const projete = maxProjete(points);
+  // Record perso (PR) : la charge la plus lourde vraiment soulevée, à côté du 1RM estimé (le potentiel).
+  const pr = tenu ? null : points.reduce<number | null>((m, p) => (p.chargeMax != null && (m == null || p.chargeMax > m) ? p.chargeMax : m), null);
+  // Reps faites à cette charge (affichées « 80 kg × 3 », comme dans les records) ; absentes si la charge est recalculée (lest, 2 mains).
+  const repsPr =
+    pr == null
+      ? undefined
+      : points
+          .filter((p) => p.chargeMax === pr)
+          .flatMap((p) => p.series.filter((x) => x.chargeKg === pr).map((x) => x.reps))
+          .reduce<number | undefined>((m, r) => (r != null && (m == null || r > m) ? r : m), undefined);
   const sansCharge = modeCharge === 'sans_charge';
   const lest = modeCharge === 'lest';
   const unite = uniteCharge(modeCharge);
@@ -155,6 +165,17 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
                   Meilleure tenue <Aide mot="enSecondes" />
                 </span>
                 <span class="ui-chiffre">{fmtDuree(meilleureTenue)}</span>
+              </div>
+            )}
+            {pr != null && pr > 0 && (
+              <div>
+                <span class="ui-surtitre">
+                  Record perso (PR){modeCharge === 'par_main' ? ' (2 mains)' : ''} <Aide mot="pr" />
+                </span>
+                <span class="ui-chiffre">
+                  {kg(pr)}
+                  {repsPr ? ` × ${repsPr}` : ''}
+                </span>
               </div>
             )}
             {ref != null && (

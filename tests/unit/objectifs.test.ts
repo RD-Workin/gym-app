@@ -147,7 +147,7 @@ describe('objectifs dans les exports', () => {
   it('résumé IA : section « Mes objectifs », sans question préremplie', () => {
     const t = construireResume(d, {}, AUJ);
     expect(t).toContain('## Mes objectifs');
-    expect(t).toContain('Développé couché : objectif Charge max 100 kg d’ici le 01/03/2027 ; actuel 85 kg, reste 15 kg (85 % de la cible)');
+    expect(t).toContain('Développé couché : objectif Record perso (PR) 100 kg d’ici le 01/03/2027 ; actuel 85 kg, reste 15 kg (85 % de la cible)');
     expect(t).toContain('date estimée à ce rythme : 16/02/2027');
     expect(t).not.toContain('Peux-tu');
   });
@@ -156,7 +156,7 @@ describe('objectifs dans les exports', () => {
     const lignes = lignesCsv(d, {}, AUJ);
     const col = (c: string) => (COLONNES_CSV as readonly string[]).indexOf(c);
     expect(lignes[0].length).toBe(COLONNES_CSV.length);
-    expect(lignes[0][col('objectif')]).toBe('Charge max 100 kg');
+    expect(lignes[0][col('objectif')]).toBe('Record perso (PR) 100 kg');
     expect(lignes[0][col('objectif_cible')]).toBe('100');
     expect(lignes[0][col('objectif_actuel')]).toBe('85');
     expect(lignes[0][col('objectif_reste')]).toBe('15');

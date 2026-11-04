@@ -5,6 +5,7 @@ import type { Exercice, MesureObjectif, Objectif } from '../../core/types';
 import { Aide, Bouton, Carte, Onglets, Puce, Stepper } from '../../ui';
 import { fmtDuree, LEST_MAX_KG, LEST_MIN_KG, signeLest } from '../../core/calculs';
 import type { DonneesProgression } from '../progression/donnees';
+import { bilanRecords } from '../progression/calculs';
 import { conseilsObjectif, evaluerObjectif, fmtValeur, LIBELLE_STATUT, phraseCourte, phraseMarge, repsCible, typeObjectif, uniteMesure, type StatutObjectif } from './calculs';
 import { enregistrerObjectif, objectifsDe, supprimerObjectif } from './objectifs';
 import './objectifs.css';
@@ -25,6 +26,20 @@ const TON: { [s in StatutObjectif]: 'progres' | 'alerte' | 'record' | undefined 
   stagne: 'alerte',
   pas_assez: undefined,
 };
+
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
+/**
+ * Record perso (PR) : la charge la plus lourde vraiment soulevée (variante de l'objectif), en charge telle que notée,
+ * ex. « 80 kg × 3 reps », « +10 kg de lest × 2 reps ». Sert à le distinguer du 1RM estimé (le potentiel).
+ */
+function texteRecordPerso(exercice: Exercice, d: DonneesProgression, varianteId?: string): string | undefined {
+  const r = bilanRecords(d.series.filter((s) => s.exerciceId === exercice.id), d.poids).actuels.get(`${exercice.id}|${varianteId ?? ''}`)?.chargeMax;
+  if (!r || !r.reps) return undefined;
+  const lest = exercice.modeCharge === 'lest';
+  const v = r.chargeNoteeKg ?? r.valeur;
+  return `${lest ? signeLest(v) : ''}${fmtValeur(v, 'serie')} ${lest ? 'kg de lest' : 'kg'} × ${pluriel(r.reps, 'rep')}`;
+}
 
 /** Tous les objectifs de l'exercice, puis le bouton d'ajout. `edition` = id de l'objectif modifié, ou 'nouveau'. */
 export function CarteObjectif({ exercice, d }: { exercice: Exercice; d: DonneesProgression }) {
@@ -60,8 +75,11 @@ function SuiviObjectif({ exercice, d, objectif, modifier }: { exercice: Exercice
   const u = lest ? 'kg de lest' : uniteMesure(objectif.mesure);
   const fmt = (v: number) => (lest ? signeLest(v) : '') + fmtValeur(v, objectif.mesure);
   const entrainement = objectif.mesure === 'serie' && repsCible(objectif) > 1;
+  const unRm = objectif.mesure === 'serie' && !entrainement;
   const sousTitre =
     objectif.mesure === 'serie' ? (entrainement ? 'ton niveau actuel' : '1RM estimé') : objectif.mesure === 'reps' ? 'meilleure série' : objectif.mesure === 'duree' ? 'meilleure tenue' : 'actuel';
+  // Objectif 1RM : on montre aussi le record vraiment soulevé, pour ne pas confondre potentiel et réalité.
+  const pr = useMemo(() => (unRm || objectif.mesure === 'un_rm' ? texteRecordPerso(exercice, d, objectif.varianteId) : undefined), [unRm, objectif, exercice, d]);
   return (
     <Carte
       ton="progres"
@@ -72,8 +90,16 @@ function SuiviObjectif({ exercice, d, objectif, modifier }: { exercice: Exercice
         {entrainement && <span class="ui-attenue obj-reps">{repsCible(objectif)} ×</span>}
         <span class="ui-chiffre obj-actuel">{etat.actuel != null ? fmt(etat.actuel) : '–'}</span>
         <span class="ui-attenue">/ {fmt(objectif.cible)} {u}</span>
-        <span class="ui-attenue obj-sous">{sousTitre}</span>
+        <span class="ui-attenue obj-sous">
+          {sousTitre}
+          {unRm && <Aide mot="unRm" />}
+        </span>
       </div>
+      {pr && (
+        <p class="ui-attenue obj-pr">
+          Record perso (PR) : <span class="ui-chiffre">{pr}</span> <Aide mot="pr" />
+        </p>
+      )}
       <div class="obj-jauge" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(etat.pourcentage)} aria-label={phraseMarge(objectif, etat)}>
         <span style={{ width: `${etat.pourcentage}%` }} />
       </div>
@@ -149,11 +175,12 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
     exercice.enSecondes || enDuree
       ? [{ valeur: 'duree', libelle: 'Temps tenu' }]
       : sansCharge || objectif?.mesure === 'reps' ? [...TYPES, { valeur: 'reps' as const, libelle: 'Reps max' }] : TYPES;
+  const pr = useMemo(() => (type === '1rm' ? texteRecordPerso(exercice, d, objectif?.varianteId) : undefined), [type, exercice, d, objectif]);
   const aide =
     actuel == null
       ? 'Pas encore de mesure sur cet exercice.'
       : type === '1rm'
-        ? `Ton 1RM estimé aujourd'hui : ${fmt(actuel)} ${uKg}.`
+        ? `Ton 1RM estimé aujourd'hui : ${fmt(actuel)} ${uKg} (ton potentiel).${pr ? ` Ton record perso (PR) : ${pr} (vraiment soulevé).` : ''} L’objectif est atteint quand tu soulèves vraiment la charge visée.`
         : type === 'entrainement'
           ? `Ton niveau aujourd'hui : ${reps} × ${fmt(actuel)} ${uKg}.`
           : enDuree
@@ -166,7 +193,7 @@ function FormulaireObjectif({ exercice, d, objectif, fermer }: { exercice: Exerc
         <div class="ex-champ">
           <span class="ui-surtitre">
             {type === '1rm' ? (lest ? 'Lest visé (1 rep)' : 'Max visé (1 rep)') : type === 'entrainement' ? (lest ? 'Lest' : 'Charge') : enDuree ? 'Temps à tenir' : 'Reps visées'}
-            {lest && <Aide mot="lest" />}
+            {lest ? <Aide mot="lest" /> : type === '1rm' && <Aide mot="unRm" />}
           </span>
           <Stepper
             id="obj-cible"

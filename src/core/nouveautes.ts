@@ -9,6 +9,13 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 13,
+    date: '2026-11-04',
+    points: [
+      'Record perso (PR) et 1RM estimé bien séparés : le PR est le poids le plus lourd que tu as vraiment soulevé, le 1RM estimé est ton potentiel calculé sur tes séries. Les deux sont affichés dans la fiche exercice et sur les objectifs 1RM.',
+    ],
+  },
+  {
     numero: 12,
     date: '2026-11-03',
     points: [

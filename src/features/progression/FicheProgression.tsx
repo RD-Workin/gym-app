@@ -14,12 +14,13 @@ import { epley, repsCible } from '../objectifs/calculs';
 import './progression.css';
 
 const MESURES: { valeur: Mesure; libelle: string }[] = [
-  { valeur: 'un_rm', libelle: '1RM' },
-  { valeur: 'charge_max', libelle: 'Charge max' },
+  { valeur: 'un_rm', libelle: '1RM estimé' },
+  { valeur: 'charge_max', libelle: 'Plus lourd' },
   { valeur: 'volume', libelle: 'Volume' },
 ];
-const TITRE_MESURE: { [m in Mesure]: string } = { un_rm: '1RM estimé', charge_max: 'Charge max', volume: 'Volume de séance', duree: 'Meilleure tenue' };
+const TITRE_MESURE: { [m in Mesure]: string } = { un_rm: '1RM estimé', charge_max: 'Charge la plus lourde', volume: 'Volume de séance', duree: 'Meilleure tenue' };
 const fmt = (m: Mesure) => (m === 'volume' ? (v: number) => `${nombre(v)}` : m === 'duree' ? fmtDuree : kg);
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 const dateLongue = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 
 export function FicheProgression({ exerciceId, donnees }: { exerciceId: Id; donnees?: DonneesProgression }) {
@@ -112,8 +113,8 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
         <>
           <span class="ui-surtitre">Records</span>
           <Liste label="Records de l'exercice">
-            {recs.unRm && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.un_rm} detail={dateLongue(recs.unRm.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
-            {recs.chargeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.charge_max} detail={dateLongue(recs.chargeMax.date)} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
+            {recs.chargeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={<>{NOM_TYPE_RECORD.charge_max} <Aide mot="pr" /></>} detail={`${recs.chargeMax.reps ? `soulevé pour ${pluriel(recs.chargeMax.reps, 'rep')} · ` : ''}${dateLongue(recs.chargeMax.date)}`} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
+            {recs.unRm && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={<>{NOM_TYPE_RECORD.un_rm} <Aide mot="unRm" /></>} detail={`potentiel calculé · ${dateLongue(recs.unRm.date)}`} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
             {recs.dureeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.duree_max} detail={dateLongue(recs.dureeMax.date)} fin={<span class="ui-chiffre prog-val">{fmtDuree(recs.dureeMax.valeur)}</span>} />}
             {recs.volumeSeance && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.volume_seance} detail={dateLongue(recs.volumeSeance.date)} fin={<span class="ui-chiffre prog-val">{nombre(recs.volumeSeance.valeur)} kg</span>} />}
           </Liste>

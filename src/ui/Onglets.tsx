@@ -7,7 +7,7 @@ interface Props<T extends string> {
   label: string;
 }
 
-/** Contrôle segmenté (ex. 1RM / Charge max / Volume). Flèches gauche/droite au clavier. */
+/** Contrôle segmenté (ex. 1RM estimé / Plus lourd / Volume). Flèches gauche/droite au clavier. */
 export function Onglets<T extends string>({ options, valeur, onChange, label }: Props<T>) {
   const ref = useRef<HTMLDivElement>(null);
   const clavier = (e: KeyboardEvent) => {
