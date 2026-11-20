@@ -56,6 +56,8 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   // Séries déjà notées aujourd'hui pour cet exercice (même variante) : on peut les corriger au lieu d'en rajouter.
   const deja = useRequete(() => dejaNoteAujourdhui(exercice.id), [exercice.id]);
   const dejaVariante = deja?.series.filter((s) => (s.varianteId ?? '') === varianteId) ?? [];
+  // « La dernière fois » ne répète pas les séries du jour, déjà montrées (ou en cours de correction) juste au-dessus.
+  const derniereFoisDuJour = !!deja && avantVariante?.[0]?.seanceId === deja.seanceId;
   const [correction, setCorrection] = useState(false);
   const [corrige, setCorrige] = useState(false);
 
@@ -179,7 +181,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
         {correction ? (
           <p class="ui-attenue sr-intro">
             Tu corriges les séries notées aujourd’hui : touche une série, change {tenu ? 'ses secondes' : 'ses reps'}
-            {sansCharge ? '' : ` ou ${lest ? 'son lest' : 'sa charge'}`}, retire-la ou ajoutes-en une, puis enregistre.
+            {sansCharge ? '' : ` ou ${lest ? 'son lest' : 'sa charge'}`}, retire-la ou ajoute-en une, puis enregistre.
           </p>
         ) : (
           <p class="ui-attenue sr-intro">
@@ -203,9 +205,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             <Puce ton="progres">✓ Séries corrigées</Puce>
           </div>
         )}
-        {(ref != null || meilleureTenue != null || !!avantVariante?.length) && (
+        {(ref != null || meilleureTenue != null || (!!avantVariante?.length && !derniereFoisDuJour)) && (
           <div class="sr-stats">
-            {avantVariante && avantVariante.length > 0 && (
+            {avantVariante && avantVariante.length > 0 && !derniereFoisDuJour && (
               <div>
                 <span class="ui-surtitre">La dernière fois</span>
                 <span class="ui-chiffre">
@@ -293,10 +295,10 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             </Bouton>
             <div class="ui-ligne-entre">
               <Bouton variante="secondaire" onClick={quitterCorrection}>
-                Annuler la correction
+                Annuler
               </Bouton>
               <Bouton variante="danger" onClick={supprimerDuJour} disabled={occupe}>
-                Supprimer ces séries
+                Supprimer
               </Bouton>
             </div>
           </>

@@ -26,13 +26,13 @@ test('noter une perf puis la corriger, depuis la fiche et depuis la séance', as
   // La séance libre du jour garde un seul exercice, 3 séries.
   await page.goto('./#/seance');
   await page.locator('a[href*="#/seance/"]').filter({ hasText: 'Séance libre' }).first().click();
-  await expect(page.getByText(/1 exercices · 3 séries/)).toBeVisible();
+  await expect(page.getByText(/1 exercice · 3 séries/)).toBeVisible();
 
   // Correction depuis la séance : on retire une série.
   await page.getByRole('button', { name: /^Corriger les séries de/ }).click();
   await page.locator('.sr-ligne').nth(2).click();
   await page.getByRole('button', { name: 'Retirer S3' }).click();
   await page.getByRole('button', { name: 'Enregistrer la correction' }).click();
-  await expect(page.getByText(/1 exercices · 2 séries/)).toBeVisible();
+  await expect(page.getByText(/1 exercice · 2 séries/)).toBeVisible();
   await expect(page.getByText(/· 11-10$/)).toBeVisible();
 });

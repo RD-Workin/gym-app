@@ -62,7 +62,7 @@ test('fiche exercice → saisie rapide → séance libre du jour', async ({ page
   await expect(page.locator('.sr-confirmation')).toContainText('0 kg · 9');
   await page.getByText('la séance libre du jour').click();
   await expect(page.getByRole('heading', { name: 'Séance libre' })).toBeVisible();
-  await expect(page.getByText(/1 exercices · \d+ séries/)).toBeVisible();
+  await expect(page.getByText(/1 exercice · \d+ séries/)).toBeVisible();
   await expect(page.getByText('2,5/0 kg · 10-8-9')).toBeVisible();
 });
 

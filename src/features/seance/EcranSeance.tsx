@@ -92,7 +92,7 @@ export function EcranSeance({ id }: { id: string }) {
       )}
       <Carte titre="Résumé">
         <span class="sc-num">
-          {ordre.length} exercices · {series.length} séries{duree ? ` · ${dureeTexte(duree)}` : ''}
+          {ordre.length} exercice{ordre.length > 1 ? 's' : ''} · {series.length} série{series.length > 1 ? 's' : ''}{duree ? ` · ${dureeTexte(duree)}` : ''}
         </span>
       </Carte>
       {grps.map((g) => (
@@ -253,7 +253,7 @@ function CorrectionExercice({
   };
   return (
     <div class="ui-pile">
-      <p class="sc-attenue">Touche une série pour la corriger, retire-la ou ajoutes-en une, puis enregistre.</p>
+      <p class="sc-attenue">Touche une série pour la corriger, retire-la ou ajoute-en une, puis enregistre.</p>
       <EditeurLignes
         lignes={lignes}
         setLignes={setLignes}

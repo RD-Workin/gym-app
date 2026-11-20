@@ -12,7 +12,7 @@ export const NOUVEAUTES: Nouveaute[] = [
     numero: 14,
     date: '2026-11-20',
     points: [
-      'Erreur de saisie ? Tes séries se corrigent. Dans la fiche d’un exercice, « Déjà noté aujourd’hui › Corriger ces séries » change les séries notées au lieu d’en ajouter. Dans une séance faite, « Corriger » à côté de chaque exercice : change une série, retire-la ou ajoutes-en une.',
+      'Erreur de saisie ? Tes séries se corrigent. Dans la fiche d’un exercice, « Déjà noté aujourd’hui › Corriger ces séries » change les séries notées au lieu d’en ajouter. Dans une séance faite, « Corriger » à côté de chaque exercice : change une série, retire-la ou ajoute-en une.',
     ],
   },
   {
