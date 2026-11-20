@@ -147,3 +147,7 @@
 .sc-chrono-tenue { display: flex; align-items: center; gap: var(--e-2); padding: 10px 12px; border-radius: 14px; background: var(--c-surface-2); }
 .sc-chrono-valeur { font-size: var(--t-xl); font-weight: 700; color: var(--c-texte); min-width: 3.2em; }
 .sc-chrono-tenue .sc-attenue { flex: 1; }
+
+/* Correction d'un exercice dans une séance faite */
+.sc-corriger { flex: none; margin-left: var(--e-2); min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--c-action); background: none; color: var(--c-action); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.sc-correction { padding: var(--e-3) 0; list-style: none; }

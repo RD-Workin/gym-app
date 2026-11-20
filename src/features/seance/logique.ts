@@ -343,3 +343,67 @@ export const CLE_ECHAUFFEMENT = 'seance.echauffement';
 /** Réglage « Proposer un échauffement » (oui par défaut). */
 export const echauffementActif = async () => (await db.reglages.get(CLE_ECHAUFFEMENT))?.valeur !== false;
 export const reglerEchauffement = (actif: boolean) => db.reglages.put({ cle: CLE_ECHAUFFEMENT, valeur: actif });
+
+/** Une série corrigée : `id` = série existante à mettre à jour ; sans `id` = série ajoutée. */
+export interface LigneCorrigee {
+  id?: Id;
+  reps: number;
+  chargeKg?: number;
+  dureeSec?: number;
+}
+
+/**
+ * Corrige les séries d'un exercice dans une séance déjà enregistrée (séance libre, séance faite) :
+ * met à jour celles gardées (même id : date, type, RIR conservés), supprime celles retirées, ajoute les nouvelles.
+ * Une séance sans modèle, terminée, qui n'a plus aucune série est supprimée (rien à garder).
+ */
+export async function corrigerSeriesExercice(
+  seanceId: Id,
+  exerciceId: Id,
+  lignes: LigneCorrigee[],
+  opts: { modeCharge: ModeCharge; enSecondes?: boolean; varianteId?: Id },
+): Promise<'corrigee' | 'seance_supprimee'> {
+  const t = maintenant();
+  const valides = lignes.filter((l) => (opts.enSecondes ? (l.dureeSec ?? 0) >= 1 : l.reps >= 1)).slice(0, 30);
+  const sansCharge = opts.modeCharge === 'sans_charge';
+  const valeurs = (l: LigneCorrigee) => ({
+    chargeKg: sansCharge ? undefined : l.chargeKg,
+    reps: opts.enSecondes ? 0 : l.reps,
+    dureeSec: opts.enSecondes ? l.dureeSec : undefined,
+  });
+  return db.transaction('rw', db.seances, db.series, async () => {
+    const toutes = await db.series.where('seanceId').equals(seanceId).toArray();
+    const avant = toutes.filter((s) => s.exerciceId === exerciceId && (opts.varianteId === undefined || (s.varianteId ?? '') === opts.varianteId));
+    const gardees = new Set(valides.map((l) => l.id).filter(Boolean));
+    await db.series.bulkDelete(avant.filter((s) => !gardees.has(s.id)).map((s) => s.id));
+    let ordre = toutes.reduce((m, x) => Math.max(m, x.ordre), 0);
+    const modele = avant[0];
+    for (const l of valides) {
+      if (l.id && avant.some((s) => s.id === l.id)) {
+        await db.series.update(l.id, { ...valeurs(l), modifieLe: t });
+        continue;
+      }
+      await db.series.add({
+        id: nouvelId(),
+        seanceId,
+        exerciceId,
+        varianteId: opts.varianteId || modele?.varianteId || undefined,
+        supersetId: modele?.supersetId,
+        ordre: ++ordre,
+        modeCharge: opts.modeCharge,
+        ...valeurs(l),
+        type: 'travail',
+        faiteLe: modele?.faiteLe ?? t,
+        creeLe: t,
+        modifieLe: t,
+      });
+    }
+    const seance = await db.seances.get(seanceId);
+    if (seance && seance.fin && !seance.modeleId && (await db.series.where('seanceId').equals(seanceId).count()) === 0) {
+      await db.seances.delete(seanceId);
+      return 'seance_supprimee';
+    }
+    if (seance) await db.seances.update(seanceId, { modifieLe: t });
+    return 'corrigee';
+  });
+}

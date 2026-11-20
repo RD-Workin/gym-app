@@ -254,6 +254,14 @@ function SeanceActive({ seance }: { seance: Seance }) {
   };
 
   const ajouterExercice = (e: Exercice) => {
+    // Déjà dans la séance : on y retourne (ses séries restent modifiables) au lieu d'en créer un deuxième.
+    const existant = plan.blocs.findIndex((b) => b.exerciceId === e.id);
+    if (existant >= 0) {
+      setEdition(undefined);
+      setPlan({ ...plan, actif: existant });
+      setChoix(false);
+      return;
+    }
     const blocs = [...plan.blocs, { id: nouvelId(), exerciceId: e.id }];
     setPlan({ ...plan, blocs, actif: blocs.length - 1 });
     setChoix(false);
@@ -540,6 +548,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
               </li>
             )}
           </ol>
+          {faites.length > 0 && !edition && <p class="sc-attenue">Une erreur ? Touche une série faite pour la corriger ou la supprimer.</p>}
 
           {plan.reposFin && !edition && (
             <Repos
