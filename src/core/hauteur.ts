@@ -44,14 +44,16 @@ export function hauteurTexte(v: number): string {
   return `entre ${bas.nom} et ${haut.nom}`;
 }
 
-/** Version courte pour les puces : « pecs », « clavicules-pecs », « sternum ». */
+/**
+ * Version courte pour les puces : « pecs » sur un repère, sinon le repère le plus proche avec « ≈ » (« ≈ pecs »).
+ * Pas de « clavicules-pecs » : lu comme une plage, pas comme une position (relecture 11).
+ */
 export function hauteurCourte(v: number): string {
   const court = (r: Repere) => (r.nom === 'bas du sternum' ? 'sternum' : r.nom);
   const proche = REPERES.find((r) => Math.abs(r.valeur - v) <= 4);
   if (proche) return court(proche);
-  const haut = REPERES.find((r) => r.valeur > v) ?? REPERES[REPERES.length - 1];
-  const bas = [...REPERES].reverse().find((r) => r.valeur < v) ?? REPERES[0];
-  return `${court(bas)}-${court(haut)}`;
+  const plusProche = REPERES.reduce((m, r) => (Math.abs(r.valeur - v) <= Math.abs(m.valeur - v) ? r : m));
+  return `≈ ${court(plusProche)}`;
 }
 
 /** « barre aux pecs », « barre entre menton et clavicules ». */

@@ -26,7 +26,7 @@ export function ChoixTraction({ hauteur, explosif, onChange }: ValeursTraction &
       </div>
       {ouvert && (
         <div class="tr-schema">
-          <p class="sr-intro ui-attenue">Glisse la barre jusqu’où tu es monté, ou touche un repère à droite.</p>
+          <p class="sr-intro ui-attenue">Glisse la barre à la hauteur atteinte, ou touche un repère à droite.</p>
           <SchemaHauteur
             barres={hauteur != null ? [{ valeur: hauteur }] : []}
             onChange={(v) => onChange({ hauteur: v, explosif })}

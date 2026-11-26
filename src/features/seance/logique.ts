@@ -207,7 +207,8 @@ export function resumeSeries(series: Serie[]): string {
     if (charges.every((c) => !c) || series[0].modeCharge === 'sans_charge') return durees;
     return `${charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c ?? 0)).join('/')}${unite} · ${durees}`;
   }
-  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
+  // Lest à 0 partout : « sans lest » plutôt que « 0 kg de lest » (relecture 11).
+  const ch = charges.every((c) => c == null) ? 'PdC' : lest && charges.every((c) => !c) ? 'sans lest' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
   return `${ch} · ${series.map((s) => s.reps).join('-')}`;
 }
 

@@ -12,7 +12,7 @@ export const NOUVEAUTES: Nouveaute[] = [
     numero: 15,
     date: '2026-11-26',
     points: [
-      'Tractions : note jusqu’où tu montes. Sous les reps, « Hauteur » ouvre un schéma du haut du corps : glisse la barre (menton, clavicules, pecs…) ; « ⚡ Explosives » marque une montée rapide. Le schéma se retrouve dans la séance faite et dans Progrès, et le texte pour l’IA ou un coach dit « barre ≈ pecs ».',
+      'Tractions : note jusqu’où tu montes. Sous les reps, « Barre : à noter » ouvre un schéma du haut du corps : glisse la barre (menton, clavicules, pecs…). « ⚡ Explosives » marque une montée rapide. Tu retrouves la hauteur dans la séance faite et dans Progrès.',
       'Dips : en séance, choisis « Barres parallèles » ou « Barre droite » sous le nom de l’exercice. Chaque version a sa « dernière fois », ses courbes et ses records.',
     ],
   },

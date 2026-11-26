@@ -62,7 +62,7 @@ export const LEXIQUE = {
   hauteurBarre: {
     terme: 'Hauteur atteinte',
     definition:
-      'Pour les tractions (et chin-up, muscle-up) : jusqu’où la barre arrive sur ton corps en haut du mouvement, à ton appréciation. Barre aux yeux = menton sous la barre ; au menton = traction validée ; aux clavicules ou aux pecs = traction haute ; au nombril = passage de muscle-up. « Explosives » = tu montes le plus vite possible. Le schéma reste dans tes séances et Progrès ; le texte copié pour l’IA ou un coach dit seulement « barre ≈ pecs ».',
+      'Pour les tractions (et chin-up, muscle-up) : jusqu’où la barre arrive sur ton corps en haut du mouvement, à ton appréciation. Barre aux yeux = menton sous la barre ; au menton = traction validée ; aux clavicules ou aux pecs = traction haute ; au nombril = passage de muscle-up. « Explosives » = tu montes le plus vite possible.',
   },
   chargeMax: {
     terme: 'Charge la plus lourde',
