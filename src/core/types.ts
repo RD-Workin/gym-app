@@ -26,6 +26,8 @@ export interface Exercice extends Horodatage {
   favori?: boolean;
   /** Se mesure en secondes tenues (gainage, dead hang…) au lieu de répétitions. Absent = en reps. Non indexé. */
   enSecondes?: boolean;
+  /** Noter la hauteur atteinte et l'explosivité (tractions…). Absent = d'après le nom (`suitHauteur`, core/hauteur.ts). Non indexé. */
+  suiviHauteur?: boolean;
   archive: boolean;
 }
 
@@ -87,6 +89,10 @@ export interface Serie extends Horodatage {
   reps: number;
   /** Série tenue (gainage, dead hang…) : durée en secondes. Présent = série en durée, `reps` vaut alors 0. */
   dureeSec?: number;
+  /** Hauteur atteinte (tractions…) : position de la barre sur le haut du corps, 0 = yeux … 100 = nombril (core/hauteur.ts). */
+  hauteur?: number;
+  /** Répétitions explosives (montée la plus rapide possible). */
+  explosif?: boolean;
   rir?: number;
   type: TypeSerie;
   reglagesMachine?: string;

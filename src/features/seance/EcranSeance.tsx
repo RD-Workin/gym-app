@@ -13,6 +13,8 @@ import { creerModeleDepuisSeance } from '../modeles/modeles';
 import { construireResumeUneSeance, copierResume } from '../donnees/exporter';
 import { corrigerSeriesExercice, dureeTexte, groupes, pasCharge, resumeSeries, supprimerSeance } from './logique';
 import { EditeurLignes } from '../saisie/EditeurLignes';
+import { HauteursSeries } from './HauteursSeries';
+import { suitHauteur } from '../../core/hauteur';
 import type { LigneSet } from '../saisie/saisieRapide';
 import './seance.css';
 
@@ -117,6 +119,11 @@ export function EcranSeance({ id }: { id: string }) {
                       )
                     }
                   />
+                  {enCorrection !== exId && sx.some((s) => s.hauteur != null || s.explosif) && (
+                    <li class="sc-hauteurs">
+                      <HauteursSeries series={sx} nom={nomEx} />
+                    </li>
+                  )}
                   {enCorrection === exId && (
                     <li class="sc-correction">
                       <CorrectionExercice
@@ -236,7 +243,7 @@ function CorrectionExercice({
   const modeCharge = series[0]?.modeCharge ?? exercice?.modeCharge ?? 'total';
   const tenu = series.some((s) => s.dureeSec != null) || !!exercice?.enSecondes;
   const [lignes, setLignes] = useState<LigneSet[]>(() =>
-    series.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec ?? (tenu ? 30 : undefined) })),
+    series.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec ?? (tenu ? 30 : undefined), hauteur: s.hauteur, explosif: s.explosif })),
   );
   const [sel, setSel] = useState(0);
   const [occupe, setOccupe] = useState(false);
@@ -264,6 +271,7 @@ function CorrectionExercice({
         pas={pasCharge(exercice?.equipement)}
         poidsCorporelKg={seance.contexte?.poidsCorporelKg}
         idChamps={`corr-${exerciceId}`}
+        hauteur={!tenu && (suitHauteur(exercice) || series.some((s) => s.hauteur != null || s.explosif))}
       />
       <Bouton icone="valider" onClick={() => enregistrer()} disabled={occupe}>
         Enregistrer la correction

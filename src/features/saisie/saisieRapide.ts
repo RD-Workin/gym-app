@@ -20,6 +20,9 @@ export interface LigneSet {
   chargeKg?: number;
   /** Série tenue (exercice en secondes) : secondes ; `reps` est alors ignoré. */
   dureeSec?: number;
+  /** Tractions… : hauteur atteinte (0 = yeux … 100 = nombril) et répétitions explosives. */
+  hauteur?: number;
+  explosif?: boolean;
 }
 
 export interface SetRapide {
@@ -81,6 +84,8 @@ export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide
       modeCharge: s.modeCharge,
       reps: s.enSecondes ? 0 : l.reps,
       ...(s.enSecondes ? { dureeSec: l.dureeSec } : {}),
+      ...(!s.enSecondes && l.hauteur != null ? { hauteur: l.hauteur } : {}),
+      ...(!s.enSecondes && l.explosif ? { explosif: true } : {}),
       type: 'travail',
       faiteLe: t,
       creeLe: t,

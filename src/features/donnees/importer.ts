@@ -133,6 +133,7 @@ function exercice(o: Obj, ou: string): Exercice {
     photo: photo(o, ou),
     favori: booleen(o, 'favori', ou) || undefined,
     enSecondes: booleen(o, 'enSecondes', ou) || undefined,
+    suiviHauteur: o.suiviHauteur == null ? undefined : booleen(o, 'suiviHauteur', ou),
     archive: booleen(o, 'archive', ou),
     ...horodatage(o, ou),
   });
@@ -209,6 +210,8 @@ function serie(o: Obj, ou: string): Serie {
     modeCharge: choix(o, 'modeCharge', ou, MODES),
     reps: nombre(o, 'reps', ou, 0, 1000, true)!,
     dureeSec: nombre(o, 'dureeSec', ou, 0, 86_400),
+    hauteur: nombre(o, 'hauteur', ou, 0, 100),
+    explosif: booleen(o, 'explosif', ou) || undefined,
     rir: nombre(o, 'rir', ou, 0, 50),
     type: choix(o, 'type', ou, TYPES),
     reglagesMachine: texte(o, 'reglagesMachine', ou),

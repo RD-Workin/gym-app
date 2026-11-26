@@ -4,6 +4,8 @@ import { IndicationLest, Stepper } from '../../ui';
 import { LEST_MAX_KG, LEST_MIN_KG, signeLest, uniteCharge } from '../../core/calculs';
 import type { ModeCharge } from '../../core/types';
 import type { LigneSet } from './saisieRapide';
+import { ChoixTraction } from './ChoixTraction';
+import { hauteurCourte } from '../../core/hauteur';
 import '../progression/progression.css';
 import './saisie.css';
 
@@ -19,12 +21,14 @@ export interface PropsEditeurLignes {
   poidsCorporelKg?: number;
   /** Préfixe des id de champs (deux éditeurs sur un même écran). */
   idChamps?: string;
+  /** Tractions… : hauteur atteinte et explosivité par série. */
+  hauteur?: boolean;
 }
 
 /** Index de la série affichée (borné à la liste). */
 export const ligneActive = (lignes: LigneSet[], sel: number) => Math.max(0, Math.min(sel, lignes.length - 1));
 
-export function EditeurLignes({ lignes, setLignes, sel, setSel, modeCharge, tenu, pas, poidsCorporelKg, idChamps = 'sr' }: PropsEditeurLignes) {
+export function EditeurLignes({ lignes, setLignes, sel, setSel, modeCharge, tenu, pas, poidsCorporelKg, idChamps = 'sr', hauteur }: PropsEditeurLignes) {
   const i = ligneActive(lignes, sel);
   const ligne = lignes[i];
   const sansCharge = modeCharge === 'sans_charge';
@@ -34,7 +38,8 @@ export function EditeurLignes({ lignes, setLignes, sel, setSel, modeCharge, tenu
   const majLigne = (p: Partial<LigneSet>) => setLignes((l) => l.map((x, j) => (j === i ? { ...x, ...p } : x)));
   const ajouterLigne = () => {
     // La nouvelle série repart de la dernière (reps et charge), sans reprendre son id.
-    setLignes((l) => [...l, { reps: l[l.length - 1]?.reps ?? 10, chargeKg: l[l.length - 1]?.chargeKg, dureeSec: l[l.length - 1]?.dureeSec }]);
+    const d = lignes[lignes.length - 1];
+    setLignes((l) => [...l, { reps: d?.reps ?? 10, chargeKg: d?.chargeKg, dureeSec: d?.dureeSec, hauteur: d?.hauteur, explosif: d?.explosif }]);
     setSel(lignes.length);
   };
   const retirerLigne = () => {
@@ -55,6 +60,9 @@ export function EditeurLignes({ lignes, setLignes, sel, setSel, modeCharge, tenu
               {tenu ? `${l.dureeSec ?? 0} s` : `${l.reps} reps`}
               {sansCharge || (lest && !l.chargeKg) ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
             </span>
+            {hauteur && !tenu && (l.hauteur != null || l.explosif) && (
+              <span class="sr-num">{[l.hauteur != null ? hauteurCourte(l.hauteur) : '', l.explosif ? '⚡' : ''].filter(Boolean).join(' ')}</span>
+            )}
           </button>
         ))}
         <button type="button" class="sr-ligne sr-plus" onClick={ajouterLigne} aria-label="Ajouter une série">
@@ -91,6 +99,9 @@ export function EditeurLignes({ lignes, setLignes, sel, setSel, modeCharge, tenu
           />
         )}
         {lest && <IndicationLest lestKg={ligne.chargeKg ?? 0} poidsCorporelKg={poidsCorporelKg} />}
+        {hauteur && !tenu && ligne.type !== 'echauffement' && (
+          <ChoixTraction key={`tr-${i}`} hauteur={ligne.hauteur} explosif={ligne.explosif} onChange={(v) => majLigne(v)} />
+        )}
       </div>
     </>
   );

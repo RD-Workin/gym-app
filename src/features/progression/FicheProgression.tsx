@@ -11,6 +11,8 @@ import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { useRequete } from '../../core/requetes';
 import { objectifsDe } from '../objectifs/objectifs';
 import { epley, repsCible } from '../objectifs/calculs';
+import { hauteurMax, hauteurTexte } from '../../core/hauteur';
+import { HauteursSeries } from '../seance/HauteursSeries';
 import './progression.css';
 
 const MESURES: { valeur: Mesure; libelle: string }[] = [
@@ -51,6 +53,9 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
 
   const points = useMemo(() => pointsExercice(seriesEx, d.seancesParId, d.poids, exerciceId, filtre), [seriesEx, d, exerciceId, filtre]);
   const bilan = useMemo(() => bilanRecords(seriesEx, d.poids), [seriesEx, d]);
+  // Tractions… : la plus haute barre de toute la variante, et la dernière séance où la hauteur est notée.
+  const hauteurRecord = useMemo(() => hauteurMax(points.flatMap((p) => p.series)), [points]);
+  const derniereHauteur = useMemo(() => [...points].reverse().find((p) => p.series.some((x) => x.hauteur != null || x.explosif)), [points]);
   const recs = bilan.actuels.get(`${exerciceId}|${varianteCle}`);
   const seancesRecord = new Set(
     bilan.evenements.filter((e) => (e.varianteId ?? '') === varianteCle && (e.type === 'un_rm' || e.type === 'charge_max' || e.type === 'duree_max')).map((e) => e.seanceId),
@@ -109,6 +114,16 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
         {mesure === 'un_rm' && <p class="prog-note ui-attenue">Formule d'Epley, séries de 12 reps au plus.</p>}
       </Carte>
 
+      {derniereHauteur && (
+        <Carte>
+          <span class="ui-surtitre">
+            Hauteur atteinte · {dateLongue(derniereHauteur.date)} <Aide mot="hauteurBarre" />
+          </span>
+          <HauteursSeries series={derniereHauteur.series} nom={d.exercices.get(exerciceId)?.nom ?? 'Exercice'} record={hauteurRecord} />
+          {hauteurRecord != null && <p class="prog-note ui-attenue">Pointillés dorés : ta barre la plus haute ({hauteurTexte(hauteurRecord)}). Chaque séance garde son schéma : touche-la dans l’historique.</p>}
+        </Carte>
+      )}
+
       {recs && (
         <>
           <span class="ui-surtitre">Records</span>
@@ -116,6 +131,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
             {recs.chargeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={<>{NOM_TYPE_RECORD.charge_max} <Aide mot="pr" /></>} detail={`${recs.chargeMax.reps ? `soulevé pour ${pluriel(recs.chargeMax.reps, 'rep')} · ` : ''}${dateLongue(recs.chargeMax.date)}`} fin={<span class="ui-chiffre prog-val">{kg(recs.chargeMax.valeur)}</span>} />}
             {recs.unRm && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={<>{NOM_TYPE_RECORD.un_rm} <Aide mot="unRm" /></>} detail={`potentiel calculé · ${dateLongue(recs.unRm.date)}`} fin={<span class="ui-chiffre prog-val">{kg(recs.unRm.valeur)}</span>} />}
             {recs.dureeMax && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.duree_max} detail={dateLongue(recs.dureeMax.date)} fin={<span class="ui-chiffre prog-val">{fmtDuree(recs.dureeMax.valeur)}</span>} />}
+            {hauteurRecord != null && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={<>Barre la plus haute <Aide mot="hauteurBarre" /></>} detail={dateLongue(points.find((p) => p.series.some((x) => x.hauteur === hauteurRecord))!.date)} fin={<span class="prog-val">{hauteurTexte(hauteurRecord)}</span>} />}
             {recs.volumeSeance && <ElementListe debut={<span class="anim-zoom prog-medaille"><Medaille /></span>} titre={NOM_TYPE_RECORD.volume_seance} detail={dateLongue(recs.volumeSeance.date)} fin={<span class="ui-chiffre prog-val">{nombre(recs.volumeSeance.valeur)} kg</span>} />}
           </Liste>
           {recs.dureeACharge.length > 1 && (
@@ -161,7 +177,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
                     : `${p.series[0]?.modeCharge === 'sans_charge' ? 'PDC' : charge} · ${p.series.map((x) => x.reps).join('-')}`}
                 </span>
               }
-              detail={`${dateLongue(p.date)}${temp != null ? ` · ${Math.round(temp)} °C` : ''}`}
+              detail={`${dateLongue(p.date)}${temp != null ? ` · ${Math.round(temp)} °C` : ''}${hauteurMax(p.series) != null ? ` · barre max : ${hauteurTexte(hauteurMax(p.series)!)}` : ''}${p.series.some((x) => x.explosif) ? ' · explosives' : ''}`}
               fin={
                 seancesRecord.has(p.seanceId) ? <Puce ton="record">★ record</Puce> : p.unRm ? <span class="ui-attenue">1RM {Math.round(p.unRm)}</span> : p.dureeMax ? <span class="ui-attenue">max {fmtDuree(p.dureeMax)}</span> : undefined
               }

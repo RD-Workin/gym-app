@@ -9,6 +9,13 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 15,
+    date: '2026-11-26',
+    points: [
+      'Tractions : note jusqu’où tu montes. Sous les reps, « Hauteur » ouvre un schéma du haut du corps : glisse la barre (menton, clavicules, pecs…) ; « ⚡ Explosives » marque une montée rapide. Le schéma se retrouve dans la séance faite et dans Progrès, et le texte pour l’IA ou un coach dit « barre ≈ pecs ».',
+    ],
+  },
+  {
     numero: 14,
     date: '2026-11-20',
     points: [

@@ -4,6 +4,7 @@ import Dexie from 'dexie';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { fmtDuree, signeLest, uniteCharge } from '../../core/calculs';
+import { suitHauteur } from '../../core/hauteur';
 import type { BlocModele, Exercice, Id, Modele, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 
@@ -89,6 +90,9 @@ export interface Saisie {
   reps: number;
   /** Série tenue (exercice en secondes) : durée en secondes, `reps` vaut alors 0. */
   dureeSec?: number;
+  /** Tractions… : hauteur atteinte (0 = yeux … 100 = nombril) et répétitions explosives. */
+  hauteur?: number;
+  explosif?: boolean;
   rir?: number;
   type: TypeSerie;
   modeCharge: ModeCharge;
@@ -98,8 +102,8 @@ export interface Saisie {
 export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: Saisie, existante?: Serie): Promise<Serie | undefined> {
   const t = maintenant();
   if (existante) {
-    // `dureeSec` absent de la saisie : on l'efface aussi de la série (Dexie ignore les clés absentes).
-    await db.series.update(existante.id, { dureeSec: undefined, ...saisie, modifieLe: t });
+    // Champs facultatifs absents de la saisie : on les efface aussi de la série (Dexie ignore les clés absentes).
+    await db.series.update(existante.id, { dureeSec: undefined, hauteur: undefined, explosif: undefined, ...saisie, modifieLe: t });
     return;
   }
   const dernier = await db.series.where('seanceId').equals(seanceId).reverse().sortBy('ordre');
@@ -159,7 +163,7 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
   const n = travail.length;
   const precJour = travail[n - 1];
   const memeRang = avant[n];
-  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'modeCharge' | 'reglagesMachine'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
+  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'modeCharge' | 'reglagesMachine' | 'hauteur' | 'explosif'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
   if (memeRang && precJour && avant[n - 1] && precJour.chargeKg !== avant[n - 1].chargeKg) {
     ref = { ...memeRang, chargeKg: precJour.chargeKg, reglagesMachine: precJour.reglagesMachine ?? memeRang.reglagesMachine };
   }
@@ -180,6 +184,9 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
     type: 'travail',
     modeCharge: ref?.modeCharge ?? modeCharge,
     reglagesMachine: ref?.reglagesMachine,
+    // Tractions : même hauteur visée et même style que la série de référence.
+    ...(suitHauteur(exercice) && ref?.hauteur != null ? { hauteur: ref.hauteur } : {}),
+    ...(suitHauteur(exercice) && ref?.explosif ? { explosif: true } : {}),
   };
 }
 
@@ -350,6 +357,8 @@ export interface LigneCorrigee {
   reps: number;
   chargeKg?: number;
   dureeSec?: number;
+  hauteur?: number;
+  explosif?: boolean;
 }
 
 /**
@@ -370,6 +379,8 @@ export async function corrigerSeriesExercice(
     chargeKg: sansCharge ? undefined : l.chargeKg,
     reps: opts.enSecondes ? 0 : l.reps,
     dureeSec: opts.enSecondes ? l.dureeSec : undefined,
+    hauteur: opts.enSecondes ? undefined : l.hauteur,
+    explosif: (!opts.enSecondes && l.explosif) || undefined,
   });
   return db.transaction('rw', db.seances, db.series, async () => {
     const toutes = await db.series.where('seanceId').equals(seanceId).toArray();

@@ -5,7 +5,7 @@ import type { Exercice, ModeCharge, Variante } from '../../core/types';
 import { VISUELS_DEPART, type EntreeCatalogue } from '../../data/catalogue';
 import { basculerEnSecondes, semblerTenu } from '../../core/duree';
 
-export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharge' | 'groupesMusculaires' | 'reglagesMachine' | 'note' | 'enSecondes'>;
+export type BrouillonExercice = Pick<Exercice, 'nom' | 'equipement' | 'modeCharge' | 'groupesMusculaires' | 'reglagesMachine' | 'note' | 'enSecondes' | 'suiviHauteur'>;
 
 /** Minuscules sans accents, pour la recherche. */
 export const normaliser = (s: string) =>

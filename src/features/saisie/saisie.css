@@ -17,3 +17,6 @@
 .sr-deja > span { display: grid; gap: 2px; }
 .sr-deja .ui-chiffre { font-size: var(--t-md); font-weight: 700; }
 .sr-corriger { color: var(--c-action); border-color: var(--c-action); }
+/* Hauteur atteinte et explosivité (ChoixTraction.tsx). */
+.tr-choix { display: grid; gap: var(--e-2); }
+.tr-schema { display: grid; gap: var(--e-2); padding: var(--e-3); border-radius: var(--r-md); background: var(--c-surface); border: 1px solid var(--c-trait); }

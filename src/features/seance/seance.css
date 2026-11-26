@@ -151,3 +151,7 @@
 /* Correction d'un exercice dans une séance faite */
 .sc-corriger { flex: none; margin-left: var(--e-2); min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--c-action); background: none; color: var(--c-action); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
 .sc-correction { padding: var(--e-3) 0; list-style: none; }
+.sc-detail-traction { color: var(--c-attenue); font-size: var(--t-sm); }
+.sc-hauteurs { list-style: none; padding: 0 0 var(--e-3); }
+.sc-hauteurs-corps { display: grid; gap: var(--e-2); }
+.sc-hauteurs-texte { margin: 0; font-size: var(--t-sm); }

@@ -16,6 +16,7 @@ import { annulerSetRapide, dejaNoteAujourdhui, enregistrerSetRapide, type LigneS
 import { EditeurLignes, ligneActive } from './EditeurLignes';
 import { depuisDerniereFois, maxProjete, resumeLignes, suggererCharge, unRmRecent } from './suggestion';
 import './saisie.css';
+import { suitHauteur } from '../../core/hauteur';
 
 const pasCharge = (e: Exercice) => (e.equipement === 'barre' || e.equipement === 'machine' || e.equipement === 'poulie' ? 2.5 : e.modeCharge === 'par_main' ? 1 : 1.25);
 
@@ -27,6 +28,8 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const modeCharge = exercice.modeCharge;
   // Exercice tenu (gainage, dead hang…) : chaque série se note en secondes.
   const tenu = !!exercice.enSecondes;
+  // Tractions… : hauteur atteinte et explosivité par série.
+  const trac = !tenu && suitHauteur(exercice);
   const pas = pasCharge(exercice);
   const poidsActuel = useMemo(() => [...d.seances].sort((a, b) => b.debut.localeCompare(a.debut)).find((s) => s.contexte?.poidsCorporelKg != null)?.contexte.poidsCorporelKg, [d]);
 
@@ -66,7 +69,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const majLigne = (p: Partial<LigneSet>) => setLignes((l) => l.map((x, j) => (j === i ? { ...x, ...p } : x)));
 
   const corriger = () => {
-    setLignes(dejaVariante.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec })));
+    setLignes(dejaVariante.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec, hauteur: s.hauteur, explosif: s.explosif })));
     setSel(0);
     setCorrection(true);
     setCorrige(false);
@@ -119,7 +122,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
     if (avant === undefined || initialise === cle || correction) return;
     const p = depuisDerniereFois(avantVariante);
     if (tenu) setLignes(p ? p.map((l) => ({ reps: 0, dureeSec: l.dureeSec ?? 30, chargeKg: l.chargeKg ?? 0 })) : [0, 1, 2].map(() => ({ reps: 0, dureeSec: 30, chargeKg: 0 })));
-    else if (p) setLignes(p.map((l) => ({ reps: l.dureeSec != null ? 10 : l.reps, chargeKg: l.chargeKg ?? 0 })));
+    else if (p) setLignes(p.map((l) => ({ reps: l.dureeSec != null ? 10 : l.reps, chargeKg: l.chargeKg ?? 0, ...(trac ? { hauteur: l.hauteur, explosif: l.explosif } : {}) })));
     else setLignes([0, 1, 2].map(() => ({ reps: 10, chargeKg: suggestion?.chargeKg ?? 0 })));
     setSel(0);
     setInitialise(cle);
@@ -267,7 +270,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
           </div>
         )}
 
-        <EditeurLignes lignes={lignes} setLignes={setLignes} sel={i} setSel={setSel} modeCharge={modeCharge} tenu={tenu} pas={pas} poidsCorporelKg={poidsActuel} />
+        <EditeurLignes hauteur={trac} lignes={lignes} setLignes={setLignes} sel={i} setSel={setSel} modeCharge={modeCharge} tenu={tenu} pas={pas} poidsCorporelKg={poidsActuel} />
 
         {suggestion && !correction && (
           <div class="sr-suggestion">

@@ -1,4 +1,5 @@
 // Export JSON (sauvegarde fidèle) et CSV (lecture coach / IA). Propriétaire : 06-donnees.
+import { hauteurTexte } from '../../core/hauteur';
 import { db, SCHEMA_VERSION } from '../../core/db';
 import { chargeEffective, unRmEstime } from '../../core/calculs';
 import { maintenant } from '../../core/ids';
@@ -65,6 +66,8 @@ export const COLONNES_CSV = [
   'lest_kg',
   'reps',
   'duree_s',
+  'hauteur_atteinte',
+  'explosive',
   'rir',
   'poids_corps_kg',
   'charge_effective_kg',
@@ -179,6 +182,8 @@ export function lignesCsv(d: {
         lest ? s.chargeKg : null,
         s.dureeSec != null ? null : s.reps,
         s.dureeSec,
+        s.hauteur != null ? hauteurTexte(s.hauteur) : '',
+        s.explosif ? 'oui' : '',
         s.rir,
         pc,
         chargeEffective(s, pc),
