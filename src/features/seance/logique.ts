@@ -123,19 +123,23 @@ export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: S
   return serie;
 }
 
-/** Séries de travail de la dernière séance (hors séance courante) qui contient cet exercice. */
-export async function derniereFois(exerciceId: Id, saufSeanceId?: Id): Promise<Serie[]> {
+/**
+ * Séries de travail de la dernière séance (hors séance courante) qui contient cet exercice.
+ * `varianteId` fourni ('' = version standard) : seulement cette variante (dips barre droite ≠ barres parallèles).
+ */
+export async function derniereFois(exerciceId: Id, saufSeanceId?: Id, varianteId?: Id | ''): Promise<Serie[]> {
+  const memeVariante = (s: Serie) => varianteId === undefined || (s.varianteId ?? '') === varianteId;
   const recentes = await db.series
     .where('[exerciceId+faiteLe]')
     .between([exerciceId, Dexie.minKey], [exerciceId, Dexie.maxKey])
     .reverse()
-    .filter((s) => s.seanceId !== saufSeanceId)
+    .filter((s) => s.seanceId !== saufSeanceId && memeVariante(s))
     .limit(1)
     .toArray();
   const seanceId = recentes[0]?.seanceId;
   if (!seanceId) return [];
   const toutes = await db.series.where('seanceId').equals(seanceId).sortBy('ordre');
-  return toutes.filter((s) => s.exerciceId === exerciceId && s.type !== 'echauffement');
+  return toutes.filter((s) => s.exerciceId === exerciceId && s.type !== 'echauffement' && memeVariante(s));
 }
 
 /** Premier nombre de « 8-10 », « 12 », « 30-45 s », sinon `undefined`. */

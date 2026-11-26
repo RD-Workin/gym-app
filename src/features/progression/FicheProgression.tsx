@@ -11,7 +11,8 @@ import { useDonneesProgression, type DonneesProgression } from './donnees';
 import { useRequete } from '../../core/requetes';
 import { objectifsDe } from '../objectifs/objectifs';
 import { epley, repsCible } from '../objectifs/calculs';
-import { hauteurMax, hauteurTexte } from '../../core/hauteur';
+import { hauteurCourte, hauteurMax, hauteurTexte } from '../../core/hauteur';
+import { nomStandard } from '../../core/variantes';
 import { HauteursSeries } from '../seance/HauteursSeries';
 import './progression.css';
 
@@ -43,7 +44,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
   const options = useMemo(() => {
     const ids = new Set(seriesEx.map((s) => s.varianteId ?? ''));
     const o: { valeur: string; libelle: string }[] = [];
-    if (ids.has('')) o.push({ valeur: '', libelle: 'Standard' });
+    if (ids.has('')) o.push({ valeur: '', libelle: nomStandard(d.exercices.get(exerciceId)) });
     for (const id of ids) if (id) o.push({ valeur: id, libelle: d.variantes.get(id)?.nom ?? 'Variante' });
     return o;
   }, [seriesEx, d]);
@@ -177,7 +178,7 @@ function Fiche({ exerciceId, d }: { exerciceId: Id; d: DonneesProgression }) {
                     : `${p.series[0]?.modeCharge === 'sans_charge' ? 'PDC' : charge} · ${p.series.map((x) => x.reps).join('-')}`}
                 </span>
               }
-              detail={`${dateLongue(p.date)}${temp != null ? ` · ${Math.round(temp)} °C` : ''}${hauteurMax(p.series) != null ? ` · barre max : ${hauteurTexte(hauteurMax(p.series)!)}` : ''}${p.series.some((x) => x.explosif) ? ' · explosives' : ''}`}
+              detail={`${dateLongue(p.date)}${temp != null ? ` · ${Math.round(temp)} °C` : ''}${hauteurMax(p.series) != null ? ` · barre max : ${hauteurCourte(hauteurMax(p.series)!)}` : ''}${p.series.some((x) => x.explosif) ? ' · explosives' : ''}`}
               fin={
                 seancesRecord.has(p.seanceId) ? <Puce ton="record">★ record</Puce> : p.unRm ? <span class="ui-attenue">1RM {Math.round(p.unRm)}</span> : p.dureeMax ? <span class="ui-attenue">max {fmtDuree(p.dureeMax)}</span> : undefined
               }

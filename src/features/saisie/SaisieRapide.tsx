@@ -17,12 +17,19 @@ import { EditeurLignes, ligneActive } from './EditeurLignes';
 import { depuisDerniereFois, maxProjete, resumeLignes, suggererCharge, unRmRecent } from './suggestion';
 import './saisie.css';
 import { suitHauteur } from '../../core/hauteur';
+import { nomStandard } from '../../core/variantes';
 
 const pasCharge = (e: Exercice) => (e.equipement === 'barre' || e.equipement === 'machine' || e.equipement === 'poulie' ? 2.5 : e.modeCharge === 'par_main' ? 1 : 1.25);
 
 export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; variantes: Variante[]; d: DonneesProgression }) {
   const [varianteId, setVarianteId] = useState<Id | ''>('');
-  const avant = useRequete(() => derniereFois(exercice.id), [exercice.id]);
+  // Avec des variantes (dips barre droite…), la dernière fois est celle de la variante choisie.
+  // Résultat marqué de sa variante : on n'utilise pas celui d'avant le changement de variante.
+  const requeteAvant = useRequete(
+    async () => ({ cle: `${exercice.id}|${varianteId}`, series: await derniereFois(exercice.id, undefined, variantes.length ? varianteId : undefined) }),
+    [exercice.id, varianteId, variantes.length],
+  );
+  const avant = requeteAvant?.cle === `${exercice.id}|${varianteId}` ? requeteAvant.series : undefined;
   const avantVariante = avant?.filter((s) => (s.varianteId ?? '') === varianteId);
 
   const modeCharge = exercice.modeCharge;
@@ -262,9 +269,9 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
 
         {variantes.length > 0 && !correction && (
           <div class="prog-puces" role="group" aria-label="Variante">
-            {[{ id: '', nom: 'Standard' }, ...variantes].map((v) => (
+            {[{ id: '', nom: nomStandard(exercice) }, ...variantes].map((v) => (
               <button key={v.id} type="button" class="prog-puce" aria-pressed={varianteId === v.id} onClick={() => setVarianteId(v.id)}>
-                {v.nom}
+                {v.nom.charAt(0).toUpperCase() + v.nom.slice(1)}
               </button>
             ))}
           </div>

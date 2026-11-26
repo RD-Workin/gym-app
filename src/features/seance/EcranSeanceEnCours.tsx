@@ -12,7 +12,7 @@ import { seanceEnCours, useRequete } from '../../core/requetes';
 import { braisesSur, bulle, COULEURS_PROGRES, ecraser, eclatSur, feuArtifice, sauter, vibrer } from '../../anim';
 import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
-import type { Exercice, Modele, Seance, Serie } from '../../core/types';
+import type { Exercice, Modele, Seance, Serie, Variante } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
 import { origineDe } from '../modeles/modeles';
@@ -23,6 +23,7 @@ import { marquerBilan } from './bilan';
 import { ChoixRepos } from './ChoixRepos';
 import { useEcranAllume } from './ecranAllume';
 import { ChoixTraction } from '../saisie/ChoixTraction';
+import { nomStandard } from '../../core/variantes';
 import { hauteurCourte, hauteurMax, suitHauteur } from '../../core/hauteur';
 import {
   REPOS_DEFAUT_SEC,
@@ -204,7 +205,12 @@ function SeanceActive({ seance }: { seance: Seance }) {
 
   const bloc = plan?.blocs[plan.actif];
   const exercice = bloc ? exercices?.get(bloc.exerciceId) : undefined;
-  const avant = useRequete(() => (bloc ? derniereFois(bloc.exerciceId, seance.id) : []), [bloc?.exerciceId, seance.id]);
+  // Variantes de l'exercice (dips : barres parallèles ou barre droite) : la dernière fois est celle de la même variante.
+  const variantes = useRequete(async (): Promise<Variante[]> => (bloc ? await db.variantes.where('exerciceId').equals(bloc.exerciceId).sortBy('nom') : []), [bloc?.exerciceId]);
+  const avant = useRequete(
+    async () => (!bloc ? [] : variantes ? await derniereFois(bloc.exerciceId, seance.id, variantes.length ? (bloc.varianteId ?? '') : undefined) : undefined),
+    [bloc?.exerciceId, bloc?.varianteId, seance.id, variantes?.length],
+  );
   const faites = bloc ? series.filter((s) => s.exerciceId === bloc.exerciceId) : [];
   const travailFaites = faites.filter((s) => s.type !== 'echauffement');
   const proposerEchauffement = useRequete(echauffementActif);
@@ -466,6 +472,22 @@ function SeanceActive({ seance }: { seance: Seance }) {
               />
             )}
             <div class="sc-nom-exo">{nom(plan.actif)}</div>
+            {!!variantes?.length && (
+              <div class="sc-options" role="group" aria-label="Variante">
+                {[{ id: '', nom: nomStandard(exercice) }, ...variantes].map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    class="sc-option"
+                    aria-pressed={(bloc?.varianteId ?? '') === v.id}
+                    onClick={() => setPlan({ ...plan, blocs: plan.blocs.map((b, i) => (i === plan.actif ? { ...b, varianteId: v.id || undefined } : b)) })}
+                  >
+                    {v.nom.charAt(0).toUpperCase() + v.nom.slice(1)}
+                  </button>
+                ))}
+                <Aide mot="variante" />
+              </div>
+            )}
             <div class="sc-attenue">
               Dernière fois : <b class="sc-num">{avant?.length ? resumeSeries(avant) : '—'}</b>
               {avant && hauteurMax(avant) != null && <> · barre : {hauteurCourte(hauteurMax(avant)!)}</>}

@@ -79,3 +79,13 @@ describe('hauteur atteinte (tractions)', () => {
     expect(construireResumeSeance(d, 's')).not.toContain('barre ≈');
   });
 });
+
+import { nomStandard, sontDipsAuxBarres } from '../../src/core/variantes';
+describe('dips : barres parallèles ou barre droite', () => {
+  it('la version standard des dips, ce sont les barres parallèles', () => {
+    expect(sontDipsAuxBarres('Dips')).toBe(true);
+    expect(sontDipsAuxBarres('Dips entre deux chaises')).toBe(false);
+    expect(nomStandard({ nom: 'Dips' })).toBe('Barres parallèles');
+    expect(nomStandard({ nom: 'Développé couché' })).toBe('Standard');
+  });
+});

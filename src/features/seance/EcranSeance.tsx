@@ -14,6 +14,7 @@ import { construireResumeUneSeance, copierResume } from '../donnees/exporter';
 import { corrigerSeriesExercice, dureeTexte, groupes, pasCharge, resumeSeries, supprimerSeance } from './logique';
 import { EditeurLignes } from '../saisie/EditeurLignes';
 import { HauteursSeries } from './HauteursSeries';
+import { nomStandard } from '../../core/variantes';
 import { suitHauteur } from '../../core/hauteur';
 import type { LigneSet } from '../saisie/saisieRapide';
 import './seance.css';
@@ -39,7 +40,9 @@ export function EcranSeance({ id }: { id: string }) {
     const series = await db.series.where('seanceId').equals(id).sortBy('ordre');
     const exercices = new Map((await db.exercices.bulkGet([...new Set(series.map((s) => s.exerciceId))])).filter((e) => !!e).map((e) => [e!.id, e!]));
     const modele = seance.modeleId ? await db.modeles.get(seance.modeleId) : undefined;
-    return { seance, series, exercices, modele };
+    const ids = [...new Set(series.map((s) => s.varianteId).filter((v): v is string => !!v))];
+    const variantes = new Map((await db.variantes.bulkGet(ids)).filter((v) => !!v).map((v) => [v!.id, v!.nom]));
+    return { seance, series, exercices, modele, variantes };
   }, [id]);
   if (d === undefined) return null;
   if (d === null)
@@ -50,7 +53,7 @@ export function EcranSeance({ id }: { id: string }) {
         </p>
       </section>
     );
-  const { seance, series, exercices, modele } = d;
+  const { seance, series, exercices, modele, variantes } = d;
 
   // Un bloc par exercice, dans l'ordre de la première série ; supersets regroupés.
   const ordre: string[] = [];
@@ -104,7 +107,10 @@ export function EcranSeance({ id }: { id: string }) {
               const exId = blocs[i].exId;
               const sx = series.filter((s) => s.exerciceId === exId);
               const ex = exercices.get(exId);
-              const nomEx = ex?.nom ?? 'Exercice supprimé';
+              // Variante notée (dips barre droite…) : dans le titre ; la version standard garde son nom propre (barres parallèles).
+              const nomsV = [...new Set(sx.map((s) => (s.varianteId ? (variantes.get(s.varianteId) ?? 'variante') : '')))];
+              const avecV = nomsV.some(Boolean);
+              const nomEx = `${ex?.nom ?? 'Exercice supprimé'}${avecV ? ` · ${nomsV.map((v) => v || nomStandard(ex).toLowerCase()).join(' + ')}` : ''}`;
               return (
                 <Fragment key={exId}>
                   <ElementListe
