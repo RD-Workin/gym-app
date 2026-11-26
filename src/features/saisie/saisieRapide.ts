@@ -3,7 +3,7 @@
 // (créée au besoin, déjà terminée) : elles comptent partout (stats, records, export).
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
-import type { Id, ModeCharge, Seance, Serie } from '../../core/types';
+import type { Id, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 import { CLE_PLAN, type PlanSeance } from '../seance/logique';
 
@@ -12,10 +12,17 @@ export const CLE_SEANCE_RAPIDE = 'saisie.seanceDuJour';
 
 /** Une série : reps et charge propres (ex. 10 × 28, 8 × 28, 9 × 26). */
 export interface LigneSet {
+  /** Série déjà enregistrée qu'on corrige (absent = nouvelle série). */
+  id?: Id;
+  /** Type de la série corrigée (échauffement affiché « É »). */
+  type?: TypeSerie;
   reps: number;
   chargeKg?: number;
   /** Série tenue (exercice en secondes) : secondes ; `reps` est alors ignoré. */
   dureeSec?: number;
+  /** Tractions… : hauteur atteinte (0 = yeux … 100 = nombril) et répétitions explosives. */
+  hauteur?: number;
+  explosif?: boolean;
 }
 
 export interface SetRapide {
@@ -77,6 +84,8 @@ export async function enregistrerSetRapide(s: SetRapide): Promise<ResultatRapide
       modeCharge: s.modeCharge,
       reps: s.enSecondes ? 0 : l.reps,
       ...(s.enSecondes ? { dureeSec: l.dureeSec } : {}),
+      ...(!s.enSecondes && l.hauteur != null ? { hauteur: l.hauteur } : {}),
+      ...(!s.enSecondes && l.explosif ? { explosif: true } : {}),
       type: 'travail',
       faiteLe: t,
       creeLe: t,
@@ -102,4 +111,21 @@ export async function annulerSetRapide(r: ResultatRapide) {
     await db.series.bulkDelete(r.series.map((s) => s.id));
     if (!r.enCours && (await db.series.where('seanceId').equals(r.seanceId).count()) === 0) await db.seances.delete(r.seanceId);
   });
+}
+
+/**
+ * Séries de cet exercice déjà notées aujourd'hui, là où « Noter une perf » les range :
+ * séance en cours, sinon séance libre du jour. Pour les corriger au lieu d'en rajouter.
+ */
+export async function dejaNoteAujourdhui(exerciceId: Id): Promise<{ seanceId: Id; enCours: boolean; series: Serie[] } | null> {
+  const enCours = await db.seances.filter((x) => !x.fin).first();
+  let seanceId = enCours?.id;
+  if (!seanceId) {
+    const id = (await db.reglages.get(CLE_SEANCE_RAPIDE))?.valeur as Id | undefined;
+    const du = id ? await db.seances.get(id) : undefined;
+    if (du && memeJour(new Date(du.debut), new Date())) seanceId = du.id;
+  }
+  if (!seanceId) return null;
+  const series = (await db.series.where('seanceId').equals(seanceId).sortBy('ordre')).filter((s) => s.exerciceId === exerciceId);
+  return series.length ? { seanceId, enCours: !!enCours, series } : null;
 }

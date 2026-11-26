@@ -25,6 +25,7 @@ Code correspondant : `src/core/types.ts`, `src/core/db.ts`, `src/core/calculs.ts
 | note | string? | |
 | favori | boolean? | en haut des listes ; absent = non favori. Non indexé, sans changement de version |
 | enSecondes | boolean? | se mesure en secondes tenues (gainage, dead hang…) au lieu de reps ; absent = en reps. Non indexé, sans changement de version. Basculer convertit les séries de l'exercice nombre pour nombre (`src/core/duree.ts`) |
+| suiviHauteur | boolean? | propose de noter hauteur atteinte et explosivité ; absent = d’après le nom (tractions, chin-up, muscle-up). Non indexé |
 | archive | boolean | |
 Index Dexie : `id, nom, equipement, *groupesMusculaires, archive`
 

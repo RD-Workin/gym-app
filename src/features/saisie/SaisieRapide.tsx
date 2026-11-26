@@ -1,8 +1,8 @@
 // Saisie rapide d'un set (séries × reps × kg) depuis la fiche d'un exercice. Propriétaire : 04-seance.
 // Stats et suggestions : 05-progression (suggestion.ts).
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { Aide, Bouton, Carte, IndicationLest, Puce, Stepper, ToastRecord } from '../../ui';
-import { fmtDuree, LEST_MAX_KG, LEST_MIN_KG, signeLest, uniteCharge } from '../../core/calculs';
+import { Aide, Bouton, Carte, Puce, ToastRecord } from '../../ui';
+import { fmtDuree, signeLest, uniteCharge } from '../../core/calculs';
 import { eclatSur } from '../../anim';
 import { lien } from '../../core/router';
 import { useRequete } from '../../core/requetes';
@@ -11,21 +11,32 @@ import { libelleGroupe } from '../../data/groupes';
 import { kg, pointsExercice } from '../progression/calculs';
 import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie, type DonneesProgression } from '../progression/donnees';
-import { derniereFois } from '../seance/logique';
-import { annulerSetRapide, enregistrerSetRapide, type LigneSet, type ResultatRapide } from './saisieRapide';
+import { corrigerSeriesExercice, derniereFois, resumeSeries } from '../seance/logique';
+import { annulerSetRapide, dejaNoteAujourdhui, enregistrerSetRapide, type LigneSet, type ResultatRapide } from './saisieRapide';
+import { EditeurLignes, ligneActive } from './EditeurLignes';
 import { depuisDerniereFois, maxProjete, resumeLignes, suggererCharge, unRmRecent } from './suggestion';
 import './saisie.css';
+import { suitHauteur } from '../../core/hauteur';
+import { nomStandard } from '../../core/variantes';
 
 const pasCharge = (e: Exercice) => (e.equipement === 'barre' || e.equipement === 'machine' || e.equipement === 'poulie' ? 2.5 : e.modeCharge === 'par_main' ? 1 : 1.25);
 
 export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; variantes: Variante[]; d: DonneesProgression }) {
   const [varianteId, setVarianteId] = useState<Id | ''>('');
-  const avant = useRequete(() => derniereFois(exercice.id), [exercice.id]);
+  // Avec des variantes (dips barre droite…), la dernière fois est celle de la variante choisie.
+  // Résultat marqué de sa variante : on n'utilise pas celui d'avant le changement de variante.
+  const requeteAvant = useRequete(
+    async () => ({ cle: `${exercice.id}|${varianteId}`, series: await derniereFois(exercice.id, undefined, variantes.length ? varianteId : undefined) }),
+    [exercice.id, varianteId, variantes.length],
+  );
+  const avant = requeteAvant?.cle === `${exercice.id}|${varianteId}` ? requeteAvant.series : undefined;
   const avantVariante = avant?.filter((s) => (s.varianteId ?? '') === varianteId);
 
   const modeCharge = exercice.modeCharge;
   // Exercice tenu (gainage, dead hang…) : chaque série se note en secondes.
   const tenu = !!exercice.enSecondes;
+  // Tractions… : hauteur atteinte et explosivité par série.
+  const trac = !tenu && suitHauteur(exercice);
   const pas = pasCharge(exercice);
   const poidsActuel = useMemo(() => [...d.seances].sort((a, b) => b.debut.localeCompare(a.debut)).find((s) => s.contexte?.poidsCorporelKg != null)?.contexte.poidsCorporelKg, [d]);
 
@@ -52,18 +63,53 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   const [toast, setToast] = useState<string>();
   const [dernier, setDernier] = useState<ResultatRapide & { texte: string }>();
   const [occupe, setOccupe] = useState(false);
+  // Séries déjà notées aujourd'hui pour cet exercice (même variante) : on peut les corriger au lieu d'en rajouter.
+  const deja = useRequete(() => dejaNoteAujourdhui(exercice.id), [exercice.id]);
+  const dejaVariante = deja?.series.filter((s) => (s.varianteId ?? '') === varianteId) ?? [];
+  // « La dernière fois » ne répète pas les séries du jour, déjà montrées (ou en cours de correction) juste au-dessus.
+  const derniereFoisDuJour = !!deja && avantVariante?.[0]?.seanceId === deja.seanceId;
+  const [correction, setCorrection] = useState(false);
+  const [corrige, setCorrige] = useState(false);
 
-  const i = Math.min(sel, lignes.length - 1);
+  const i = ligneActive(lignes, sel);
   const ligne = lignes[i];
   const majLigne = (p: Partial<LigneSet>) => setLignes((l) => l.map((x, j) => (j === i ? { ...x, ...p } : x)));
-  const ajouterLigne = () => {
-    setLignes((l) => [...l, { ...l[l.length - 1] }]);
-    setSel(lignes.length);
+
+  const corriger = () => {
+    setLignes(dejaVariante.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec, hauteur: s.hauteur, explosif: s.explosif })));
+    setSel(0);
+    setCorrection(true);
+    setCorrige(false);
+    setDernier(undefined);
   };
-  const retirerLigne = () => {
-    if (lignes.length < 2) return;
-    setLignes((l) => l.filter((_, j) => j !== i));
-    setSel(Math.max(0, i - 1));
+  const quitterCorrection = () => {
+    setCorrection(false);
+    // Repart des séries de la dernière fois, comme à l'ouverture de la fiche.
+    setInitialise('');
+  };
+  const enregistrerCorrection = async () => {
+    if (occupe || !deja) return;
+    setOccupe(true);
+    try {
+      await corrigerSeriesExercice(deja.seanceId, exercice.id, lignes, { modeCharge, enSecondes: tenu, varianteId });
+      setCorrection(false);
+      setCorrige(true);
+      setInitialise('');
+    } finally {
+      setOccupe(false);
+    }
+  };
+  const supprimerDuJour = async () => {
+    if (occupe || !deja) return;
+    if (!confirm(`Supprimer les ${dejaVariante.length} séries de ${exercice.nom} notées aujourd’hui ?`)) return;
+    setOccupe(true);
+    try {
+      await corrigerSeriesExercice(deja.seanceId, exercice.id, [], { modeCharge, enSecondes: tenu, varianteId });
+      setCorrection(false);
+      setInitialise('');
+    } finally {
+      setOccupe(false);
+    }
   };
 
   const suggestion = tenu ? null : suggererCharge({
@@ -80,10 +126,10 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   // Préremplissage : les séries de la dernière fois (chacune avec ses reps et sa charge), sinon la suggestion.
   useEffect(() => {
     const cle = `${exercice.id}|${varianteId}`;
-    if (avant === undefined || initialise === cle) return;
+    if (avant === undefined || initialise === cle || correction) return;
     const p = depuisDerniereFois(avantVariante);
     if (tenu) setLignes(p ? p.map((l) => ({ reps: 0, dureeSec: l.dureeSec ?? 30, chargeKg: l.chargeKg ?? 0 })) : [0, 1, 2].map(() => ({ reps: 0, dureeSec: 30, chargeKg: 0 })));
-    else if (p) setLignes(p.map((l) => ({ reps: l.dureeSec != null ? 10 : l.reps, chargeKg: l.chargeKg ?? 0 })));
+    else if (p) setLignes(p.map((l) => ({ reps: l.dureeSec != null ? 10 : l.reps, chargeKg: l.chargeKg ?? 0, ...(trac ? { hauteur: l.hauteur, explosif: l.explosif } : {}) })));
     else setLignes([0, 1, 2].map(() => ({ reps: 10, chargeKg: suggestion?.chargeKg ?? 0 })));
     setSel(0);
     setInitialise(cle);
@@ -109,6 +155,7 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
 
   const enregistrer = async (e: Event) => {
     if (occupe) return;
+    setCorrige(false);
     const bouton = e.currentTarget as Element;
     setOccupe(true);
     try {
@@ -141,13 +188,36 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
   return (
     <Carte titre="Noter une perf" ton="mise-en-avant" aside={<Aide mot="noterExercice" />}>
       <div class="ui-pile">
-        <p class="ui-attenue sr-intro">
-          Fait sans lancer de séance ? Touche une série (S1, S2…), règle {tenu ? 'combien de secondes tu as tenu' : 'ses reps'}
-          {sansCharge ? '' : ` et ${lest ? 'son lest' : 'sa charge'}`}, puis enregistre.
-        </p>
-        {(ref != null || meilleureTenue != null || !!avantVariante?.length) && (
+        {correction ? (
+          <p class="ui-attenue sr-intro">
+            Tu corriges les séries notées aujourd’hui : touche une série, change {tenu ? 'ses secondes' : 'ses reps'}
+            {sansCharge ? '' : ` ou ${lest ? 'son lest' : 'sa charge'}`}, retire-la ou ajoute-en une, puis enregistre.
+          </p>
+        ) : (
+          <p class="ui-attenue sr-intro">
+            Fait sans lancer de séance ? Touche une série (S1, S2…), règle {tenu ? 'combien de secondes tu as tenu' : 'ses reps'}
+            {sansCharge ? '' : ` et ${lest ? 'son lest' : 'sa charge'}`}, puis enregistre.
+          </p>
+        )}
+        {!correction && !dernier && dejaVariante.length > 0 && (
+          <div class="sr-deja" role="group" aria-label="Déjà noté aujourd’hui">
+            <span>
+              <span class="ui-surtitre">Déjà noté aujourd’hui</span>
+              <span class="ui-chiffre">{resumeSeries(dejaVariante)}</span>
+            </span>
+            <button type="button" class="prog-puce sr-corriger" onClick={corriger}>
+              Corriger ces séries
+            </button>
+          </div>
+        )}
+        {corrige && !correction && (
+          <div class="sr-confirmation" role="status">
+            <Puce ton="progres">✓ Séries corrigées</Puce>
+          </div>
+        )}
+        {(ref != null || meilleureTenue != null || (!!avantVariante?.length && !derniereFoisDuJour)) && (
           <div class="sr-stats">
-            {avantVariante && avantVariante.length > 0 && (
+            {avantVariante && avantVariante.length > 0 && !derniereFoisDuJour && (
               <div>
                 <span class="ui-surtitre">La dernière fois</span>
                 <span class="ui-chiffre">
@@ -197,63 +267,19 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
           </div>
         )}
 
-        {variantes.length > 0 && (
+        {variantes.length > 0 && !correction && (
           <div class="prog-puces" role="group" aria-label="Variante">
-            {[{ id: '', nom: 'Standard' }, ...variantes].map((v) => (
+            {[{ id: '', nom: nomStandard(exercice) }, ...variantes].map((v) => (
               <button key={v.id} type="button" class="prog-puce" aria-pressed={varianteId === v.id} onClick={() => setVarianteId(v.id)}>
-                {v.nom}
+                {v.nom.charAt(0).toUpperCase() + v.nom.slice(1)}
               </button>
             ))}
           </div>
         )}
 
-        <div class="sr-lignes" role="group" aria-label="Séries à enregistrer">
-          {lignes.map((l, j) => (
-            <button key={j} type="button" class="sr-ligne" aria-pressed={j === i} onClick={() => setSel(j)}>
-              <span class="sr-num">S{j + 1}</span>
-              <span class="ui-chiffre">
-                {tenu ? `${l.dureeSec ?? 0} s` : `${l.reps} reps`}
-                {sansCharge || (lest && !l.chargeKg) ? '' : ` · ${fmtKg(l.chargeKg)} ${unite}`}
-              </span>
-            </button>
-          ))}
-          <button type="button" class="sr-ligne sr-plus" onClick={ajouterLigne} aria-label="Ajouter une série">
-            + Série
-          </button>
-        </div>
+        <EditeurLignes hauteur={trac} lignes={lignes} setLignes={setLignes} sel={i} setSel={setSel} modeCharge={modeCharge} tenu={tenu} pas={pas} poidsCorporelKg={poidsActuel} />
 
-        <div class="sr-champs">
-          <div class="ui-ligne-entre">
-            <span class="ui-surtitre">Série {i + 1}</span>
-            {lignes.length > 1 && (
-              <button type="button" class="prog-puce" onClick={retirerLigne}>
-                Retirer S{i + 1}
-              </button>
-            )}
-          </div>
-          {/* key par série : le champ repart de la valeur de la série touchée, sans délai de synchro. */}
-          {tenu ? (
-            <Stepper key={`duree-${i}`} id="sr-duree" valeur={ligne.dureeSec ?? 0} onChange={(v) => majLigne({ dureeSec: v })} unite="secondes" pas={5} min={1} max={3600} decimales={0} />
-          ) : (
-            <Stepper key={`reps-${i}`} id="sr-reps" valeur={ligne.reps} onChange={(v) => majLigne({ reps: v })} unite="reps" min={1} max={200} decimales={0} />
-          )}
-          {!sansCharge && (
-            <Stepper
-              key={`charge-${i}`}
-              id="sr-charge"
-              valeur={ligne.chargeKg ?? 0}
-              onChange={(v) => majLigne({ chargeKg: v })}
-              unite={unite}
-              pas={pas}
-              min={lest ? LEST_MIN_KG : 0}
-              max={lest ? LEST_MAX_KG : 999}
-              decimales={2}
-            />
-          )}
-          {lest && <IndicationLest lestKg={ligne.chargeKg ?? 0} poidsCorporelKg={poidsActuel} />}
-        </div>
-
-        {suggestion && (
+        {suggestion && !correction && (
           <div class="sr-suggestion">
             <p class="ui-attenue">{suggestion.texte}</p>
             <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }}>
@@ -272,9 +298,25 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
           </div>
         )}
 
-        <Bouton taille="geant" icone="valider" onClick={enregistrer} disabled={occupe}>
-          Enregistrer {lignes.length} série{lignes.length > 1 ? 's' : ''}
-        </Bouton>
+        {correction ? (
+          <>
+            <Bouton taille="geant" icone="valider" onClick={enregistrerCorrection} disabled={occupe}>
+              Enregistrer la correction
+            </Bouton>
+            <div class="ui-ligne-entre">
+              <Bouton variante="secondaire" onClick={quitterCorrection}>
+                Annuler
+              </Bouton>
+              <Bouton variante="danger" onClick={supprimerDuJour} disabled={occupe}>
+                Supprimer
+              </Bouton>
+            </div>
+          </>
+        ) : (
+          <Bouton taille="geant" icone="valider" onClick={enregistrer} disabled={occupe}>
+            Enregistrer {lignes.length} série{lignes.length > 1 ? 's' : ''}
+          </Bouton>
+        )}
 
         {dernier && (
           <div class="sr-confirmation" role="status">
@@ -292,6 +334,11 @@ export function SaisieRapide({ exercice, variantes, d }: { exercice: Exercice; v
             >
               Annuler
             </button>
+            {dejaVariante.length > 0 && (
+              <button type="button" class="prog-puce" onClick={corriger}>
+                Corriger
+              </button>
+            )}
           </div>
         )}
       </div>

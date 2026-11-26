@@ -49,12 +49,20 @@ export interface LignePrerempli {
   reps: number;
   chargeKg?: number;
   dureeSec?: number;
+  hauteur?: number;
+  explosif?: boolean;
 }
 
 /** Dernière séance de l'exercice → les mêmes séries, chacune avec ses reps (ou secondes) et sa charge. */
-export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg' | 'dureeSec'>[] | undefined): LignePrerempli[] | null {
+export function depuisDerniereFois(derniere: Pick<Serie, 'reps' | 'chargeKg' | 'dureeSec' | 'hauteur' | 'explosif'>[] | undefined): LignePrerempli[] | null {
   if (!derniere?.length) return null;
-  return derniere.map((s) => ({ reps: s.reps, chargeKg: s.chargeKg, ...(s.dureeSec != null ? { dureeSec: s.dureeSec } : {}) }));
+  return derniere.map((s) => ({
+    reps: s.reps,
+    chargeKg: s.chargeKg,
+    ...(s.dureeSec != null ? { dureeSec: s.dureeSec } : {}),
+    ...(s.hauteur != null ? { hauteur: s.hauteur } : {}),
+    ...(s.explosif ? { explosif: true } : {}),
+  }));
 }
 
 /** « 28 kg · 10-8 / 26 kg · 9 » : charges groupées dans l'ordre, reps de chaque série (« 45-40 s » pour des séries tenues). */

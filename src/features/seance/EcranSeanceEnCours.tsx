@@ -12,7 +12,7 @@ import { seanceEnCours, useRequete } from '../../core/requetes';
 import { braisesSur, bulle, COULEURS_PROGRES, ecraser, eclatSur, feuArtifice, sauter, vibrer } from '../../anim';
 import { objectifAtteintPar } from '../objectifs/objectifs';
 import { recordsDeLaSerie } from '../progression/donnees';
-import type { Exercice, Modele, Seance, Serie } from '../../core/types';
+import type { Exercice, Modele, Seance, Serie, Variante } from '../../core/types';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { SEANCES_BONUS, rangDepart } from '../../data/bibliotheque';
 import { origineDe } from '../modeles/modeles';
@@ -22,6 +22,9 @@ import { Chrono } from './Chrono';
 import { marquerBilan } from './bilan';
 import { ChoixRepos } from './ChoixRepos';
 import { useEcranAllume } from './ecranAllume';
+import { ChoixTraction } from '../saisie/ChoixTraction';
+import { nomStandard } from '../../core/variantes';
+import { hauteurCourte, hauteurMax, suitHauteur } from '../../core/hauteur';
 import {
   REPOS_DEFAUT_SEC,
   REPOS_ECHAUFFEMENT_SEC,
@@ -202,7 +205,12 @@ function SeanceActive({ seance }: { seance: Seance }) {
 
   const bloc = plan?.blocs[plan.actif];
   const exercice = bloc ? exercices?.get(bloc.exerciceId) : undefined;
-  const avant = useRequete(() => (bloc ? derniereFois(bloc.exerciceId, seance.id) : []), [bloc?.exerciceId, seance.id]);
+  // Variantes de l'exercice (dips : barres parallèles ou barre droite) : la dernière fois est celle de la même variante.
+  const variantes = useRequete(async (): Promise<Variante[]> => (bloc ? await db.variantes.where('exerciceId').equals(bloc.exerciceId).sortBy('nom') : []), [bloc?.exerciceId]);
+  const avant = useRequete(
+    async () => (!bloc ? [] : variantes ? await derniereFois(bloc.exerciceId, seance.id, variantes.length ? (bloc.varianteId ?? '') : undefined) : undefined),
+    [bloc?.exerciceId, bloc?.varianteId, seance.id, variantes?.length],
+  );
   const faites = bloc ? series.filter((s) => s.exerciceId === bloc.exerciceId) : [];
   const travailFaites = faites.filter((s) => s.type !== 'echauffement');
   const proposerEchauffement = useRequete(echauffementActif);
@@ -227,7 +235,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
   useEffect(() => {
     if (!bloc || !exercices || !avant) return;
     if (edition) {
-      setSaisie({ chargeKg: edition.chargeKg, reps: edition.reps, dureeSec: edition.dureeSec, rir: edition.rir, type: edition.type, modeCharge: edition.modeCharge, reglagesMachine: edition.reglagesMachine });
+      setSaisie({ chargeKg: edition.chargeKg, reps: edition.reps, dureeSec: edition.dureeSec, hauteur: edition.hauteur, explosif: edition.explosif, rir: edition.rir, type: edition.type, modeCharge: edition.modeCharge, reglagesMachine: edition.reglagesMachine });
       setRirVisible(edition.rir != null);
     } else {
       setSaisie(preremplir(exercice, bloc, faites, avant, etapesEchauf));
@@ -254,6 +262,14 @@ function SeanceActive({ seance }: { seance: Seance }) {
   };
 
   const ajouterExercice = (e: Exercice) => {
+    // Déjà dans la séance : on y retourne (ses séries restent modifiables) au lieu d'en créer un deuxième.
+    const existant = plan.blocs.findIndex((b) => b.exerciceId === e.id);
+    if (existant >= 0) {
+      setEdition(undefined);
+      setPlan({ ...plan, actif: existant });
+      setChoix(false);
+      return;
+    }
     const blocs = [...plan.blocs, { id: nouvelId(), exerciceId: e.id }];
     setPlan({ ...plan, blocs, actif: blocs.length - 1 });
     setChoix(false);
@@ -456,8 +472,25 @@ function SeanceActive({ seance }: { seance: Seance }) {
               />
             )}
             <div class="sc-nom-exo">{nom(plan.actif)}</div>
+            {!!variantes?.length && (
+              <div class="sc-options" role="group" aria-label="Variante">
+                {[{ id: '', nom: nomStandard(exercice) }, ...variantes].map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    class="sc-option"
+                    aria-pressed={(bloc?.varianteId ?? '') === v.id}
+                    onClick={() => setPlan({ ...plan, blocs: plan.blocs.map((b, i) => (i === plan.actif ? { ...b, varianteId: v.id || undefined } : b)) })}
+                  >
+                    {v.nom.charAt(0).toUpperCase() + v.nom.slice(1)}
+                  </button>
+                ))}
+                <Aide mot="variante" />
+              </div>
+            )}
             <div class="sc-attenue">
               Dernière fois : <b class="sc-num">{avant?.length ? resumeSeries(avant) : '—'}</b>
+              {avant && hauteurMax(avant) != null && <> · barre : {hauteurCourte(hauteurMax(avant)!)}</>}
             </div>
             {cible && (
               <div class="sc-attenue">
@@ -509,6 +542,9 @@ function SeanceActive({ seance }: { seance: Seance }) {
                   <span class="sc-num">
                     {formatSerie(s)}
                     {s.rir != null ? ` · RIR ${s.rir}` : ''}
+                    {(s.hauteur != null || s.explosif) && (
+                      <span class="sc-detail-traction"> · {[s.hauteur != null ? `barre : ${hauteurCourte(s.hauteur)}` : '', s.explosif ? '⚡' : ''].filter(Boolean).join(' ')}</span>
+                    )}
                   </span>
                   <span class={s.type === 'echauffement' ? 'sc-ok sc-echauf-fait' : 'sc-ok'}>
                     {s.type === 'echauffement' ? (
@@ -540,6 +576,7 @@ function SeanceActive({ seance }: { seance: Seance }) {
               </li>
             )}
           </ol>
+          {faites.length > 0 && !edition && <p class="sc-attenue">Une erreur ? Touche une série faite pour la corriger ou la supprimer.</p>}
 
           {plan.reposFin && !edition && (
             <Repos
@@ -577,6 +614,10 @@ function SeanceActive({ seance }: { seance: Seance }) {
               </div>
               {tenu && !edition && <Chrono key={travailFaites.length} onFin={(sec) => setSaisie({ ...saisie, dureeSec: sec })} />}
               {lest && <IndicationLest lestKg={saisie.chargeKg ?? 0} poidsCorporelKg={seance.contexte?.poidsCorporelKg} />}
+              {/* Tractions : hauteur atteinte (schéma replié) et explosivité, pas pour l'échauffement. */}
+              {!tenu && saisie.type !== 'echauffement' && suitHauteur(exercice) && (
+                <ChoixTraction hauteur={saisie.hauteur} explosif={saisie.explosif} onChange={(v) => setSaisie({ ...saisie, ...v })} />
+              )}
               {rirVisible && (
                 <Stepper id="sc-rir" valeur={saisie.rir ?? 2} onChange={(v) => setSaisie({ ...saisie, rir: v })} unite="reps en réserve" min={0} max={10} decimales={0} />
               )}

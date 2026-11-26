@@ -342,3 +342,29 @@ button.ui-element:active { background: var(--c-surface-2); }
 
 /* Indication sous le champ de lest (exercices au poids du corps). */
 .ui-indication-lest { margin: 0; font-size: var(--t-sm); line-height: 1.35; }
+
+/* Schéma de hauteur atteinte (tractions) — SchemaHauteur.tsx */
+.ui-sh { display: block; justify-self: center; width: 100%; max-width: 320px; height: auto; aspect-ratio: 240 / 196; margin: 0 auto; overflow: visible; user-select: none; -webkit-user-select: none; }
+.ui-sh.compact { max-width: 200px; }
+.ui-sh.reglable { touch-action: none; cursor: ns-resize; -webkit-tap-highlight-color: transparent; }
+.ui-sh.reglable:focus-visible { outline: 2px solid var(--c-action); outline-offset: 4px; border-radius: var(--r-sm); }
+.ui-sh-corps > * { fill: var(--c-surface-2); stroke: var(--c-trait); stroke-width: 1.5; }
+.ui-sh-traits > * { fill: none; stroke: var(--c-attenue); stroke-width: 1.2; opacity: 0.6; }
+.ui-sh-traits circle { fill: var(--c-attenue); stroke: none; }
+.ui-sh-bras, .ui-sh-bras-contour { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ui-sh-bras { stroke: var(--c-surface-2); stroke-width: 10; }
+.ui-sh-bras-contour { stroke: var(--c-trait); stroke-width: 13; }
+.ui-sh-repere line { stroke: var(--c-trait); stroke-width: 1.5; }
+.ui-sh-repere text { fill: var(--c-attenue); font-family: var(--f-texte); font-size: 12px; }
+.ui-sh-repere.actif text { fill: var(--c-texte); font-weight: 700; }
+.ui-sh-repere.actif line { stroke: var(--c-action); }
+.ui-sh.reglable .ui-sh-repere { cursor: pointer; }
+.ui-sh-barre line { stroke-width: 6; stroke-linecap: round; }
+.ui-sh-barre text { font-family: var(--f-texte); font-size: 11px; font-weight: 700; }
+.ui-sh-barre.action line, .ui-sh-barre.action circle { stroke: var(--c-action); fill: var(--c-action); }
+.ui-sh-barre.action text { fill: var(--c-action); }
+.ui-sh-barre.attenue line { stroke: var(--c-attenue); stroke-width: 3; opacity: 0.7; }
+.ui-sh-barre.attenue text { fill: var(--c-attenue); }
+.ui-sh-barre.record line { stroke: var(--c-record); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.ui-sh-barre.record text { fill: var(--c-record); }
+.ui-sh-barre circle { stroke-width: 0; }

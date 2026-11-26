@@ -1,8 +1,9 @@
 // Détail d'une séance faite (propriétaire : 04-seance).
+import { Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Bouton, Carte, ElementListe, Icone, Liste } from '../../ui';
 import { celebrer, Flamme, feuArtifice, useCompteur, vibrer } from '../../anim';
-import type { Seance } from '../../core/types';
+import type { Exercice, Seance, Serie } from '../../core/types';
 import { bilanAJouer, calculerBilan } from './bilan';
 import { db } from '../../core/db';
 import { lien, naviguer } from '../../core/router';
@@ -10,7 +11,12 @@ import { useRequete } from '../../core/requetes';
 import { BandeauContexte } from '../contexte/BandeauContexte';
 import { creerModeleDepuisSeance } from '../modeles/modeles';
 import { construireResumeUneSeance, copierResume } from '../donnees/exporter';
-import { dureeTexte, groupes, resumeSeries, supprimerSeance } from './logique';
+import { corrigerSeriesExercice, dureeTexte, groupes, pasCharge, resumeSeries, supprimerSeance } from './logique';
+import { EditeurLignes } from '../saisie/EditeurLignes';
+import { HauteursSeries } from './HauteursSeries';
+import { nomStandard } from '../../core/variantes';
+import { suitHauteur } from '../../core/hauteur';
+import type { LigneSet } from '../saisie/saisieRapide';
 import './seance.css';
 
 export function EcranSeance({ id }: { id: string }) {
@@ -19,6 +25,8 @@ export function EcranSeance({ id }: { id: string }) {
   const [copie, setCopie] = useState<string | null>(null);
   // Calculé à l'avance : Safari n'autorise la copie que dans le geste.
   const [resume, setResume] = useState<string | null>(null);
+  // Exercice dont on corrige les séries (un seul à la fois).
+  const [enCorrection, setEnCorrection] = useState<string>();
   useEffect(() => {
     let actif = true;
     construireResumeUneSeance(id).then((t) => actif && setResume(t), () => actif && setResume(null));
@@ -32,7 +40,9 @@ export function EcranSeance({ id }: { id: string }) {
     const series = await db.series.where('seanceId').equals(id).sortBy('ordre');
     const exercices = new Map((await db.exercices.bulkGet([...new Set(series.map((s) => s.exerciceId))])).filter((e) => !!e).map((e) => [e!.id, e!]));
     const modele = seance.modeleId ? await db.modeles.get(seance.modeleId) : undefined;
-    return { seance, series, exercices, modele };
+    const ids = [...new Set(series.map((s) => s.varianteId).filter((v): v is string => !!v))];
+    const variantes = new Map((await db.variantes.bulkGet(ids)).filter((v) => !!v).map((v) => [v!.id, v!.nom]));
+    return { seance, series, exercices, modele, variantes };
   }, [id]);
   if (d === undefined) return null;
   if (d === null)
@@ -43,7 +53,7 @@ export function EcranSeance({ id }: { id: string }) {
         </p>
       </section>
     );
-  const { seance, series, exercices, modele } = d;
+  const { seance, series, exercices, modele, variantes } = d;
 
   // Un bloc par exercice, dans l'ordre de la première série ; supersets regroupés.
   const ordre: string[] = [];
@@ -87,7 +97,7 @@ export function EcranSeance({ id }: { id: string }) {
       )}
       <Carte titre="Résumé">
         <span class="sc-num">
-          {ordre.length} exercices · {series.length} séries{duree ? ` · ${dureeTexte(duree)}` : ''}
+          {ordre.length} exercice{ordre.length > 1 ? 's' : ''} · {series.length} série{series.length > 1 ? 's' : ''}{duree ? ` · ${dureeTexte(duree)}` : ''}
         </span>
       </Carte>
       {grps.map((g) => (
@@ -96,7 +106,46 @@ export function EcranSeance({ id }: { id: string }) {
             {g.map((i) => {
               const exId = blocs[i].exId;
               const sx = series.filter((s) => s.exerciceId === exId);
-              return <ElementListe key={exId} titre={exercices.get(exId)?.nom ?? 'Exercice supprimé'} detail={resumeSeries(sx)} href={lien(`/exercices/${exId}`)} />;
+              const ex = exercices.get(exId);
+              // Variante notée (dips barre droite…) : dans le titre ; la version standard garde son nom propre (barres parallèles).
+              const nomsV = [...new Set(sx.map((s) => (s.varianteId ? (variantes.get(s.varianteId) ?? 'variante') : '')))];
+              const avecV = nomsV.some(Boolean);
+              const nomEx = `${ex?.nom ?? 'Exercice supprimé'}${avecV ? ` · ${nomsV.map((v) => v || nomStandard(ex).toLowerCase()).join(' + ')}` : ''}`;
+              return (
+                <Fragment key={exId}>
+                  <ElementListe
+                    titre={nomEx}
+                    detail={resumeSeries(sx)}
+                    href={lien(`/exercices/${exId}`)}
+                    action={
+                      enCorrection !== exId && (
+                        <button type="button" class="sc-corriger" onClick={() => setEnCorrection(exId)} aria-label={`Corriger les séries de ${nomEx}`}>
+                          Corriger
+                        </button>
+                      )
+                    }
+                  />
+                  {enCorrection !== exId && sx.some((s) => s.hauteur != null || s.explosif) && (
+                    <li class="sc-hauteurs">
+                      <HauteursSeries series={sx} nom={nomEx} />
+                    </li>
+                  )}
+                  {enCorrection === exId && (
+                    <li class="sc-correction">
+                      <CorrectionExercice
+                        seance={seance}
+                        exerciceId={exId}
+                        exercice={ex}
+                        series={sx}
+                        onFin={(r) => {
+                          setEnCorrection(undefined);
+                          if (r === 'seance_supprimee') naviguer('/seance');
+                        }}
+                      />
+                    </li>
+                  )}
+                </Fragment>
+              );
             })}
           </Liste>
         </Carte>
@@ -179,6 +228,68 @@ function BilanAnime({ seance, duree }: { seance: Seance; duree?: number }) {
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Correction des séries d'un exercice dans une séance déjà enregistrée (erreur de saisie). */
+function CorrectionExercice({
+  seance,
+  exerciceId,
+  exercice,
+  series,
+  onFin,
+}: {
+  seance: Seance;
+  exerciceId: string;
+  exercice?: Exercice;
+  series: Serie[];
+  onFin: (r?: 'corrigee' | 'seance_supprimee') => void;
+}) {
+  const modeCharge = series[0]?.modeCharge ?? exercice?.modeCharge ?? 'total';
+  const tenu = series.some((s) => s.dureeSec != null) || !!exercice?.enSecondes;
+  const [lignes, setLignes] = useState<LigneSet[]>(() =>
+    series.map((s) => ({ id: s.id, type: s.type, reps: s.reps, chargeKg: s.chargeKg ?? 0, dureeSec: s.dureeSec ?? (tenu ? 30 : undefined), hauteur: s.hauteur, explosif: s.explosif })),
+  );
+  const [sel, setSel] = useState(0);
+  const [occupe, setOccupe] = useState(false);
+  const nom = exercice?.nom ?? 'cet exercice';
+  const enregistrer = async (vide?: boolean) => {
+    if (occupe) return;
+    if (vide && !confirm(`Retirer ${nom} de cette séance (${series.length} série${series.length > 1 ? 's' : ''}) ?`)) return;
+    setOccupe(true);
+    try {
+      onFin(await corrigerSeriesExercice(seance.id, exerciceId, vide ? [] : lignes, { modeCharge, enSecondes: tenu }));
+    } finally {
+      setOccupe(false);
+    }
+  };
+  return (
+    <div class="ui-pile">
+      <p class="sc-attenue">Touche une série pour la corriger, retire-la ou ajoute-en une, puis enregistre.</p>
+      <EditeurLignes
+        lignes={lignes}
+        setLignes={setLignes}
+        sel={sel}
+        setSel={setSel}
+        modeCharge={modeCharge}
+        tenu={tenu}
+        pas={pasCharge(exercice?.equipement)}
+        poidsCorporelKg={seance.contexte?.poidsCorporelKg}
+        idChamps={`corr-${exerciceId}`}
+        hauteur={!tenu && (suitHauteur(exercice) || series.some((s) => s.hauteur != null || s.explosif))}
+      />
+      <Bouton icone="valider" onClick={() => enregistrer()} disabled={occupe}>
+        Enregistrer la correction
+      </Bouton>
+      <div class="sc-ligne">
+        <Bouton variante="secondaire" onClick={() => onFin()}>
+          Annuler
+        </Bouton>
+        <Bouton variante="danger" onClick={() => enregistrer(true)} disabled={occupe}>
+          Retirer l’exercice
+        </Bouton>
+      </div>
     </div>
   );
 }

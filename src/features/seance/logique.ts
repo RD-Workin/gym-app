@@ -4,6 +4,7 @@ import Dexie from 'dexie';
 import { db } from '../../core/db';
 import { maintenant, nouvelId } from '../../core/ids';
 import { fmtDuree, signeLest, uniteCharge } from '../../core/calculs';
+import { suitHauteur } from '../../core/hauteur';
 import type { BlocModele, Exercice, Id, Modele, ModeCharge, Seance, Serie, TypeSerie } from '../../core/types';
 import { remplirContexte } from '../contexte/contexte';
 
@@ -89,6 +90,9 @@ export interface Saisie {
   reps: number;
   /** Série tenue (exercice en secondes) : durée en secondes, `reps` vaut alors 0. */
   dureeSec?: number;
+  /** Tractions… : hauteur atteinte (0 = yeux … 100 = nombril) et répétitions explosives. */
+  hauteur?: number;
+  explosif?: boolean;
   rir?: number;
   type: TypeSerie;
   modeCharge: ModeCharge;
@@ -98,8 +102,8 @@ export interface Saisie {
 export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: Saisie, existante?: Serie): Promise<Serie | undefined> {
   const t = maintenant();
   if (existante) {
-    // `dureeSec` absent de la saisie : on l'efface aussi de la série (Dexie ignore les clés absentes).
-    await db.series.update(existante.id, { dureeSec: undefined, ...saisie, modifieLe: t });
+    // Champs facultatifs absents de la saisie : on les efface aussi de la série (Dexie ignore les clés absentes).
+    await db.series.update(existante.id, { dureeSec: undefined, hauteur: undefined, explosif: undefined, ...saisie, modifieLe: t });
     return;
   }
   const dernier = await db.series.where('seanceId').equals(seanceId).reverse().sortBy('ordre');
@@ -119,19 +123,23 @@ export async function enregistrerSerie(seanceId: Id, bloc: BlocModele, saisie: S
   return serie;
 }
 
-/** Séries de travail de la dernière séance (hors séance courante) qui contient cet exercice. */
-export async function derniereFois(exerciceId: Id, saufSeanceId?: Id): Promise<Serie[]> {
+/**
+ * Séries de travail de la dernière séance (hors séance courante) qui contient cet exercice.
+ * `varianteId` fourni ('' = version standard) : seulement cette variante (dips barre droite ≠ barres parallèles).
+ */
+export async function derniereFois(exerciceId: Id, saufSeanceId?: Id, varianteId?: Id | ''): Promise<Serie[]> {
+  const memeVariante = (s: Serie) => varianteId === undefined || (s.varianteId ?? '') === varianteId;
   const recentes = await db.series
     .where('[exerciceId+faiteLe]')
     .between([exerciceId, Dexie.minKey], [exerciceId, Dexie.maxKey])
     .reverse()
-    .filter((s) => s.seanceId !== saufSeanceId)
+    .filter((s) => s.seanceId !== saufSeanceId && memeVariante(s))
     .limit(1)
     .toArray();
   const seanceId = recentes[0]?.seanceId;
   if (!seanceId) return [];
   const toutes = await db.series.where('seanceId').equals(seanceId).sortBy('ordre');
-  return toutes.filter((s) => s.exerciceId === exerciceId && s.type !== 'echauffement');
+  return toutes.filter((s) => s.exerciceId === exerciceId && s.type !== 'echauffement' && memeVariante(s));
 }
 
 /** Premier nombre de « 8-10 », « 12 », « 30-45 s », sinon `undefined`. */
@@ -159,7 +167,7 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
   const n = travail.length;
   const precJour = travail[n - 1];
   const memeRang = avant[n];
-  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'modeCharge' | 'reglagesMachine'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
+  let ref: Pick<Serie, 'chargeKg' | 'reps' | 'dureeSec' | 'modeCharge' | 'reglagesMachine' | 'hauteur' | 'explosif'> | undefined = memeRang ?? precJour ?? avant[avant.length - 1];
   if (memeRang && precJour && avant[n - 1] && precJour.chargeKg !== avant[n - 1].chargeKg) {
     ref = { ...memeRang, chargeKg: precJour.chargeKg, reglagesMachine: precJour.reglagesMachine ?? memeRang.reglagesMachine };
   }
@@ -180,6 +188,9 @@ export function preremplir(exercice: Exercice | undefined, bloc: BlocModele, fai
     type: 'travail',
     modeCharge: ref?.modeCharge ?? modeCharge,
     reglagesMachine: ref?.reglagesMachine,
+    // Tractions : même hauteur visée et même style que la série de référence.
+    ...(suitHauteur(exercice) && ref?.hauteur != null ? { hauteur: ref.hauteur } : {}),
+    ...(suitHauteur(exercice) && ref?.explosif ? { explosif: true } : {}),
   };
 }
 
@@ -196,7 +207,8 @@ export function resumeSeries(series: Serie[]): string {
     if (charges.every((c) => !c) || series[0].modeCharge === 'sans_charge') return durees;
     return `${charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c ?? 0)).join('/')}${unite} · ${durees}`;
   }
-  const ch = charges.every((c) => c == null) ? 'PdC' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
+  // Lest à 0 partout : « sans lest » plutôt que « 0 kg de lest » (relecture 11).
+  const ch = charges.every((c) => c == null) ? 'PdC' : lest && charges.every((c) => !c) ? 'sans lest' : charges.map((c) => (lest && c != null ? signeLest(c) : '') + kg(c)).join('/') + unite;
   return `${ch} · ${series.map((s) => s.reps).join('-')}`;
 }
 
@@ -343,3 +355,71 @@ export const CLE_ECHAUFFEMENT = 'seance.echauffement';
 /** Réglage « Proposer un échauffement » (oui par défaut). */
 export const echauffementActif = async () => (await db.reglages.get(CLE_ECHAUFFEMENT))?.valeur !== false;
 export const reglerEchauffement = (actif: boolean) => db.reglages.put({ cle: CLE_ECHAUFFEMENT, valeur: actif });
+
+/** Une série corrigée : `id` = série existante à mettre à jour ; sans `id` = série ajoutée. */
+export interface LigneCorrigee {
+  id?: Id;
+  reps: number;
+  chargeKg?: number;
+  dureeSec?: number;
+  hauteur?: number;
+  explosif?: boolean;
+}
+
+/**
+ * Corrige les séries d'un exercice dans une séance déjà enregistrée (séance libre, séance faite) :
+ * met à jour celles gardées (même id : date, type, RIR conservés), supprime celles retirées, ajoute les nouvelles.
+ * Une séance sans modèle, terminée, qui n'a plus aucune série est supprimée (rien à garder).
+ */
+export async function corrigerSeriesExercice(
+  seanceId: Id,
+  exerciceId: Id,
+  lignes: LigneCorrigee[],
+  opts: { modeCharge: ModeCharge; enSecondes?: boolean; varianteId?: Id },
+): Promise<'corrigee' | 'seance_supprimee'> {
+  const t = maintenant();
+  const valides = lignes.filter((l) => (opts.enSecondes ? (l.dureeSec ?? 0) >= 1 : l.reps >= 1)).slice(0, 30);
+  const sansCharge = opts.modeCharge === 'sans_charge';
+  const valeurs = (l: LigneCorrigee) => ({
+    chargeKg: sansCharge ? undefined : l.chargeKg,
+    reps: opts.enSecondes ? 0 : l.reps,
+    dureeSec: opts.enSecondes ? l.dureeSec : undefined,
+    hauteur: opts.enSecondes ? undefined : l.hauteur,
+    explosif: (!opts.enSecondes && l.explosif) || undefined,
+  });
+  return db.transaction('rw', db.seances, db.series, async () => {
+    const toutes = await db.series.where('seanceId').equals(seanceId).toArray();
+    const avant = toutes.filter((s) => s.exerciceId === exerciceId && (opts.varianteId === undefined || (s.varianteId ?? '') === opts.varianteId));
+    const gardees = new Set(valides.map((l) => l.id).filter(Boolean));
+    await db.series.bulkDelete(avant.filter((s) => !gardees.has(s.id)).map((s) => s.id));
+    let ordre = toutes.reduce((m, x) => Math.max(m, x.ordre), 0);
+    const modele = avant[0];
+    for (const l of valides) {
+      if (l.id && avant.some((s) => s.id === l.id)) {
+        await db.series.update(l.id, { ...valeurs(l), modifieLe: t });
+        continue;
+      }
+      await db.series.add({
+        id: nouvelId(),
+        seanceId,
+        exerciceId,
+        varianteId: opts.varianteId || modele?.varianteId || undefined,
+        supersetId: modele?.supersetId,
+        ordre: ++ordre,
+        modeCharge: opts.modeCharge,
+        ...valeurs(l),
+        type: 'travail',
+        faiteLe: modele?.faiteLe ?? t,
+        creeLe: t,
+        modifieLe: t,
+      });
+    }
+    const seance = await db.seances.get(seanceId);
+    if (seance && seance.fin && !seance.modeleId && (await db.series.where('seanceId').equals(seanceId).count()) === 0) {
+      await db.seances.delete(seanceId);
+      return 'seance_supprimee';
+    }
+    if (seance) await db.seances.update(seanceId, { modifieLe: t });
+    return 'corrigee';
+  });
+}

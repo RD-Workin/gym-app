@@ -22,6 +22,8 @@ Période au choix avant l'export : 2 semaines, 30 jours, 3 mois (jours glissants
 | lest_kg | lest ajouté au poids du corps (mode lest) |
 | reps | répétitions faites (vide pour un exercice tenu en secondes) |
 | duree_s | secondes tenues, pour les exercices en secondes (gainage, dead hang…) ; vide sinon |
+| hauteur_atteinte | tractions : où la barre arrive sur le haut du corps, en mots approximatifs (`menton`, `pecs`, `entre clavicules et pecs`…) ; le schéma exact reste dans l'app ; vide si non noté |
+| explosive | `oui` si les répétitions sont notées explosives ; vide sinon |
 | rir | répétitions en réserve (vide si non noté) |
 | poids_corps_kg | poids de corps du jour |
 | charge_effective_kg | charge réellement déplacée (par_main × 2, lest + poids de corps) |

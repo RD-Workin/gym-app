@@ -9,6 +9,21 @@ export interface Nouveaute {
 
 export const NOUVEAUTES: Nouveaute[] = [
   {
+    numero: 15,
+    date: '2026-11-26',
+    points: [
+      'Tractions : note jusqu’où tu montes. Sous les reps, « Barre : à noter » ouvre un schéma du haut du corps : glisse la barre (menton, clavicules, pecs…). « ⚡ Explosives » marque une montée rapide. Tu retrouves la hauteur dans la séance faite et dans Progrès.',
+      'Dips : en séance, choisis « Barres parallèles » ou « Barre droite » sous le nom de l’exercice. Chaque version a sa « dernière fois », ses courbes et ses records.',
+    ],
+  },
+  {
+    numero: 14,
+    date: '2026-11-20',
+    points: [
+      'Erreur de saisie ? Tes séries se corrigent. Dans la fiche d’un exercice, « Déjà noté aujourd’hui › Corriger ces séries » change les séries notées au lieu d’en ajouter. Dans une séance faite, « Corriger » à côté de chaque exercice : change une série, retire-la ou ajoute-en une.',
+    ],
+  },
+  {
     numero: 13,
     date: '2026-11-04',
     points: [

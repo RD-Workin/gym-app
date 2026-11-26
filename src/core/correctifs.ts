@@ -6,6 +6,7 @@ import { maintenant } from './ids';
 import { BIBLIOTHEQUE, MODELES_DEPART, MODELES_DEPART_V1, REPOS_POLYARTICULAIRE_SEC, blocsDepart, reposDepart } from '../data/bibliotheque';
 import { nouvelId } from './ids';
 import { basculerEnSecondes, semblerTenu } from './duree';
+import { sontDipsAuxBarres, VARIANTE_DIPS_BARRE_DROITE } from './variantes';
 
 export interface Correctif {
   id: string;
@@ -193,6 +194,23 @@ export const CORRECTIFS: Correctif[] = [
     },
   },
   correctifAjoutExercices('2026-11-03-exercices-tenus', 'Nouveaux exercices notés en secondes : gainage (planche), gainage latéral et dead hang.'),
+  // Demande de Romain (2026-11-26) : préciser barres parallèles (standard) ou barre droite.
+  {
+    id: '2026-11-26-dips-barre-droite',
+    description: 'Dips : variante « barre droite » ajoutée. La version standard, ce sont les barres parallèles ; choisis la barre en séance, chaque version a ses records.',
+    async executer(simuler) {
+      const dips = (await db.exercices.toArray()).filter((x) => !x.archive && sontDipsAuxBarres(x.nom));
+      let n = 0;
+      const t = maintenant();
+      for (const x of dips) {
+        const vs = await db.variantes.where('exerciceId').equals(x.id).toArray();
+        if (vs.some((v) => /barre droite/i.test(v.nom))) continue;
+        n++;
+        if (!simuler) await db.variantes.add({ id: nouvelId(), exerciceId: x.id, nom: VARIANTE_DIPS_BARRE_DROITE, creeLe: t, modifieLe: t });
+      }
+      return n;
+    },
+  },
 ];
 
 async function dejaAppliques(): Promise<string[]> {

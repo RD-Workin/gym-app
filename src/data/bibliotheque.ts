@@ -45,7 +45,7 @@ export const BIBLIOTHEQUE: ExerciceDepart[] = [
   e({ cle: 'chest-press', nom: 'Chest press', equipement: 'machine', modeCharge: 'total', groupes: ['pectoraux', 'triceps'], seance: 'Push', reps: '8' }),
   e({ cle: 'bench-plate', nom: 'Bench press (plate)', equipement: 'machine', modeCharge: 'par_main', groupes: ['pectoraux', 'triceps'], variantes: ['prise large'], seance: 'Push', reps: '7' }),
   e({ cle: 'dc', nom: 'Développé couché', equipement: 'barre', modeCharge: 'total', groupes: ['pectoraux', 'triceps', 'epaules'], seance: 'Push', reps: '8' }),
-  e({ cle: 'dips', nom: 'Dips', equipement: 'poids_du_corps', modeCharge: 'lest', groupes: ['pectoraux', 'triceps'], seance: 'Push', series: 2, reps: '8-11' }),
+  e({ cle: 'dips', nom: 'Dips', equipement: 'poids_du_corps', modeCharge: 'lest', groupes: ['pectoraux', 'triceps'], variantes: ['barre droite'], seance: 'Push', series: 2, reps: '8-11' }),
   e({ cle: 'seated-triceps', nom: 'Seated triceps press', equipement: 'machine', modeCharge: 'total', groupes: ['triceps'], seance: 'Push' }),
   e({ cle: 'vertical-chest', nom: 'Vertical chest press', equipement: 'machine', modeCharge: 'total', groupes: ['pectoraux'], seance: 'Push' }),
   e({ cle: 'extension-poulie', nom: 'Extension poulie', equipement: 'poulie', modeCharge: 'total', groupes: ['triceps'], seance: 'Push' }),

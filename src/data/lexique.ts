@@ -59,6 +59,11 @@ export const LEXIQUE = {
     terme: 'En secondes',
     definition: 'Pour les exercices qu’on tient sans bouger (gainage, dead hang, chaise contre un mur) : tu notes combien de secondes tu as tenu, au lieu de répétitions. Un lest reste possible.',
   },
+  hauteurBarre: {
+    terme: 'Hauteur atteinte',
+    definition:
+      'Pour les tractions (et chin-up, muscle-up) : jusqu’où la barre arrive sur ton corps en haut du mouvement, à ton appréciation. Barre aux yeux = menton sous la barre ; au menton = traction validée ; aux clavicules ou aux pecs = traction haute ; au nombril = passage de muscle-up. « Explosives » = tu montes le plus vite possible.',
+  },
   chargeMax: {
     terme: 'Charge la plus lourde',
     definition: 'Le poids le plus lourd vraiment soulevé à chaque séance, quel que soit le nombre de répétitions. Le point le plus haut de la courbe, c’est ton record perso (PR).',

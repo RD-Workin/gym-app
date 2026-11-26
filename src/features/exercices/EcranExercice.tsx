@@ -1,5 +1,6 @@
 // Fiche exercice : créer, modifier, masquer, variantes. Propriétaire : 03-exercices.
 // Courbe, records et historique : composant de 05-progression.
+import { sembleTraction, suitHauteur } from '../../core/hauteur';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useRequete } from '../../core/requetes';
 import { lien, naviguer } from '../../core/router';
@@ -61,8 +62,8 @@ function FicheExercice({ id }: { id: string }) {
   useEffect(() => () => urlPhoto && URL.revokeObjectURL(urlPhoto), [urlPhoto]);
   useEffect(() => {
     if (ex && !modifie) {
-      const { nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes } = ex;
-      setB({ nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes });
+      const { nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes, suiviHauteur } = ex;
+      setB({ nom, equipement, modeCharge, groupesMusculaires, reglagesMachine, note, enSecondes, suiviHauteur });
     }
   }, [ex?.modifieLe]);
 
@@ -199,6 +200,22 @@ function FicheExercice({ id }: { id: string }) {
             </button>
           </div>
         </div>
+        {!b.enSecondes && (
+          <div class="ex-champ">
+            <span class="ui-surtitre">
+              Noter la hauteur atteinte et l’explosivité <Aide mot="hauteurBarre" />
+            </span>
+            <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }} role="group" aria-label="Noter la hauteur atteinte et l’explosivité">
+              {/* Par défaut d'après le nom (tractions, chin-up, muscle-up) : on ne stocke que l'écart à ce défaut. */}
+              <button type="button" class="ex-filtre" aria-pressed={suitHauteur(b)} onClick={() => maj({ suiviHauteur: sembleTraction(b.nom) ? undefined : true })}>
+                Oui (tractions…)
+              </button>
+              <button type="button" class="ex-filtre" aria-pressed={!suitHauteur(b)} onClick={() => maj({ suiviHauteur: sembleTraction(b.nom) ? false : undefined })}>
+                Non
+              </button>
+            </div>
+          </div>
+        )}
         <div class="ex-champ">
           <span class="ui-surtitre">Muscles (ou touche le corps plus haut)</span>
           <div class="ui-ligne" style={{ flexWrap: 'wrap', gap: 'var(--e-2)' }}>

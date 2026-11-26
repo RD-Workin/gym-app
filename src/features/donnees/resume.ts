@@ -1,4 +1,5 @@
 // Résumé texte d'une période, à coller dans un message à un coach ou à une IA. Propriétaire : 06-donnees.
+import { hauteurMax, hauteurTexte } from '../../core/hauteur';
 import { signeLest, unRmEstime, volume } from '../../core/calculs';
 import type { Exercice, Modele, Objectif, Seance, Serie, Variante } from '../../core/types';
 import { evaluerObjectif, libelleCible, LIBELLE_STATUT, repsCible, uniteMesure } from '../objectifs/calculs';
@@ -40,6 +41,9 @@ function serieCourte(s: Serie): string {
   if (s.type === 'echec') extras.push('échec');
   if (s.type === 'degressive') extras.push('dégressive');
   if (s.rir != null) extras.push(`RIR ${s.rir}`);
+  // Tractions… : hauteur approximative en mots (le schéma reste dans l'app) et explosivité.
+  if (s.hauteur != null) extras.push(`barre ≈ ${hauteurTexte(s.hauteur)}`);
+  if (s.explosif) extras.push('explosive');
   // Série tenue : « 45 s », « +10 45 s » (lest).
   const coeur = s.dureeSec != null ? `${charge === 'PDC' ? '' : `${charge} `}${s.dureeSec} s` : `${charge}×${s.reps}`;
   return `${s.type === 'echauffement' ? 'échauff. ' : ''}${coeur}${extras.length ? ` (${extras.join(', ')})` : ''}`;
@@ -142,7 +146,8 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     L.push('- Poids de corps : non renseigné');
   }
   L.push('');
-  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. « 45 s » = série tenue 45 secondes (gainage, dead hang…). RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.');
+  const aHauteur = actives.some((x) => seriesParSeance.get(x.id)?.some((y) => y.hauteur != null || y.explosif));
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. « 45 s » = série tenue 45 secondes (gainage, dead hang…). RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail.' + (aHauteur ? ' « barre ≈ pecs » = hauteur atteinte en traction (où arrive la barre sur le haut du corps : yeux, menton, clavicules, pecs, bas du sternum, nombril), estimée à l’œil ; « explosive » = montée la plus rapide possible.' : ''));
   L.push('');
 
   // --- Objectifs (état à aujourd'hui, sur tout l'historique : référentiel pour le coach / l'IA)
@@ -215,6 +220,9 @@ export function construireResume(d: DonneesResume, periode: Periode = {}, aujour
     if (ia.duree || ib.duree) evol.push(`temps tenu max ${ia.duree} → ${ib.duree} s`);
     else evol.push(`reps max ${ia.reps} → ${ib.reps}`);
     if (ia.vol && ib.vol) evol.push(`volume de la séance ${ecart(ia.vol, ib.vol, 'kg', 0)}`);
+    const ha = hauteurMax(a.series);
+    const hb = hauteurMax(b.series);
+    if (ha != null && hb != null) evol.push(`barre la plus haute ≈ ${hauteurTexte(ha)} → ${hauteurTexte(hb)}`);
     L.push(`- Évolution : ${evol.join(' ; ')}`);
     const meilleur = ps.reduce((m, p) => (indicateurs(p).rm > indicateurs(m).rm ? p : m), a);
     if (meilleur !== a && meilleur !== b && indicateurs(meilleur).rm) {
@@ -290,7 +298,8 @@ export function construireResumeSeance(d: DonneesResume, seanceId: string): stri
   const travail = siennes.filter((s) => s.type !== 'echauffement');
   L.push(`- ${pluriel(ordre.length, 'exercice')}, ${pluriel(travail.length, 'série')} de travail`);
   L.push('');
-  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail. « La fois d’avant » = la dernière séance précédente où j’ai fait l’exercice.');
+  const aHauteur = d.series.some((y) => ordre.includes(y.exerciceId) && (y.hauteur != null || y.explosif));
+  L.push('Notation : charge en kg × reps. « +10 » = lest ajouté au poids du corps, « −15 » = aidé de 15 kg (élastique, machine), PDC = poids du corps seul. RIR = reps en réserve. 1RM estimé : formule d’Epley sur les séries ≤ 12 reps, poids du corps inclus pour les exercices lestés. Volume = charge × reps des séries de travail. « La fois d’avant » = la dernière séance précédente où j’ai fait l’exercice.' + (aHauteur ? ' « barre ≈ pecs » = hauteur atteinte en traction (où arrive la barre sur le haut du corps : yeux, menton, clavicules, pecs, bas du sternum, nombril), estimée à l’œil ; « explosive » = montée la plus rapide possible.' : ''));
   L.push('');
   L.push('## Exercices, dans l’ordre');
 
@@ -332,6 +341,9 @@ export function construireResumeSeance(d: DonneesResume, seanceId: string): stri
     if (ip.charge && i.charge) evol.push(`${libCharge} ${ecart(ip.charge, i.charge, 'kg')}`);
     evol.push(`reps max ${ip.reps} → ${i.reps}`);
     if (ip.vol && i.vol) evol.push(`volume ${ecart(ip.vol, i.vol, 'kg', 0)}`);
+    const hp = hauteurMax(prec.series);
+    const hj = hauteurMax(l);
+    if (hp != null && hj != null) evol.push(`barre la plus haute ≈ ${hauteurTexte(hp)} → ${hauteurTexte(hj)}`);
     L.push(`- Écart : ${evol.join(' ; ')}`);
     const record = Math.max(...precedentes.map((x) => indicateurs(x).rm));
     if (i.rm && record) {
